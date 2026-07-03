@@ -54,7 +54,7 @@ export const AppLayout: React.FC = () => {
           )}
         </Box>
 
-        <Box sx={[logoutWrapperSx, { display: { xs: isDoctor ? 'flex' : 'none', md: 'flex' } }]}>
+        <Box sx={[...(Array.isArray(logoutWrapperSx) ? logoutWrapperSx : [logoutWrapperSx]), { display: { xs: isDoctor ? 'flex' : 'none', md: 'flex' } }]}>
           <Tooltip title="התנתק" placement="left">
             <IconButton
               onClick={() => { clearSession(); navigate('/login'); }}
