@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Box, Typography } from '@mui/material';
 import { getPatientById, Patient, refreshMedicalSummary, ClinicalAlert } from '../../api/patients';
 import { useAsyncData } from '../../hooks/useAsyncData';
-import { genderLabel } from '../../utils/format';
+import { getGenderLabel } from '../../utils/format';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import InfoGrid from '../../components/InfoGrid/InfoGrid';
 import DocumentSummaryModal from '../../components/DocumentSummaryModal/DocumentSummaryModal';
@@ -45,7 +45,7 @@ export const PatientDashboardPage: React.FC = () => {
 
   if (status !== 'done' || !displayPatient) {
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', direction: 'rtl' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
         <PageHeader
           title={status === 'loading' ? 'טוען מטופל...' : 'מטופל לא נמצא'}
           subtitle={status === 'loading' ? 'מייד נתוני המטופל' : 'המטופל הנבחר אינו קיים'}
@@ -64,13 +64,13 @@ export const PatientDashboardPage: React.FC = () => {
   const idLabel = displayPatient.idNumber ?? displayPatient.id.slice(0, 8).toUpperCase();
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', direction: 'rtl' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
       <PageHeader
         title={fullName}
-        subtitle={`ת"ז: ${idLabel} • גיל ${displayPatient.age} • ${genderLabel(displayPatient.gender)}`}
+        subtitle={`ת"ז: ${idLabel} • גיל ${displayPatient.age} • ${getGenderLabel(displayPatient.gender)}`}
         onBack={() => navigate('/patients')}
       />
-      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: { xs: 2, sm: 3 }, display: 'flex', flexDirection: 'column', gap: { xs: 2, sm: 3 } }}>
         <ClinicalAlertsCard
           patientId={displayPatient.id}
           alerts={displayPatient.clinicalAlerts ?? []}
@@ -91,7 +91,7 @@ export const PatientDashboardPage: React.FC = () => {
           refreshing={refreshing}
         />
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: { xs: 2, sm: 3 } }}>
           <EncountersList encounters={displayPatient.encounters} patientId={displayPatient.id} />
           <DocumentsList
             documents={displayPatient.documents}

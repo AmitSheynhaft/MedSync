@@ -37,7 +37,7 @@ function VisitRow({
   const navigate = useNavigate();
   return (
     <Stack
-      direction="row-reverse"
+      direction="row"
       spacing={2}
       onClick={() =>
         patientId && navigate(`/patients/${patientId}/visits/${visit.id}`)

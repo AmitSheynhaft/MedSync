@@ -46,19 +46,24 @@ export const AuthLayout: React.FC = () => {
   const theme = themes[role as keyof typeof themes] || themes.default;
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", md: "row" },
+        minHeight: "100vh",
+      }}
+    >
       <Box
         sx={{
-          flex: "0 0 46%",
+          flex: { xs: "none", md: "0 0 46%" },
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          px: 7,
-          py: 6,
+          px: { xs: 3, sm: 5, md: 7 },
+          py: { xs: 4, md: 6 },
           background: theme.gradient,
           color: "#fff",
           transition: "background 0.4s ease",
-          "@media (max-width:768px)": { flex: "none", px: 4, py: 4 },
         }}
       >
         <Box
@@ -66,7 +71,7 @@ export const AuthLayout: React.FC = () => {
             width: 52,
             height: 52,
             borderRadius: "14px",
-            mb: 5,
+            mb: { xs: 2.5, md: 5 },
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -84,6 +89,7 @@ export const AuthLayout: React.FC = () => {
             fontWeight: 800,
             lineHeight: 1.2,
             mb: 1.5,
+            fontSize: { xs: 26, md: 34 },
             whiteSpace: "pre-line",
           }}
         >
@@ -91,9 +97,9 @@ export const AuthLayout: React.FC = () => {
         </Typography>
         <Typography
           sx={{
-            fontSize: 16,
+            fontSize: { xs: 14, md: 16 },
             lineHeight: 1.6,
-            mb: 5,
+            mb: { xs: 3, md: 5 },
             maxWidth: 320,
             color: "rgba(255,255,255,0.82)",
           }}
@@ -103,7 +109,7 @@ export const AuthLayout: React.FC = () => {
 
         <Box
           sx={{
-            display: "flex",
+            display: { xs: "none", sm: "flex" },
             alignItems: "center",
             gap: 2,
             px: 2.5,
@@ -144,7 +150,7 @@ export const AuthLayout: React.FC = () => {
           alignItems: "center",
           justifyContent: "center",
           bgcolor: "#fff",
-          p: 4,
+          p: { xs: 2, sm: 4 },
         }}
       >
         <Outlet />

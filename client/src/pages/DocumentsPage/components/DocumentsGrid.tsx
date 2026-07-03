@@ -41,7 +41,7 @@ export const DocumentsGrid: React.FC<IDocumentsGridProps> = ({
   }
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 2.5 }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fill, minmax(280px, 1fr))' }, gap: 2.5 }}>
       {filteredDocuments.map(document => (
         <DocumentCard
           key={document.id}

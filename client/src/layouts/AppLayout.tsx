@@ -7,17 +7,21 @@ import PersonIcon from '@mui/icons-material/Person';
 import PeopleIcon from '@mui/icons-material/People';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { clearSession, loadSession } from '../api/auth';
-
-const NAV_ITEM_SX = {
-  width: 40, height: 40, borderRadius: '10px', color: '#adb5bd',
-  '&:hover': { background: '#f1f3f5', color: '#495057' },
-  '&.active': { background: '#eef2ff', color: '#3b5bdb' },
-};
+import {
+  asideSx,
+  logoSx,
+  logoutButtonSx,
+  logoutWrapperSx,
+  mainSx,
+  navGroupSx,
+  navItemSx,
+  rootSx,
+} from './AppLayout.styles';
 
 const NavItem: React.FC<{ to: string; title: string; icon: React.ReactNode }> = ({ to, title, icon }) => {
   return (
     <Tooltip title={title} placement="left">
-      <IconButton component={NavLink} to={to} sx={NAV_ITEM_SX}>
+      <IconButton component={NavLink} to={to} sx={navItemSx}>
         {icon}
       </IconButton>
     </Tooltip>
@@ -29,26 +33,16 @@ export const AppLayout: React.FC = () => {
   const isDoctor = loadSession()?.role === 'doctor';
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      <Outlet />
-      <Box
-        component="aside"
-        sx={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          width: 64, borderLeft: '1px solid #e9ecef', py: 2, flexShrink: 0, bgcolor: '#fff',
-        }}
-      >
-        <Box
-          sx={{
-            width: 38, height: 38, bgcolor: 'primary.main', borderRadius: '10px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 800, fontSize: 18, mb: 2,
-          }}
-        >
+    <Box sx={rootSx}>
+      <Box component="main" sx={mainSx}>
+        <Outlet />
+      </Box>
+      <Box component="aside" sx={asideSx}>
+        <Box sx={logoSx}>
           M
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, flex: 1 }}>
+        <Box sx={navGroupSx}>
           {isDoctor ? (
             <NavItem to="/patients" title="מטופלים" icon={<PeopleIcon fontSize="small" />} />
           ) : (
@@ -60,14 +54,16 @@ export const AppLayout: React.FC = () => {
           )}
         </Box>
 
-        <Tooltip title="התנתק" placement="left">
-          <IconButton
-            onClick={() => { clearSession(); navigate('/login'); }}
-            sx={{ width: 40, height: 40, borderRadius: '10px', color: '#adb5bd', '&:hover': { background: '#f1f3f5', color: '#495057' } }}
-          >
-            <LogoutIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <Box sx={[logoutWrapperSx, { display: { xs: isDoctor ? 'flex' : 'none', md: 'flex' } }]}>
+          <Tooltip title="התנתק" placement="left">
+            <IconButton
+              onClick={() => { clearSession(); navigate('/login'); }}
+              sx={logoutButtonSx}
+            >
+              <LogoutIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
     </Box>
   );
