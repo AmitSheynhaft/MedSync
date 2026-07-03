@@ -34,3 +34,20 @@ export enum VisitType {
   EMERGENCY = 'EMERGENCY',
   FOLLOW_UP = 'FOLLOW_UP',
 }
+
+export enum ClinicalAlertCategory {
+  ALLERGY = 'ALLERGY',
+  LIFE_THREATENING = 'LIFE_THREATENING',
+  CHRONIC = 'CHRONIC',
+}
+
+export enum ClinicalAlertSeverity {
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW',
+}
+
+export enum ClinicalAlertSource {
+  AI = 'AI',
+  MANUAL = 'MANUAL',
+}

@@ -16,6 +16,7 @@ import { Diagnosis } from '../entities/diagnosis/diagnosisEntity';
 import { Medicine } from '../entities/medicine/medicineEntity';
 import { DiagnosesModule } from '../diagnoses/diagnoses.module';
 import { MedicinesModule } from '../medicines/medicines.module';
+import { PatientMedicalSummaryModule } from '../patient-medical-summary/patient-medical-summary.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { MedicinesModule } from '../medicines/medicines.module';
     ]),
     DiagnosesModule,
     MedicinesModule,
+    PatientMedicalSummaryModule,
   ],
   controllers: [VisitsController, VisitRecordsController],
   providers: [VisitsService, SpeechService, SummaryService, VisitRecordsService],

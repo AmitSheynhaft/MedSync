@@ -25,9 +25,17 @@ function computeInitials(name: string): string {
   );
 }
 
+const doctorCache = new Map<string, CurrentDoctor>();
+const inflight = new Map<string, Promise<CurrentDoctor>>();
+
 export function useCurrentDoctor(): CurrentDoctor {
   const session = loadSession();
+  const cached = session?.caregiverId
+    ? doctorCache.get(session.caregiverId)
+    : undefined;
+
   const [doctor, setDoctor] = useState<CurrentDoctor>(() => {
+    if (cached) return cached;
     if (!session) return DEFAULT;
     return {
       fullName: session.fullName || DEFAULT.fullName,
@@ -37,16 +45,33 @@ export function useCurrentDoctor(): CurrentDoctor {
   });
 
   useEffect(() => {
-    if (session?.role !== 'doctor' || !session?.caregiverId) return;
+    const caregiverId = session?.caregiverId;
+    if (session?.role !== 'doctor' || !caregiverId) return;
+    if (doctorCache.has(caregiverId)) {
+      setDoctor(doctorCache.get(caregiverId)!);
+      return;
+    }
     let active = true;
-    getCaregiver(session.caregiverId)
-      .then(c => {
-        if (!active) return;
-        setDoctor({
-          fullName: c.user?.fullName || session.fullName || DEFAULT.fullName,
+    let request = inflight.get(caregiverId);
+    if (!request) {
+      request = getCaregiver(caregiverId).then(c => {
+        const next: CurrentDoctor = {
+          fullName: c.user?.fullName || session?.fullName || DEFAULT.fullName,
           specialization: c.specialization || DEFAULT.specialization,
-          initials: computeInitials(c.user?.fullName || session.fullName || ''),
-        });
+          initials: computeInitials(c.user?.fullName || session?.fullName || ''),
+        };
+        doctorCache.set(caregiverId, next);
+        inflight.delete(caregiverId);
+        return next;
+      }).catch(err => {
+        inflight.delete(caregiverId);
+        throw err;
+      });
+      inflight.set(caregiverId, request);
+    }
+    request
+      .then(next => {
+        if (active) setDoctor(next);
       })
       .catch(() => {});
     return () => {

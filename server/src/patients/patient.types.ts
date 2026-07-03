@@ -14,6 +14,14 @@ export interface PatientDocument {
   kind: string;
 }
 
+export interface ClinicalAlert {
+  id: string;
+  category: 'ALLERGY' | 'LIFE_THREATENING' | 'CHRONIC';
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  label: string;
+  source: 'AI' | 'MANUAL';
+}
+
 export interface Patient {
   id: string;
   userId: string;
@@ -33,6 +41,7 @@ export interface Patient {
   overview: string;
   encounters: Encounter[];
   documents: PatientDocument[];
+  clinicalAlerts: ClinicalAlert[];
   createdAt: string;
   updatedAt: string;
 }

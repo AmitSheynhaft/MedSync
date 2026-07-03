@@ -16,6 +16,18 @@ export interface PatientDocument {
   kind: string;
 }
 
+export type ClinicalAlertCategory = 'ALLERGY' | 'LIFE_THREATENING' | 'CHRONIC';
+export type ClinicalAlertSeverity = 'HIGH' | 'MEDIUM' | 'LOW';
+export type ClinicalAlertSource = 'AI' | 'MANUAL';
+
+export interface ClinicalAlert {
+  id: string;
+  category: ClinicalAlertCategory;
+  severity: ClinicalAlertSeverity;
+  label: string;
+  source: ClinicalAlertSource;
+}
+
 export interface Patient {
   id: string;
   userId: string;
@@ -35,6 +47,7 @@ export interface Patient {
   overview: string;
   encounters: Encounter[];
   documents: PatientDocument[];
+  clinicalAlerts: ClinicalAlert[];
   createdAt: string;
   updatedAt: string;
 }
@@ -92,4 +105,11 @@ export function updatePatient(
 
 export function deletePatient(id: string): Promise<void> {
   return apiDelete<void>(`/api/patients/${encodeURIComponent(id)}`);
+}
+
+export function refreshMedicalSummary(id: string): Promise<Patient> {
+  return apiPost<Patient>(
+    `/api/patients/${encodeURIComponent(id)}/medical-summary/refresh`,
+    {},
+  );
 }

@@ -17,13 +17,13 @@ export const UploadBanner: React.FC<UploadBannerProps> = ({
     <Box
       sx={{
         borderRadius: 4,
-        p: 4,
+        p: { xs: 2.5, sm: 4 },
         overflow: "hidden",
         minHeight: 140,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        flexDirection: "row-reverse",
+        flexDirection: "row",
         background: "linear-gradient(135deg, #3b5bdb 0%, #4c6ef5 100%)",
       }}
     >

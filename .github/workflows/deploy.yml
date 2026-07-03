@@ -18,7 +18,7 @@ jobs:
         working-directory: client
         run: |
           npm ci
-          VITE_API_URL=http://10.10.248.140 npm run build
+          VITE_API_URL=https://medsync.cs.colman.ac.il npm run build
 
       # ── Build server ────────────────────────────────────────────────
       - name: Install & build server

@@ -6,6 +6,7 @@ import { DocumentSummaryService } from './document-summary.service';
 import { MedicalDocument } from '../entities/medicalDocument/medicalDocumentEntity';
 import { DocumentSummary } from '../entities/documentSummary/documentSummaryEntity';
 import { DocumentType, SummaryStatus } from '../entities/enums';
+import { PatientMedicalSummaryService } from '../patient-medical-summary/patient-medical-summary.service';
 
 export interface DocumentResult {
   id: string;
@@ -33,6 +34,7 @@ export class DocumentsService {
     private readonly medicalDocuments: Repository<MedicalDocument>,
     @InjectRepository(DocumentSummary)
     private readonly documentSummaries: Repository<DocumentSummary>,
+    private readonly medicalSummaryService: PatientMedicalSummaryService,
   ) {}
 
   /**
@@ -102,6 +104,22 @@ export class DocumentsService {
         processingCount: 1,
       });
       this.logger.log(`Finished analyzing document ${documentId}`);
+
+      if (hasText) {
+        const doc = await this.medicalDocuments.findOne({
+          where: { id: documentId },
+          select: ['patientId'],
+        });
+        if (doc?.patientId) {
+          this.medicalSummaryService
+            .generateAndSave(doc.patientId)
+            .catch((e) =>
+              this.logger.error(
+                `Medical summary trigger failed: ${e instanceof Error ? e.message : String(e)}`,
+              ),
+            );
+        }
+      }
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       this.logger.error(

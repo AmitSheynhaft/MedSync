@@ -41,3 +41,9 @@ export * from './medicine/medicineEntity';
 
 export * from './visitMedicine/visitMedicineInterface';
 export * from './visitMedicine/visitMedicineEntity';
+
+export * from './patientMedicalSummary/patientMedicalSummaryInterface';
+export * from './patientMedicalSummary/patientMedicalSummaryEntity';
+
+export * from './patientClinicalAlert/patientClinicalAlertInterface';
+export * from './patientClinicalAlert/patientClinicalAlertEntity';

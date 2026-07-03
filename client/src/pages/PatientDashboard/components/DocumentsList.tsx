@@ -43,7 +43,7 @@ function DocRow({ doc }: { doc: DashboardDoc }) {
 
   return (
     <Stack
-      direction="row-reverse"
+      direction="row"
       spacing={1.5}
       sx={{
         p: 1,

@@ -12,8 +12,10 @@ import { Patient as PatientEntity } from '../entities/patient/patientEntity';
 import { User } from '../entities/user/userEntity';
 import { Visit } from '../entities/visit/visitEntity';
 import { MedicalDocument } from '../entities/medicalDocument/medicalDocumentEntity';
+import { PatientMedicalSummary } from '../entities/patientMedicalSummary/patientMedicalSummaryEntity';
 import { RolesService } from '../roles/roles.service';
 import { hashPassword } from '../common/password.util';
+import { ClinicalAlertsService } from '../clinical-alerts/clinical-alerts.service';
 import {
   CreatePatientInput,
   Encounter,
@@ -67,8 +69,11 @@ export class PatientsService {
     private readonly visits: Repository<Visit>,
     @InjectRepository(MedicalDocument)
     private readonly documents: Repository<MedicalDocument>,
+    @InjectRepository(PatientMedicalSummary)
+    private readonly medicalSummaries: Repository<PatientMedicalSummary>,
     private readonly roles: RolesService,
     private readonly dataSource: DataSource,
+    private readonly clinicalAlertsService: ClinicalAlertsService,
   ) {}
 
   private toSummary(p: PatientEntity): PatientSummary {
@@ -86,18 +91,23 @@ export class PatientsService {
   private async toDetail(p: PatientEntity): Promise<Patient> {
     const { first, last } = splitName(p.user?.fullName);
 
-    const visits = await this.visits.find({
-      where: { patientId: p.id },
-      relations: ['caregiver', 'caregiver.user', 'summary'],
-      order: { visitDate: 'DESC' },
-      take: 10,
-    });
-
-    const docs = await this.documents.find({
-      where: { patientId: p.id },
-      order: { uploadedAt: 'DESC' },
-      take: 10,
-    });
+    const [medicalSummary, visits, docs, clinicalAlerts] = await Promise.all([
+      this.medicalSummaries.findOne({
+        where: { patientId: p.id },
+      }),
+      this.visits.find({
+        where: { patientId: p.id },
+        relations: ['caregiver', 'caregiver.user', 'summary'],
+        order: { visitDate: 'DESC' },
+        take: 10,
+      }),
+      this.documents.find({
+        where: { patientId: p.id },
+        order: { uploadedAt: 'DESC' },
+        take: 10,
+      }),
+      this.clinicalAlertsService.getForPatient(p.id),
+    ]);
 
     const encounters: Encounter[] = visits.map((v) => ({
       id: v.id,
@@ -133,9 +143,10 @@ export class PatientsService {
       bloodType: p.bloodType,
       address: p.address ?? '',
       notes: p.notes,
-      overview: p.notes ?? '',
+      overview: medicalSummary?.summaryText ?? p.notes ?? '',
       encounters,
       documents,
+      clinicalAlerts,
       createdAt: p.createdAt?.toISOString?.() ?? String(p.createdAt ?? ''),
       updatedAt: p.updatedAt?.toISOString?.() ?? String(p.updatedAt ?? ''),
     };

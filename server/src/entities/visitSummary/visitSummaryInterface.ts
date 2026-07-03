@@ -7,5 +7,6 @@ export interface IVisitSummary {
   visit?: IVisit;
   summaryText: string;
   visitType: VisitSummaryType;
+  includedInMedicalSummary: boolean;
   createdAt: Date;
 }

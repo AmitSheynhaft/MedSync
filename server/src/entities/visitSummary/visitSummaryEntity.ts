@@ -33,6 +33,13 @@ export class VisitSummary extends BaseEntity implements IVisitSummary {
   })
   visitType: VisitSummaryType;
 
+  @Column({
+    type: 'boolean',
+    name: 'included_in_medical_summary',
+    default: false,
+  })
+  includedInMedicalSummary: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 }

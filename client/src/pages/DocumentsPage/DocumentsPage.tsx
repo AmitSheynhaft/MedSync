@@ -21,7 +21,7 @@ export const DocumentsPage: React.FC = () => {
         onUpload={page.openUploadModal}
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', px: 4, py: 3.5 }}>
+      <Box sx={{ flex: 1, overflow: 'auto', px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 3.5 } }}>
         {page.uploadError && (
           <Alert severity="error" onClose={() => page.setUploadError(null)} sx={{ mb: 3 }}>
             {page.uploadError}

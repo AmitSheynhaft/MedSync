@@ -4,14 +4,18 @@ import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
 
 const DOCUMENT_SUMMARY_PROMPT = `Role: Act as a medical data analyst.
 Task: Summarize the following blood test results and medical visit summaries.
-Requirements:
-1. Executive Summary: Provide a 2-3 sentence overview of the patient's current status based on the documents.
-2. Normal Findings: Briefly list key systems or categories that are within range (e.g., Kidney function, Electrolytes).
-3. Abnormal Findings (High Priority): List all out-of-range values with: Parameter Name, Result vs. Reference Range, and Brief Significance.
-4. Action Items: List specific questions or findings that require immediate discussion with a primary care physician.
+
+Output the summary using EXACTLY these section headings, each on its own line, with a blank line between sections:
+סיכום מנהלים
+ממצאים תקינים
+ממצאים חריגים
+פריטי פעולה
+
+Under each heading, put the items on their own lines. Use numbered items "1.", "2.", "3." each starting on a new line. For an item with a label and value, write it as "label: value." For abnormal findings include parameter, result vs. reference range, and brief significance (each on a new line or separated by ". ").
+
 Tone: Professional, objective, and concise.
 IMPORTANT: Write the entire summary in Hebrew.
-IMPORTANT: Output plain text only. Do NOT use Markdown, asterisks, pound signs, pipes, hyphens for lists, or any other formatting symbols. Use plain numbered lists and line breaks only.
+IMPORTANT: Output plain text only. Do NOT use Markdown, asterisks, pound signs, pipes, hyphens for lists, or any other formatting symbols. Use real newline characters (\\n) between every heading and every numbered item.
 
 Document text:
 `;

@@ -6,5 +6,6 @@ export interface IDocumentSummary {
   document?: IMedicalDocument;
   summaryText: string;
   extractedText: string;
+  includedInMedicalSummary: boolean;
   createdAt: Date;
 }

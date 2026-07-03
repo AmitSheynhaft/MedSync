@@ -87,10 +87,10 @@ export const PatientDashboard: React.FC = () => {
         sx={{
           flex: 1,
           overflow: "auto",
-          p: 3.5,
+          p: { xs: 2, sm: 3.5 },
           display: "flex",
           flexDirection: "column",
-          gap: 3,
+          gap: { xs: 2, sm: 3 },
         }}
       >
         <UploadBanner

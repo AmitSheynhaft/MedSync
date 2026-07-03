@@ -30,6 +30,13 @@ export class DocumentSummary extends BaseEntity implements IDocumentSummary {
   @Column({ type: 'text', name: 'extracted_text' })
   extractedText: string;
 
+  @Column({
+    type: 'boolean',
+    name: 'included_in_medical_summary',
+    default: false,
+  })
+  includedInMedicalSummary: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 }

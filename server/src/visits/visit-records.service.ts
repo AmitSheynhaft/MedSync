@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import { Medicine } from '../entities/medicine/medicineEntity';
 import { RecordingStatus, VisitSummaryType, VisitType } from '../entities/enums';
 import { DiagnosesService } from '../diagnoses/diagnoses.service';
 import { MedicinesService } from '../medicines/medicines.service';
+import { PatientMedicalSummaryService } from '../patient-medical-summary/patient-medical-summary.service';
 
 export interface VisitInput {
   patientId: string;
@@ -62,6 +64,8 @@ export interface VisitMedicineInput {
 
 @Injectable()
 export class VisitRecordsService {
+  private readonly logger = new Logger(VisitRecordsService.name);
+
   constructor(
     @InjectRepository(Visit) private readonly visits: Repository<Visit>,
     @InjectRepository(VisitRecording)
@@ -79,6 +83,7 @@ export class VisitRecordsService {
     private readonly diagnosesService: DiagnosesService,
     private readonly medicinesService: MedicinesService,
     private readonly dataSource: DataSource,
+    private readonly medicalSummaryService: PatientMedicalSummaryService,
   ) {}
 
   findAll(patientId?: string, caregiverId?: string): Promise<Visit[]> {
@@ -213,7 +218,19 @@ export class VisitRecordsService {
       summary.summaryText = input.summaryText;
       summary.visitType = input.visitType;
     }
-    return this.summaries.save(summary);
+    const saved = await this.summaries.save(summary);
+
+    // Fire-and-forget: regenerate patient medical summary
+    const visit = await this.visits.findOne({ where: { id: visitId } });
+    if (visit?.patientId) {
+      this.medicalSummaryService
+        .generateAndSave(visit.patientId)
+        .catch((e) =>
+          this.logger.error(`Medical summary trigger failed: ${e instanceof Error ? e.message : String(e)}`),
+        );
+    }
+
+    return saved;
   }
 
   // -------- diagnoses --------

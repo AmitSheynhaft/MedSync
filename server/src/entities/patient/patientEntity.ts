@@ -13,6 +13,8 @@ import { User } from '../user/userEntity';
 import { Slot } from '../slot/slotEntity';
 import { MedicalDocument } from '../medicalDocument/medicalDocumentEntity';
 import { Visit } from '../visit/visitEntity';
+import { PatientMedicalSummary } from '../patientMedicalSummary/patientMedicalSummaryEntity';
+import { PatientClinicalAlert } from '../patientClinicalAlert/patientClinicalAlertEntity';
 import { IPatient } from './patientInterface';
 
 @Entity({ name: 'patients' })
@@ -56,4 +58,10 @@ export class Patient extends BaseEntity implements IPatient {
 
   @OneToMany(() => Visit, (visit) => visit.patient)
   visits: Visit[];
+
+  @OneToOne(() => PatientMedicalSummary, (s) => s.patient)
+  medicalSummary: PatientMedicalSummary;
+
+  @OneToMany(() => PatientClinicalAlert, (alert) => alert.patient)
+  clinicalAlerts: PatientClinicalAlert[];
 }

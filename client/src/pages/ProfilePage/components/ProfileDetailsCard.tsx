@@ -26,9 +26,9 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ profile,
   } = profile;
 
   return (
-    <Box sx={{ bgcolor: '#fff', border: '1px solid #e9ecef', borderRadius: 3, p: 3, mb: 3 }}>
+    <Box sx={{ bgcolor: '#fff', border: '1px solid #dee5ef', borderRadius: 3, p: { xs: 2.25, sm: 3 }, mb: 3, boxShadow: '0 1px 2px rgba(15,23,42,0.03)' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#868e96', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        <Typography sx={{ fontSize: 12, fontWeight: 800, color: '#8a94a5', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
           פרטים אישיים
         </Typography>
         {!editing && (
@@ -54,10 +54,10 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ profile,
             </>
           )}
           <Stack direction="row" spacing={1.5}>
-            <Button variant="contained" onClick={handleSave} disabled={saving} sx={{ borderRadius: 2, fontWeight: 600 }}>
+            <Button variant="contained" onClick={handleSave} disabled={saving} sx={{ borderRadius: 999, fontWeight: 700, px: 2.5, boxShadow: 'none', '&:hover': { boxShadow: 'none' } }}>
               {saving ? 'שומר…' : 'שמור'}
             </Button>
-            <Button variant="outlined" onClick={handleCancel} disabled={saving} sx={{ borderRadius: 2, fontWeight: 600 }}>
+            <Button variant="outlined" onClick={handleCancel} disabled={saving} sx={{ borderRadius: 999, fontWeight: 700, px: 2.5 }}>
               ביטול
             </Button>
           </Stack>

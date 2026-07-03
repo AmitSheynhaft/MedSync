@@ -12,32 +12,36 @@ export const RegisterPage: React.FC = () => {
   const form = useRegisterForm(isTherapist);
 
   return (
-    <Box sx={{ width: "100%", maxWidth: 420, p: 4, direction: "rtl", textAlign: "right" }}>
-      <Chip
-        icon={config.icon}
-        label={config.label}
-        size="small"
-        sx={{
-          mb: 3,
-          fontWeight: 600,
-          bgcolor: `${config.color}14`,
-          color: config.color,
-          border: `1px solid ${config.color}30`,
-          "& .MuiChip-icon": { color: config.color },
-        }}
-      />
+    <Box sx={{ width: "100%", maxWidth: 420, p: { xs: 1, sm: 4 } }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 3 }}>
+        <Chip
+          icon={config.icon}
+          label={config.label}
+          size="small"
+          sx={{
+            fontWeight: 600,
+            bgcolor: `${config.color}14`,
+            color: config.color,
+            border: `1px solid ${config.color}30`,
+            "& .MuiChip-icon": { color: config.color },
+          }}
+        />
+      </Box>
 
-      <Typography variant="h5" sx={{ fontWeight: 700, color: "#1a1a2e", mb: 0.5 }}>
+      <Typography
+        variant="h5"
+        sx={{ fontWeight: 700, color: "#1a1a2e", mb: 0.5, width: "100%" }}
+      >
         {config.heading}
       </Typography>
-      <Typography sx={{ fontSize: 14, color: "text.secondary", mb: 2.5 }}>
+      <Typography sx={{ fontSize: 14, color: "text.secondary", mb: 2.5, width: "100%" }}>
         {config.subtitle}
       </Typography>
 
       <Stepper
         activeStep={form.step}
         alternativeLabel
-        dir="ltr"
+        dir="rtl"
         sx={{
           mb: 3,
           "& .MuiStepIcon-root.Mui-active": { color: config.color },

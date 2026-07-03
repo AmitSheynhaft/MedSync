@@ -1,6 +1,7 @@
 import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
+  direction: 'rtl',
   palette: {
     primary: { main: '#3b5bdb' },
     background: { default: '#f8f9fa' },
