@@ -31,7 +31,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       value={password}
       onChange={e => setPassword(e.target.value)}
     />
-    <Box sx={{ textAlign: "right" }}>
+    <Box sx={{ textAlign: "start" }}>
       <Typography
         component="a"
         href="#"
