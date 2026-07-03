@@ -30,7 +30,7 @@ export const asideSx: SxProps<Theme> = {
   display: 'flex',
   flexDirection: { xs: 'row', md: 'column' },
   alignItems: 'center',
-  justifyContent: { xs: 'space-between', md: 'flex-start' },
+  justifyContent: { xs: 'space-evenly', md: 'flex-start' },
   position: { xs: 'fixed', md: 'static' },
   left: { xs: 0, md: 'auto' },
   right: { xs: 0, md: 'auto' },
@@ -63,20 +63,22 @@ export const logoSx: SxProps<Theme> = {
 };
 
 export const navGroupSx: SxProps<Theme> = {
-  display: 'flex',
-  flexDirection: { xs: 'row', md: 'column' },
+  // On mobile the group is flattened so every icon spaces evenly across the bar.
+  display: { xs: 'contents', md: 'flex' },
+  flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: { xs: 'space-evenly', md: 'flex-start' },
-  gap: { xs: 1, md: 0.5 },
+  justifyContent: 'flex-start',
+  gap: 0.5,
   flex: 1,
   minWidth: 0,
 };
 
-export const logoutWrapperSx: SxProps<Theme> = {
-  display: 'flex',
+export const utilityGroupSx: SxProps<Theme> = {
+  // Bottom group (guide + logout). Flattened on mobile, stacked on desktop.
+  display: { xs: 'contents', md: 'flex' },
+  flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'center',
-  flex: { xs: 1, md: 'none' },
+  gap: 0.5,
   flexShrink: 0,
 };
 

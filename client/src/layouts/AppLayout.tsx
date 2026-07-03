@@ -1,17 +1,21 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Box, Tooltip, IconButton } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PersonIcon from '@mui/icons-material/Person';
 import PeopleIcon from '@mui/icons-material/People';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutlineRounded';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { clearSession, loadSession } from '../api/auth';
+import SystemInfoModal from '../components/SystemInfoModal/SystemInfoModal';
+import { consumeWelcomePending } from '../components/SystemInfoModal/welcomeFlag';
 import {
   asideSx,
   logoSx,
   logoutButtonSx,
-  logoutWrapperSx,
+  utilityGroupSx,
   mainSx,
   navGroupSx,
   navItemSx,
@@ -30,10 +34,15 @@ const NavItem: React.FC<{ to: string; title: string; icon: React.ReactNode }> = 
 
 export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
-  const isDoctor = loadSession()?.role === 'doctor';
+  const session = loadSession();
+  const isDoctor = session?.role === 'doctor';
+  const [showWelcomeSystemInfo, setShowWelcomeSystemInfo] = React.useState(consumeWelcomePending);
 
   return (
     <Box sx={rootSx}>
+      {showWelcomeSystemInfo && (
+        <SystemInfoModal role={session?.role} onClose={() => setShowWelcomeSystemInfo(false)} />
+      )}
       <Box component="main" sx={mainSx}>
         <Outlet />
       </Box>
@@ -54,11 +63,16 @@ export const AppLayout: React.FC = () => {
           )}
         </Box>
 
-        <Box sx={[...(Array.isArray(logoutWrapperSx) ? logoutWrapperSx : [logoutWrapperSx]), { display: { xs: isDoctor ? 'flex' : 'none', md: 'flex' } }]}>
+        <Box sx={utilityGroupSx}>
+          <Tooltip title="מדריך המערכת" placement="left">
+            <IconButton onClick={() => setShowWelcomeSystemInfo(true)} sx={navItemSx}>
+              <HelpOutlineIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="התנתק" placement="left">
             <IconButton
               onClick={() => { clearSession(); navigate('/login'); }}
-              sx={logoutButtonSx}
+              sx={[logoutButtonSx, { display: { xs: isDoctor ? 'inline-flex' : 'none', md: 'inline-flex' } }] as SxProps<Theme>}
             >
               <LogoutIcon fontSize="small" />
             </IconButton>
