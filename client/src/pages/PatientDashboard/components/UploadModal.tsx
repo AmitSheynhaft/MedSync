@@ -208,7 +208,6 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     py: 1.5,
                     borderRadius: 3,
                     fontWeight: 700,
-                    "& .MuiButton-startIcon": { ml: 1, mr: "-4px" },
                   }}
                 >
                   העלה
@@ -235,7 +234,6 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     py: 1.5,
                     borderStyle: "dashed",
                     borderRadius: 3,
-                    "& .MuiButton-startIcon": { ml: 1, mr: "-4px" },
                   }}
                 >
                   צלם
@@ -252,7 +250,6 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     borderRadius: 3,
                     color: "#1a1a2e",
                     borderColor: "#e9ecef",
-                    "& .MuiButton-startIcon": { ml: 1, mr: "-4px" },
                   }}
                 >
                   בחר מסמך
@@ -320,7 +317,6 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   onClick={onCapture}
                   sx={{
                     flex: 1,
-                    "& .MuiButton-startIcon": { ml: 1, mr: "-4px" },
                   }}
                 >
                   צלם

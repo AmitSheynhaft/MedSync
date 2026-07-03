@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clearSession, loadSession, saveSession } from '../../../api/auth';
-import { getUser, updateUser, User } from '../../../api/users';
+import { getMe, updateMe, User } from '../../../api/users';
 import { getCaregiver } from '../../../api/caregivers';
 import { getPatientById, updatePatient } from '../../../api/patients';
 import { useToast } from '../../../hooks/useToast';
@@ -24,15 +24,16 @@ export function useProfile() {
   const { toast, setToast, showToast } = useToast();
 
   useEffect(() => {
-    if (!session?.userId) return;
-    getUser(session.userId)
+    if (!session) return;
+    getMe()
       .then(u => {
         setUser(u);
         setPhone(u.phone ?? '');
         setBirthDate(toDateInput(u.birthDate));
       })
       .catch(() => setUser(null));
-  }, [session?.userId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.role]);
 
   useEffect(() => {
     if (session?.role === 'doctor' && session?.caregiverId) {
@@ -71,10 +72,10 @@ export function useProfile() {
   };
 
   const handleSave = async () => {
-    if (!session?.userId) return;
+    if (!session) return;
     setSaving(true);
     try {
-      const updated = await updateUser(session.userId, {
+      const updated = await updateMe({
         phone: phone.trim() || undefined,
         birthDate: birthDate || undefined,
       });

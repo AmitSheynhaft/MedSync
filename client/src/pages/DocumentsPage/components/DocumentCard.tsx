@@ -54,7 +54,7 @@ export const DocumentCard: React.FC<IDocumentCardProps> = ({ document, onClick }
         sx={{
           fontWeight: 800, fontSize: 11, letterSpacing: '.05em',
           color: statusInfo.color, bgcolor: statusInfo.bg, borderRadius: 2,
-          '& .MuiChip-icon': { color: statusInfo.color, mr: '6px', ml: '-4px' },
+          '& .MuiChip-icon': { color: statusInfo.color },
         }}
       />
     </Card>

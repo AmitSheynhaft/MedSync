@@ -88,7 +88,7 @@ export function usePatientDashboard() {
       };
       setDocuments((prev) => [placeholder, ...prev]);
       try {
-        await uploadDocument(file, patientId, session?.userId, documentType);
+        await uploadDocument(file, patientId, documentType);
         setToast({
           severity: "success",
           message: `"${file.name}" uploaded successfully.`,
@@ -104,7 +104,7 @@ export function usePatientDashboard() {
         setUploading(false);
       }
     },
-    [patientId, session?.userId, refreshDocuments],
+    [patientId, refreshDocuments],
   );
 
   return {

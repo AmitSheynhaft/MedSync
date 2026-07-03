@@ -68,7 +68,7 @@ export function useDocumentsPage() {
     setUploading(true);
     setUploadError(null);
     try {
-      await uploadDocument(file, patientId, session?.userId, documentType);
+      await uploadDocument(file, patientId, documentType);
       setRefreshKey(key => key + 1);
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'העלאת המסמך נכשלה.');

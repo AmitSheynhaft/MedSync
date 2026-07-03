@@ -11,13 +11,11 @@ export interface DocumentUploadResult {
 export function uploadDocument(
   file: File,
   patientId?: string,
-  uploadedByUserId?: string,
   documentType?: DocumentTypeEnum,
 ): Promise<DocumentUploadResult> {
   const formData = new FormData();
   formData.append('document', file);
   if (patientId) formData.append('patientId', patientId);
-  if (uploadedByUserId) formData.append('uploadedByUserId', uploadedByUserId);
   if (documentType) formData.append('documentType', documentType);
 
   return apiRequest<DocumentUploadResult>('/api/documents/upload', {

@@ -57,7 +57,6 @@ const VIEW_AS_KEY = 'medsync.viewAs';
 
 export function saveSession(result: AuthResult) {
   localStorage.setItem(SESSION_KEY, JSON.stringify(result));
-  localStorage.setItem('role', result.role);
 }
 
 export function setViewAs(role: RoleName) {

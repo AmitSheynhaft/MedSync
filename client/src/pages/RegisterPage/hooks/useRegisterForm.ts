@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registerDoctor, registerPatient, saveSession } from '../../../api/auth';
+import { markWelcomePending } from '../../../components/SystemInfoModal/welcomeFlag';
 
 /**
  * Holds all register form fields, step navigation, validation and submission
@@ -67,6 +68,7 @@ export function useRegisterForm(isTherapist: boolean) {
         ? await registerDoctor({ role: 'doctor', fullName, email, password, licenseNumber: idOrLicense || 'TBD', specialization: specialization || 'General', phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined })
         : await registerPatient({ role: 'patient', fullName, email, password, idNumber: idOrLicense || undefined, address: address || '', hmo: hmo || undefined, phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined });
       saveSession(result);
+      markWelcomePending();
       navigate(result.role === 'patient' ? '/dashboard' : '/patients');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'הרשמה נכשלה');

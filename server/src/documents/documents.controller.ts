@@ -17,6 +17,7 @@ import {
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentsService } from './documents.service';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { DocumentType } from '../entities/enums';
 
 const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -40,8 +41,8 @@ export class DocumentsController {
   )
   async upload(
     @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: any,
     @Body('patientId') patientId?: string,
-    @Body('uploadedByUserId') uploadedByUserId?: string,
     @Body('documentType') documentType?: string,
   ) {
     if (!file || !file.buffer) {
@@ -66,11 +67,10 @@ export class DocumentsController {
       throw new BadRequestException('File size exceeds 10 MB limit');
     }
 
-    if (!patientId || !uploadedByUserId) {
-      throw new BadRequestException(
-        'patientId and uploadedByUserId are required',
-      );
+    if (!patientId) {
+      throw new BadRequestException('patientId is required');
     }
+    const uploadedByUserId = user.id;
 
     try {
       // Multer decodes multipart filenames as Latin-1; re-encode as UTF-8 for Hebrew/non-ASCII names

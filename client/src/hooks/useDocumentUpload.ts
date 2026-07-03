@@ -1,7 +1,6 @@
 import { useState, useRef, ChangeEvent } from 'react';
 import { uploadDocument, getDocumentSummary } from '../api/documents';
 import { getMedicalDocument } from '../api/medical-documents';
-import { loadSession } from '../api/auth';
 
 type UploadStatus = 'idle' | 'uploading' | 'processing' | 'done' | 'error';
 
@@ -31,14 +30,13 @@ export function useDocumentUpload(patientId?: string) {
 
   const upload = async () => {
     if (!file) return;
-    const session = loadSession();
     setStatus('uploading');
     setSummary('');
     setUploadedId(null);
     setUploadedFileName(null);
     try {
       // 1. Upload — server responds immediately with a PROCESSING document.
-      const { id, filename } = await uploadDocument(file, patientId, session?.userId);
+      const { id, filename } = await uploadDocument(file, patientId);
       setUploadedId(id);
       setUploadedFileName(filename);
       setStatus('processing');
