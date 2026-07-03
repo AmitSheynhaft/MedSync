@@ -35,9 +35,9 @@ export const routes: RouteConfig[] = [
   // App layout — patient + doctor
   { path: "/dashboard", element: <PatientDashboard />, layout: "app", allowRoles: [Role.Patient, Role.Doctor] },
   { path: "/documents", element: <DocumentsPage />, layout: "app", allowRoles: [Role.Patient, Role.Doctor] },
-  { path: "/visit", element: <VisitPage />, layout: "app", allowRoles: [Role.Patient, Role.Doctor] },
 
   // App layout — doctor only
+  { path: "/visit", element: <VisitPage />, layout: "app", allowRoles: [Role.Doctor] },
   { path: "/patients", element: <PatientsListPage />, layout: "app", allowRoles: [Role.Doctor] },
   { path: "/patients/:id", element: <PatientDashboardPage />, layout: "app", allowRoles: [Role.Doctor] },
   { path: "/patients/:id/visit", element: <VisitPage />, layout: "app", allowRoles: [Role.Doctor] },

@@ -2,8 +2,10 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -20,7 +22,8 @@ import {
   VisitSummaryInput,
 } from './visit-records.service';
 import { Roles } from '../common/decorators/roles.decorator';
-import { ROLE_DOCTOR } from '../common/constants/roles';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { ROLE_DOCTOR, ROLE_PATIENT } from '../common/constants/roles';
 
 @Controller('api/visits-records')
 export class VisitRecordsController {
@@ -28,15 +31,36 @@ export class VisitRecordsController {
 
   @Get()
   findAll(
+    @CurrentUser() user: any,
     @Query('patientId') patientId?: string,
     @Query('caregiverId') caregiverId?: string,
   ) {
+    // Patients may only ever read their own visit records; ignore any
+    // client-supplied filters that could target another patient's data.
+    if (user?.role?.name === ROLE_PATIENT) {
+      const ownPatientId = user.patient?.id;
+      if (!ownPatientId) {
+        throw new ForbiddenException('No patient profile for this user');
+      }
+      return this.service.findAll(ownPatientId, undefined);
+    }
     return this.service.findAll(patientId, caregiverId);
   }
 
   @Get(':id')
-  findOne(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.service.findOne(id);
+  async findOne(
+    @CurrentUser() user: any,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    const visit = await this.service.findOne(id);
+    // Patients may only read a visit that belongs to them.
+    if (
+      user?.role?.name === ROLE_PATIENT &&
+      visit.patientId !== user.patient?.id
+    ) {
+      throw new NotFoundException('Visit not found');
+    }
+    return visit;
   }
 
   @Roles(ROLE_DOCTOR)

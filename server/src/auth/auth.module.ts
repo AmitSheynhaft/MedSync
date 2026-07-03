@@ -7,6 +7,7 @@ import { Patient } from '../entities/patient/patientEntity';
 import { Caregiver } from '../entities/caregiver/caregiverEntity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { TokenService } from './token.service';
 import { RolesModule } from '../roles/roles.module';
 
 @Module({
@@ -15,9 +16,9 @@ import { RolesModule } from '../roles/roles.module';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET') || 'dev-jwt-secret-change-me',
+        secret: config.get<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: (config.get<string>('JWT_EXPIRES_IN') || '7d') as any,
+          expiresIn: (config.get<string>('JWT_EXPIRES_IN') || '5d') as any,
         },
       }),
     }),
@@ -25,7 +26,7 @@ import { RolesModule } from '../roles/roles.module';
     RolesModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService],
-  exports: [AuthService, JwtModule],
+  providers: [AuthService, TokenService],
+  exports: [AuthService, TokenService, JwtModule],
 })
 export class AuthModule {}

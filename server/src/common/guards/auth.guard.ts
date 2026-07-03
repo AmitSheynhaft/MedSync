@@ -6,21 +6,17 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
+import { TokenService } from '../../auth/token.service';
 import { UsersService } from '../../users/users.service';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { ALL_ROLES } from '../constants/roles';
 import { IRole } from '../../entities';
 
-interface AuthTokenPayload {
-  sub?: string;
-}
-
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly jwtService: JwtService,
+    private readonly tokens: TokenService,
     private readonly usersService: UsersService,
   ) {}
 
@@ -45,17 +41,8 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing Bearer token');
     }
 
-    let payload: AuthTokenPayload;
-    try {
-      payload = this.jwtService.verify<AuthTokenPayload>(token);
-    } catch {
-      throw new UnauthorizedException('Invalid or expired token');
-    }
-
-    const userId = payload?.sub;
-    if (!userId || typeof userId !== 'string') {
-      throw new UnauthorizedException('Invalid token payload');
-    }
+    const payload = this.tokens.verifyAccessToken(token);
+    const userId = payload.sub;
 
     const user = await this.usersService.findUserByIdWithRole(userId);
 

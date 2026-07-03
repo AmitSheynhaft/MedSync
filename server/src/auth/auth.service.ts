@@ -3,8 +3,6 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { User } from '../entities/user/userEntity';
@@ -12,6 +10,7 @@ import { Patient } from '../entities/patient/patientEntity';
 import { Caregiver } from '../entities/caregiver/caregiverEntity';
 import { hashPassword, verifyPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
+import { TokenService, TokenPair } from './token.service';
 
 export interface RegisterPatientInput {
   role?: string;
@@ -57,11 +56,6 @@ export interface AuthResult {
   caregiverId?: string;
 }
 
-export interface TokenPair {
-  accessToken: string;
-  refreshToken: string;
-}
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -69,28 +63,16 @@ export class AuthService {
     @InjectRepository(Patient) private readonly patients: Repository<Patient>,
     @InjectRepository(Caregiver) private readonly caregivers: Repository<Caregiver>,
     private readonly roles: RolesService,
-    private readonly jwtService: JwtService,
-    private readonly config: ConfigService,
+    private readonly tokens: TokenService,
     private readonly dataSource: DataSource,
   ) {}
 
-  private get refreshSecret(): string {
-    return this.config.get<string>('JWT_REFRESH_SECRET') || 'dev-jwt-refresh-secret-change-me';
-  }
-
-  private get refreshExpiresIn(): string {
-    return this.config.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
-  }
-
   private issueAccessToken(userId: string): string {
-    return this.jwtService.sign({ sub: userId });
+    return this.tokens.issueAccessToken(userId);
   }
 
   private issueRefreshToken(userId: string): string {
-    return this.jwtService.sign(
-      { sub: userId, type: 'refresh' },
-      { secret: this.refreshSecret, expiresIn: this.refreshExpiresIn as any },
-    );
+    return this.tokens.issueRefreshToken(userId);
   }
 
   /** Verifies a refresh token and mints a fresh access/refresh token pair. */
@@ -98,23 +80,12 @@ export class AuthService {
     if (!refreshToken) {
       throw new UnauthorizedException('Missing refresh token');
     }
-    let payload: { sub?: string; type?: string };
-    try {
-      payload = this.jwtService.verify(refreshToken, { secret: this.refreshSecret });
-    } catch {
-      throw new UnauthorizedException('Invalid or expired refresh token');
-    }
-    if (payload?.type !== 'refresh' || !payload.sub) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
+    const payload = this.tokens.verifyRefreshToken(refreshToken);
     const user = await this.users.findOne({ where: { id: payload.sub } });
     if (!user) {
       throw new UnauthorizedException('Invalid refresh token');
     }
-    return {
-      accessToken: this.issueAccessToken(user.id),
-      refreshToken: this.issueRefreshToken(user.id),
-    };
+    return this.tokens.generateTokenPair(user.id);
   }
 
   async registerPatient(input: RegisterPatientInput): Promise<AuthResult> {
@@ -260,8 +231,9 @@ export class AuthService {
       role: roleName,
       accessToken: this.issueAccessToken(user.id),
       refreshToken: this.issueRefreshToken(user.id),
-      patientId: user.patient?.id,
-      caregiverId: user.caregiver?.id,
+      // Expose only the id that matches the user's role, mirroring /api/auth/me.
+      patientId: roleName === 'patient' ? user.patient?.id : undefined,
+      caregiverId: roleName === 'doctor' ? user.caregiver?.id : undefined,
     };
   }
 }
