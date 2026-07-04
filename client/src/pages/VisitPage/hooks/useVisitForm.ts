@@ -170,29 +170,47 @@ export function useVisitForm() {
 
   const handleSave = async () => {
     // Guard against re-entrancy (fast double-clicks) and read-only callers.
-    if (isReadOnly || isSavingRef.current || !patientId) return;
+    if (isReadOnly || isSavingRef.current) return;
+    if (!patientId) {
+      setToast({ severity: 'error', message: 'יש לבחור מטופל לפני שמירת ביקור.' });
+      return;
+    }
+
+    const vitalsAndMeta = {
+      bloodPressure: bloodPressure.trim() || undefined,
+      pulse: pulse.trim() || undefined,
+      bodyTemp: bodyTemp.trim() || undefined,
+      weight: weight.trim() || undefined,
+      height: height.trim() || undefined,
+      oxygenSat: oxygenSat.trim() || undefined,
+      visitType: visitType || undefined,
+      followUpDate: followUpDate || undefined,
+      referralNotes: referralNotes.trim() || undefined,
+    };
+
+    const summaryText = buildSummaryText(subjective, diagnosis, plan);
+
+    // Refuse to create an empty record: require at least a summary, some
+    // vitals/metadata, a diagnosis or a medicine.
+    const hasContent =
+      !!summaryText ||
+      Object.values(vitalsAndMeta).some(v => v !== undefined) ||
+      diagnosesList.length > 0 ||
+      medicinesList.length > 0;
+    if (!hasContent) {
+      setToast({ severity: 'error', message: 'לא ניתן לשמור ביקור ריק.' });
+      return;
+    }
+
     isSavingRef.current = true;
     setSaving(true);
     try {
-      const vitalsAndMeta = {
-        bloodPressure: bloodPressure.trim() || undefined,
-        pulse: pulse.trim() || undefined,
-        bodyTemp: bodyTemp.trim() || undefined,
-        weight: weight.trim() || undefined,
-        height: height.trim() || undefined,
-        oxygenSat: oxygenSat.trim() || undefined,
-        visitType: visitType || undefined,
-        followUpDate: followUpDate || undefined,
-        referralNotes: referralNotes.trim() || undefined,
-      };
-
       const targetId = visitId ?? (await createVisit({
         patientId,
         visitDate: new Date().toISOString(),
         ...vitalsAndMeta,
       })).id;
 
-      const summaryText = buildSummaryText(subjective, diagnosis, plan);
       if (summaryText) {
         await upsertVisitSummary(targetId, {
           summaryText,
