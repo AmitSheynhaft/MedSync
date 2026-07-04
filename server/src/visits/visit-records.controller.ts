@@ -65,8 +65,12 @@ export class VisitRecordsController {
 
   @Roles(ROLE_DOCTOR)
   @Post()
-  create(@Body() body: VisitInput) {
-    return this.service.create(body);
+  create(@User() user: any, @Body() body: VisitInput) {
+    const caregiverId = user?.caregiver?.id;
+    if (!caregiverId) {
+      throw new ForbiddenException('No caregiver profile for this user');
+    }
+    return this.service.create({ ...body, caregiverId });
   }
 
   @Roles(ROLE_DOCTOR)
