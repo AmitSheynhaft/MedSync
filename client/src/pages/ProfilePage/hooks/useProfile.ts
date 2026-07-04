@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { logout } from '../../../auth/authApi';
+import { logout } from '../../../api/authApi';
 import { loadUserSession, saveSession } from '../../../auth/userSessionStore';
 import { getMe, updateMe, User } from '../../../api/users';
 import { getCaregiver } from '../../../api/caregivers';

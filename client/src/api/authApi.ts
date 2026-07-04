@@ -1,10 +1,10 @@
-import { apiGet, apiPost } from '../api/client';
-import { clearSession } from './userSessionStore';
+import { apiGet, apiPost } from './client';
+import { clearSession } from '../auth/userSessionStore';
 import type {
   AuthResult,
   RegisterDoctorInput,
   RegisterPatientInput,
-} from './types';
+} from '../auth/types';
 
 export function registerPatient(input: RegisterPatientInput): Promise<AuthResult> {
   return apiPost<AuthResult>('/api/auth/register/patient', input);

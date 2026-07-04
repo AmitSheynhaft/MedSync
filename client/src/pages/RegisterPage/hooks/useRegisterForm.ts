@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerDoctor, registerPatient } from '../../../auth/authApi';
+import { registerDoctor, registerPatient } from '../../../api/authApi';
 import { saveSession } from '../../../auth/userSessionStore';
 import { markWelcomePending } from '../../../components/SystemInfoModal/welcomeFlag';
 

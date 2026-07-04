@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../../../auth/authApi';
+import { login } from '../../../api/authApi';
 import { saveSession } from '../../../auth/userSessionStore';
 import { setViewAs, homeForRole } from '../../../auth/viewAs';
 

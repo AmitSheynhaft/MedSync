@@ -9,7 +9,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlineRounded';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { getEffectiveRole } from '../auth/viewAs';
-import { logout } from '../auth/authApi';
+import { logout } from '../api/authApi';
 import { useCurrentUser } from '../atoms/useCurrentUser';
 import SystemInfoModal from '../components/SystemInfoModal/SystemInfoModal';
 import { consumeWelcomePending } from '../components/SystemInfoModal/welcomeFlag';

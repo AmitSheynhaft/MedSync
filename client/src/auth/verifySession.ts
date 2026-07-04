@@ -1,5 +1,5 @@
 import { getCurrentUser, setCurrentUser } from '../atoms/useCurrentUser';
-import { fetchCurrentSession } from './authApi';
+import { fetchCurrentSession } from '../api/authApi';
 import { clearSession } from './userSessionStore';
 import type { AuthResult } from './types';
 
