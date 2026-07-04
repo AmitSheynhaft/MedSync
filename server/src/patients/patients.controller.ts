@@ -17,6 +17,10 @@ import {
   PatientSummary,
   UpdatePatientInput,
 } from './patient.types';
+import { Roles } from '../common/decorators/roles.decorator';
+import { User } from '../common/decorators/user.decorator';
+import { IUser } from '../entities';
+import { ROLE_DOCTOR } from '../common/constants/roles';
 import { PatientMedicalSummaryService } from '../patient-medical-summary/patient-medical-summary.service';
 
 @Controller('api/patients')
@@ -26,16 +30,21 @@ export class PatientsController {
     private readonly medicalSummaryService: PatientMedicalSummaryService,
   ) {}
 
+  @Roles(ROLE_DOCTOR)
   @Get()
   findAll(@Query('search') search?: string): Promise<PatientSummary[]> {
     return this.patientsService.findAll(search);
   }
 
   @Get(':id')
-  findOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<Patient> {
-    return this.patientsService.findOne(id);
+  findOne(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @User() user: IUser,
+  ): Promise<Patient> {
+    return this.patientsService.findOne(id, user);
   }
 
+  @Roles(ROLE_DOCTOR)
   @Post()
   create(@Body() body: CreatePatientInput): Promise<Patient> {
     return this.patientsService.create(body);
@@ -45,10 +54,12 @@ export class PatientsController {
   update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdatePatientInput,
+    @User() user: IUser,
   ): Promise<Patient> {
-    return this.patientsService.update(id, body);
+    return this.patientsService.update(id, body, user);
   }
 
+  @Roles(ROLE_DOCTOR)
   @Delete(':id')
   @HttpCode(204)
   remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {

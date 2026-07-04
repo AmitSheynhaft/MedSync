@@ -10,6 +10,9 @@ import { Patient } from '../entities/patient/patientEntity';
 import { Caregiver } from '../entities/caregiver/caregiverEntity';
 import { hashPassword, verifyPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
+import { TokenService, TokenPair } from './token.service';
+import { ROLE_DOCTOR, ROLE_PATIENT, ALL_ROLES } from '../common/constants/roles';
+import { getEffectiveRoles } from '../common/authorization/role-hierarchy';
 
 export interface RegisterPatientInput {
   role?: string;
@@ -41,6 +44,7 @@ export interface RegisterDoctorInput {
 export interface LoginInput {
   email: string;
   password: string;
+  expectedRole?: string;
 }
 
 export interface AuthResult {
@@ -48,6 +52,8 @@ export interface AuthResult {
   email: string;
   fullName: string;
   role: 'patient' | 'doctor' | string;
+  accessToken?: string;
+  refreshToken?: string;
   patientId?: string;
   caregiverId?: string;
 }
@@ -59,8 +65,29 @@ export class AuthService {
     @InjectRepository(Patient) private readonly patients: Repository<Patient>,
     @InjectRepository(Caregiver) private readonly caregivers: Repository<Caregiver>,
     private readonly roles: RolesService,
+    private readonly tokens: TokenService,
     private readonly dataSource: DataSource,
   ) {}
+
+  private issueAccessToken(userId: string): string {
+    return this.tokens.issueAccessToken(userId);
+  }
+
+  private issueRefreshToken(userId: string): string {
+    return this.tokens.issueRefreshToken(userId);
+  }
+
+  async refresh(refreshToken: string): Promise<TokenPair> {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Missing refresh token');
+    }
+    const payload = this.tokens.verifyRefreshToken(refreshToken);
+    const user = await this.users.findOne({ where: { id: payload.sub } });
+    if (!user) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+    return this.tokens.generateTokenPair(user.id);
+  }
 
   async registerPatient(input: RegisterPatientInput): Promise<AuthResult> {
     if (!input?.email || !input?.password || !input?.fullName) {
@@ -109,6 +136,8 @@ export class AuthService {
         email: savedUser.email,
         fullName: savedUser.fullName,
         role: role.name,
+        accessToken: this.issueAccessToken(savedUser.id),
+        refreshToken: this.issueRefreshToken(savedUser.id),
         patientId: savedPatient.id,
       };
     });
@@ -157,6 +186,8 @@ export class AuthService {
         email: savedUser.email,
         fullName: savedUser.fullName,
         role: role.name,
+        accessToken: this.issueAccessToken(savedUser.id),
+        refreshToken: this.issueRefreshToken(savedUser.id),
         caregiverId: savedCaregiver.id,
       };
     });
@@ -173,13 +204,37 @@ export class AuthService {
     if (!user || !verifyPassword(input.password, user.password)) {
       throw new UnauthorizedException('Invalid email or password');
     }
+
+    const roleName = user.role?.name;
+    if (!roleName || !ALL_ROLES.includes(roleName)) {
+      throw new UnauthorizedException('User does not have an assigned role. Contact an administrator.');
+    }
+
+    this.assertRoleMatchesLoginInterface(roleName, input.expectedRole);
+
     return {
       userId: user.id,
       email: user.email,
       fullName: user.fullName,
-      role: user.role?.name ?? 'patient',
-      patientId: user.patient?.id,
-      caregiverId: user.caregiver?.id,
+      role: roleName,
+      accessToken: this.issueAccessToken(user.id),
+      refreshToken: this.issueRefreshToken(user.id),
+      // Expose only the id that matches the user's role, mirroring /api/auth/me.
+      patientId: roleName === ROLE_PATIENT ? user.patient?.id : undefined,
+      caregiverId: roleName === ROLE_DOCTOR ? user.caregiver?.id : undefined,
     };
+  }
+
+  private assertRoleMatchesLoginInterface(
+    roleName: string,
+    expectedRole?: string,
+  ): void {
+    if (!expectedRole) return;
+
+    if (!getEffectiveRoles(roleName).includes(expectedRole as any)) {
+      throw new UnauthorizedException(
+        expectedRole === ROLE_DOCTOR ? 'אין לך הרשאות מטפל' : 'אין לך הרשאות מטופל',
+      );
+    }
   }
 }

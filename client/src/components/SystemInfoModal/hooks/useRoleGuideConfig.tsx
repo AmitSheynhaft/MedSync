@@ -8,7 +8,7 @@ import SmartToyIcon from "@mui/icons-material/SmartToy";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
 import WavingHandIcon from "@mui/icons-material/WavingHand";
-import type { RoleName } from "../../../api/auth";
+import type { RoleName } from "../../../auth/types";
 import type { TGuideRole, IRoleGuide } from "../types";
 
 const ROLE_GUIDES_CONFIG: Record<TGuideRole, IRoleGuide> = {

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login, saveSession } from '../../../api/auth';
-import { homeForRole } from '../../../components/RequireRole/RequireRole';
+import { login } from '../../../api/authApi';
+import { saveUserDataSession } from '../../../auth/userDataSessionStore';
+import { setViewAs, homeForRole } from '../../../auth/viewAs';
+import { canActAs } from '../../../auth/roleHierarchy';
 
 export function useLoginForm(role?: string) {
   const navigate = useNavigate();
@@ -19,17 +21,15 @@ export function useLoginForm(role?: string) {
     }
     setSubmitting(true);
     try {
-      const result = await login(email, password);
-      if (role === 'therapist' && result.role !== 'doctor') {
-        setError('אין לך הרשאות מטפל');
-        return;
-      }
-      if (role === 'patient' && result.role !== 'patient') {
-        setError('אין לך הרשאות מטופל');
-        return;
-      }
-      saveSession(result);
-      navigate(homeForRole(result.role));
+      const userData = await login(email, password, role);
+      saveUserDataSession(userData);
+      const selectedRole = role ??  userData.role;
+      const viewRole = canActAs(userData.role, selectedRole)
+        ? selectedRole
+        : userData.role;
+
+      setViewAs(viewRole);
+      navigate(homeForRole(viewRole));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'התחברות נכשלה');
     } finally {

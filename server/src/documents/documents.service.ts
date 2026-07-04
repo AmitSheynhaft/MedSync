@@ -37,11 +37,6 @@ export class DocumentsService {
     private readonly medicalSummaryService: PatientMedicalSummaryService,
   ) {}
 
-  /**
-   * Persists the uploaded file immediately with a PROCESSING status and returns
-   * right away. The heavy OCR + summarization work is kicked off in the
-   * background via {@link analyzeDocument} so the client can poll for status.
-   */
   async createPendingDocument(
     buffer: Buffer,
     mimeType: string,

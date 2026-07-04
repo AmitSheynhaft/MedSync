@@ -18,7 +18,7 @@ export const ACCOUNT_FIELDS: TFieldConfig[] = [
   },
   {
     key: 'idOrLicense',
-    placeholder: (isTherapist) => isTherapist ? 'מספר רישיון' : 'תעודת זהות',
+    placeholder: (isDoctor) => isDoctor ? 'מספר רישיון' : 'תעודת זהות',
     icon: <BadgeIcon sx={ICON_SX} />,
     autoComplete: 'off',
     getValue: f => f.idOrLicense,

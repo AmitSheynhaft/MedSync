@@ -11,7 +11,10 @@ import {
   Query,
 } from '@nestjs/common';
 import { MedicineInput, MedicinesService } from './medicines.service';
+import { Roles } from '../common/decorators/roles.decorator';
+import { ROLE_DOCTOR } from '../common/constants/roles';
 
+@Roles(ROLE_DOCTOR)
 @Controller('api/medicines')
 export class MedicinesController {
   constructor(private readonly service: MedicinesService) {}

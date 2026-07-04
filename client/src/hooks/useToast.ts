@@ -9,9 +9,6 @@ export type TToastState = {
 
 export type ToastState = TToastState;
 
-/**
- * Small helper for managing a single transient toast/snackbar message.
- */
 export const useToast = () => {
   const [toast, setToast] = useState<TToastState | null>(null);
 

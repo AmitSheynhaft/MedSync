@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { loadSession } from "../../../api/auth";
+import { loadUserDataSession } from "../../../auth/userDataSessionStore";
 import { uploadDocument } from "../../../api/documents";
 import { DocumentTypeEnum } from "../../../api/medical-documents";
 import { PatientDocument, Patient, Encounter, getPatientById } from "../../../api/patients";
@@ -35,9 +35,9 @@ function initialsFromName(name: string): string {
 }
 
 export function usePatientDashboard() {
-  const session = loadSession();
-  const patientId = session?.patientId;
-  const userName = session?.fullName || "Patient";
+  const userDataSession = loadUserDataSession();
+  const patientId = userDataSession?.patientId;
+  const userName = userDataSession?.fullName || "Patient";
   const userInitials = initialsFromName(userName);
   const firstName = userName.split(" ")[0];
 
@@ -88,7 +88,7 @@ export function usePatientDashboard() {
       };
       setDocuments((prev) => [placeholder, ...prev]);
       try {
-        await uploadDocument(file, patientId, session?.userId, documentType);
+        await uploadDocument(file, patientId, documentType);
         setToast({
           severity: "success",
           message: `"${file.name}" uploaded successfully.`,
@@ -104,7 +104,7 @@ export function usePatientDashboard() {
         setUploading(false);
       }
     },
-    [patientId, session?.userId, refreshDocuments],
+    [patientId, refreshDocuments],
   );
 
   return {

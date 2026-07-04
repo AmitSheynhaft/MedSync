@@ -9,7 +9,7 @@ export const PERSONAL_FIELDS: TFieldConfig[] = [
     placeholder: 'התמחות',
     autoComplete: 'off',
     required: true,
-    showFor: 'therapist',
+    showFor: 'doctor',
     getValue: f => f.specialization,
     onChange: (f, v) => f.setSpecialization(v),
   },

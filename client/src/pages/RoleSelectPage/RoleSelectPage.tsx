@@ -64,7 +64,7 @@ export const RoleSelectPage: React.FC = () => {
           iconGradient="linear-gradient(135deg, #5f3dc4, #7950f2)"
           hoverColor="#7048e8"
           hoverShadow="0 12px 40px rgba(112,72,232,0.15)"
-          onClick={() => navigate(`${basePath}/therapist`)}
+          onClick={() => navigate(`${basePath}/doctor`)}
         />
       </Box>
     </Box>

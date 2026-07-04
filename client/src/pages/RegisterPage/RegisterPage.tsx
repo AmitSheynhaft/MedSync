@@ -8,8 +8,8 @@ import { RegisterForm } from "./components/RegisterForm";
 export const RegisterPage: React.FC = () => {
   const { role } = useParams<{ role: string }>();
   const config = resolveRegisterRole(role);
-  const isTherapist = role === "therapist";
-  const form = useRegisterForm(isTherapist);
+  const isDoctor = role === "doctor";
+  const form = useRegisterForm(isDoctor);
 
   return (
     <Box sx={{ width: "100%", maxWidth: 420, p: { xs: 1, sm: 4 } }}>
@@ -59,7 +59,7 @@ export const RegisterPage: React.FC = () => {
 
       {form.error && <Alert severity="error" sx={{ mb: 2 }}>{form.error}</Alert>}
 
-      <RegisterForm form={form} isTherapist={isTherapist} color={config.color} />
+      <RegisterForm form={form} isDoctor={isDoctor} color={config.color} />
 
       <Typography sx={{ textAlign: "center", mt: 2, fontSize: 14, color: "text.secondary" }}>
         כבר יש לך חשבון?{" "}

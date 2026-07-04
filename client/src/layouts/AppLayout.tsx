@@ -8,7 +8,9 @@ import PersonIcon from '@mui/icons-material/Person';
 import PeopleIcon from '@mui/icons-material/People';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlineRounded';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { clearSession, loadSession } from '../api/auth';
+import { getEffectiveRole } from '../auth/viewAs';
+import { logout } from '../api/authApi';
+import { useCurrentUser } from '../atoms/useCurrentUser';
 import SystemInfoModal from '../components/SystemInfoModal/SystemInfoModal';
 import { consumeWelcomePending } from '../components/SystemInfoModal/welcomeFlag';
 import {
@@ -34,14 +36,15 @@ const NavItem: React.FC<{ to: string; title: string; icon: React.ReactNode }> = 
 
 export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
-  const session = loadSession();
-  const isDoctor = session?.role === 'doctor';
+  useCurrentUser();
+  const role = getEffectiveRole();
+  const isDoctor = role === 'doctor';
   const [showWelcomeSystemInfo, setShowWelcomeSystemInfo] = React.useState(consumeWelcomePending);
 
   return (
     <Box sx={rootSx}>
       {showWelcomeSystemInfo && (
-        <SystemInfoModal role={session?.role} onClose={() => setShowWelcomeSystemInfo(false)} />
+        <SystemInfoModal role={role ?? undefined} onClose={() => setShowWelcomeSystemInfo(false)} />
       )}
       <Box component="main" sx={mainSx}>
         <Outlet />
@@ -53,7 +56,10 @@ export const AppLayout: React.FC = () => {
 
         <Box sx={navGroupSx}>
           {isDoctor ? (
-            <NavItem to="/patients" title="מטופלים" icon={<PeopleIcon fontSize="small" />} />
+            <>
+              <NavItem to="/patients" title="מטופלים" icon={<PeopleIcon fontSize="small" />} />
+              <NavItem to="/profile"  title="פרופיל"  icon={<PersonIcon fontSize="small" />} />
+            </>
           ) : (
             <>
               <NavItem to="/dashboard" title="בית"      icon={<HomeIcon        fontSize="small" />} />
@@ -71,7 +77,7 @@ export const AppLayout: React.FC = () => {
           </Tooltip>
           <Tooltip title="התנתק" placement="left">
             <IconButton
-              onClick={() => { clearSession(); navigate('/login'); }}
+              onClick={() => { logout().finally(() => navigate('/login')); }}
               sx={[logoutButtonSx, { display: { xs: isDoctor ? 'inline-flex' : 'none', md: 'inline-flex' } }] as SxProps<Theme>}
             >
               <LogoutIcon fontSize="small" />

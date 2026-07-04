@@ -17,7 +17,7 @@ const themes = {
       desc: "מתוכנן עבור מסע הבריאות שלך",
     },
   },
-  therapist: {
+  doctor: {
     gradient: "linear-gradient(135deg, #5f3dc4 0%, #7048e8 50%, #9775fa 100%)",
     title: "הפרקטיקה שלך,\nמיועלת.",
     subtitle:

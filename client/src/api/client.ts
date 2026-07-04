@@ -1,4 +1,37 @@
+import { setCurrentUser } from '../atoms/useCurrentUser';
+import { VIEW_AS_KEY } from '../auth/storageKeys';
+import { HTTP_UNAUTHORIZED } from './constants';
+
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+
+function clearClientSession() {
+  setCurrentUser(null);
+  localStorage.removeItem(VIEW_AS_KEY);
+}
+
+// Single-flight refresh: concurrent 401s share one refresh request.
+let pendingRefreshRequest: Promise<boolean> | null = null;
+
+async function refreshSession(): Promise<boolean> {
+  if (pendingRefreshRequest) return pendingRefreshRequest;
+
+  pendingRefreshRequest = (async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      pendingRefreshRequest = null;
+    }
+  })();
+
+  return pendingRefreshRequest;
+}
 
 export interface ApiError extends Error {
   status: number;
@@ -19,12 +52,33 @@ async function readError(res: Response): Promise<string> {
   }
 }
 
+const NO_REFRESH_PATHS = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/refresh',
+  '/api/auth/logout',
+];
+
+function shouldSkipRefresh(path: string): boolean {
+  return NO_REFRESH_PATHS.some((p) => path.startsWith(p));
+}
+
 export async function apiRequest<T = any>(
   path: string,
   options: RequestInit = {},
+  allowRefresh = true,
 ): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, options);
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, credentials: 'include' });
   if (!res.ok) {
+    if (res.status === HTTP_UNAUTHORIZED) {
+      if (allowRefresh && !shouldSkipRefresh(path)) {
+        const refreshed = await refreshSession();
+        if (refreshed) {
+          return apiRequest<T>(path, options, false);
+        }
+      }
+      clearClientSession();
+    }
     const detail = await readError(res);
     const err = new Error(detail) as ApiError;
     err.status = res.status;
@@ -46,6 +100,30 @@ export function apiJson<T = any>(
     headers: { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+}
+
+export async function apiBlob(
+  path: string,
+  options: RequestInit = {},
+  allowRefresh = true,
+): Promise<Blob> {
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, credentials: 'include' });
+  if (!res.ok) {
+    if (res.status === HTTP_UNAUTHORIZED) {
+      if (allowRefresh && !shouldSkipRefresh(path)) {
+        const refreshed = await refreshSession();
+        if (refreshed) {
+          return apiBlob(path, options, false);
+        }
+      }
+      clearClientSession();
+    }
+    const detail = await readError(res);
+    const err = new Error(detail) as ApiError;
+    err.status = res.status;
+    throw err;
+  }
+  return res.blob();
 }
 
 export const apiGet = <T = any>(path: string) => apiRequest<T>(path);

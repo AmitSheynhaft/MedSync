@@ -44,6 +44,11 @@ export class UsersService {
     if (!user) return user;
     const clone: any = { ...user };
     delete clone.password;
+    // Never expose the role's internal uuid — only its name is meaningful to clients.
+    delete clone.roleId;
+    if (clone.role) {
+      clone.role = { name: clone.role.name };
+    }
     return clone;
   }
 
@@ -65,6 +70,14 @@ export class UsersService {
     });
     if (!user) throw new NotFoundException(`User ${id} not found`);
     return this.strip(user);
+  }
+
+ async findUserByIdWithRole(id: string): Promise<SafeUser | null> {
+    const user = await this.repo.findOne({
+      where: { id },
+      relations: ['role', 'patient', 'caregiver'],
+    });
+    return user ? this.strip(user) : null;
   }
 
   findRawByEmail(email: string): Promise<User | null> {

@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import type { RoleName } from "../../api/auth";
+import type { RoleName } from "../../auth/types";
 
 export interface ITourStep {
   icon: ReactElement;

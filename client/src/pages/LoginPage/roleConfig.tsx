@@ -11,7 +11,7 @@ export interface LoginRoleConfig {
   redirect: string;
 }
 
-export const roleConfig: Record<'patient' | 'therapist', LoginRoleConfig> = {
+export const roleConfig: Record<'patient' | 'doctor', LoginRoleConfig> = {
   patient: {
     label: 'מטופל',
     icon: <PersonIcon sx={{ fontSize: 16 }} />,
@@ -20,7 +20,7 @@ export const roleConfig: Record<'patient' | 'therapist', LoginRoleConfig> = {
     subtitle: 'התחבר לחשבונך כדי לצפות ברשומות הבריאות שלך.',
     redirect: '/dashboard',
   },
-  therapist: {
+  doctor: {
     label: 'רופא',
     icon: <MedicalServicesIcon sx={{ fontSize: 16 }} />,
     color: '#7048e8',

@@ -1,7 +1,3 @@
-/**
- * Parse a structured visit summary text (Label:\n value blocks) back into the
- * complaints / diagnosis / recommendations fields.
- */
 export function parseSummaryText(raw: string) {
   const normalizedText = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
@@ -15,7 +11,6 @@ export function parseSummaryText(raw: string) {
   const diagnosisText = extractSection('Diagnosis');
   const recommendations = extractSection("Doctor's Recommendations");
 
-  // Fallback: if nothing was extracted but text exists, treat it all as complaints.
   const subjective = (!patientComplaints && !diagnosisText && !recommendations && normalizedText)
     ? normalizedText
     : patientComplaints;
@@ -23,7 +18,6 @@ export function parseSummaryText(raw: string) {
   return { subjective, diagnosis: diagnosisText, recommendations };
 }
 
-/** Build the structured summary text from the three editable fields. */
 export function buildSummaryText(
   patientComplaints: string,
   diagnosis: string,
