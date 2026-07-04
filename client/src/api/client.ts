@@ -11,12 +11,12 @@ function clearClientSession() {
 }
 
 // Single-flight refresh: concurrent 401s share one refresh request.
-let refreshInFlight: Promise<boolean> | null = null;
+let pendingRefreshRequest: Promise<boolean> | null = null;
 
 async function refreshSession(): Promise<boolean> {
-  if (refreshInFlight) return refreshInFlight;
+  if (pendingRefreshRequest) return pendingRefreshRequest;
 
-  refreshInFlight = (async () => {
+  pendingRefreshRequest = (async () => {
     try {
       const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
         method: 'POST',
@@ -26,11 +26,11 @@ async function refreshSession(): Promise<boolean> {
     } catch {
       return false;
     } finally {
-      refreshInFlight = null;
+      pendingRefreshRequest = null;
     }
   })();
 
-  return refreshInFlight;
+  return pendingRefreshRequest;
 }
 
 export interface ApiError extends Error {
