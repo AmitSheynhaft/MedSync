@@ -67,11 +67,19 @@ export class DocumentsController {
       throw new BadRequestException('File size exceeds 10 MB limit');
     }
 
-    if (!patientId) {
+    // Patients may only upload documents for themselves.
+    let targetPatientId = patientId;
+    if (user?.role?.name === 'patient') {
+      targetPatientId = user.patient?.id;
+      if (!targetPatientId) {
+        throw new HttpException('No patient profile for this user', 403);
+      }
+    }
+
+    if (!targetPatientId) {
       throw new BadRequestException('patientId is required');
     }
     const uploadedByUserId = user.id;
-
     try {
       // Multer decodes multipart filenames as Latin-1; re-encode as UTF-8 for Hebrew/non-ASCII names
       const originalName = Buffer.from(file.originalname, 'latin1').toString(
