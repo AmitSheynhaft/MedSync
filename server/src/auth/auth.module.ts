@@ -19,7 +19,7 @@ import { requireEnv } from '../common/config/require-env';
       useFactory: (config: ConfigService) => ({
         secret: requireEnv('JWT_SECRET'),
         signOptions: {
-          expiresIn: (config.get<string>('JWT_EXPIRES_IN') || '5d') as any,
+          expiresIn: (config.get<string>('JWT_EXPIRES_IN') || '15m') as any,
         },
       }),
     }),
