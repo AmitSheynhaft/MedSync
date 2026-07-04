@@ -23,6 +23,7 @@ import {
 } from './visit-records.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { User } from '../common/decorators/user.decorator';
+import { IUser } from '../entities';
 import { ROLE_DOCTOR, ROLE_PATIENT } from '../common/constants/roles';
 
 @Controller('api/visits-records')
@@ -31,7 +32,7 @@ export class VisitRecordsController {
 
   @Get()
   findAll(
-    @User() user: any,
+    @User() user: IUser,
     @Query('patientId') patientId?: string,
     @Query('caregiverId') caregiverId?: string,
   ) {
@@ -49,7 +50,7 @@ export class VisitRecordsController {
 
   @Get(':id')
   async findOne(
-    @User() user: any,
+    @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     const visit = await this.service.findOne(id);
@@ -65,7 +66,7 @@ export class VisitRecordsController {
 
   @Roles(ROLE_DOCTOR)
   @Post()
-  create(@User() user: any, @Body() body: VisitInput) {
+  create(@User() user: IUser, @Body() body: VisitInput) {
     const caregiverId = user?.caregiver?.id;
     if (!caregiverId) {
       throw new ForbiddenException('No caregiver profile for this user');

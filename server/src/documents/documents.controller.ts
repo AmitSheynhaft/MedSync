@@ -3,6 +3,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpException,
   InternalServerErrorException,
@@ -18,6 +19,8 @@ import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentsService } from './documents.service';
 import { User } from '../common/decorators/user.decorator';
+import { IUser } from '../entities';
+import { ROLE_PATIENT } from '../common/constants/roles';
 import { DocumentType } from '../entities/enums';
 
 const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -41,7 +44,7 @@ export class DocumentsController {
   )
   async upload(
     @UploadedFile() file: Express.Multer.File,
-    @User() user: any,
+    @User() user: IUser,
     @Body('patientId') patientId?: string,
     @Body('documentType') documentType?: string,
   ) {
@@ -69,10 +72,10 @@ export class DocumentsController {
 
     // Patients may only upload documents for themselves.
     let targetPatientId = patientId;
-    if (user?.role?.name === 'patient') {
+    if (user?.role?.name === ROLE_PATIENT) {
       targetPatientId = user.patient?.id;
       if (!targetPatientId) {
-        throw new HttpException('No patient profile for this user', 403);
+        throw new ForbiddenException('No patient profile for this user');
       }
     }
 
@@ -86,12 +89,11 @@ export class DocumentsController {
         'utf8',
       );
 
-      // Save the file immediately and respond; analysis runs in the background.
       const pending = await this.documentsService.createPendingDocument(
         file.buffer,
         file.mimetype,
         originalName,
-        patientId,
+        targetPatientId,
         uploadedByUserId,
         parsedDocumentType,
       );

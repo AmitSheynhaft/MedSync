@@ -31,6 +31,7 @@ export function useVisitForm() {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [isLoadingVisit, setIsLoadingVisit] = useState(false);
   const lastSummarizedRef = useRef<string>('');
+  const isSavingRef = useRef(false);
   const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null);
 
   // Vitals
@@ -168,7 +169,9 @@ export function useVisitForm() {
     setMedicinesList(prev => prev.filter((_, idx) => idx !== index));
 
   const handleSave = async () => {
-    if (!patientId) return;
+    // Guard against re-entrancy (fast double-clicks) and read-only callers.
+    if (isReadOnly || isSavingRef.current || !patientId) return;
+    isSavingRef.current = true;
     setSaving(true);
     try {
       const vitalsAndMeta = {
@@ -216,6 +219,7 @@ export function useVisitForm() {
     } catch (err: any) {
       setToast({ severity: 'error', message: err?.message || 'שמירת ביקור נכשלה.' });
     } finally {
+      isSavingRef.current = false;
       setSaving(false);
     }
   };

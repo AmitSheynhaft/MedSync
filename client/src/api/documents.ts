@@ -1,4 +1,4 @@
-import { apiRequest } from './client';
+import { apiRequest, apiBlob } from './client';
 import { SummaryStatus, DocumentTypeEnum } from './medical-documents';
 
 export interface DocumentUploadResult {
@@ -25,10 +25,7 @@ export function uploadDocument(
 }
 
 export async function downloadDocument(id: string, fileName: string): Promise<void> {
-  const BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000';
-  const res = await fetch(`${BASE_URL}/api/documents/${id}/download`);
-  if (!res.ok) throw new Error('Download failed');
-  const blob = await res.blob();
+  const blob = await apiBlob(`/api/documents/${id}/download`);
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

@@ -1,5 +1,6 @@
 import { setCurrentUser } from '../atoms/useCurrentUser';
 import { VIEW_AS_KEY } from '../auth/storageKeys';
+import { HTTP_UNAUTHORIZED } from './constants';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -69,7 +70,7 @@ export async function apiRequest<T = any>(
 ): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, { ...options, credentials: 'include' });
   if (!res.ok) {
-    if (res.status === 401) {
+    if (res.status === HTTP_UNAUTHORIZED) {
       if (allowRefresh && !shouldSkipRefresh(path)) {
         const refreshed = await refreshSession();
         if (refreshed) {
@@ -99,6 +100,30 @@ export function apiJson<T = any>(
     headers: { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+}
+
+export async function apiBlob(
+  path: string,
+  options: RequestInit = {},
+  allowRefresh = true,
+): Promise<Blob> {
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, credentials: 'include' });
+  if (!res.ok) {
+    if (res.status === HTTP_UNAUTHORIZED) {
+      if (allowRefresh && !shouldSkipRefresh(path)) {
+        const refreshed = await refreshSession();
+        if (refreshed) {
+          return apiBlob(path, options, false);
+        }
+      }
+      clearClientSession();
+    }
+    const detail = await readError(res);
+    const err = new Error(detail) as ApiError;
+    err.status = res.status;
+    throw err;
+  }
+  return res.blob();
 }
 
 export const apiGet = <T = any>(path: string) => apiRequest<T>(path);

@@ -16,6 +16,7 @@ import {
   UsersService,
 } from './users.service';
 import { User } from '../common/decorators/user.decorator';
+import { IUser } from '../entities';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ROLE_DOCTOR } from '../common/constants/roles';
 
@@ -24,12 +25,12 @@ export class UsersController {
   constructor(private readonly service: UsersService) {}
 
   @Get('me')
-  findMe(@User() user: any) {
+  findMe(@User() user: IUser) {
     return this.service.findOne(user.id);
   }
 
   @Patch('me')
-  updateMe(@User() user: any, @Body() body: UpdateUserInput) {
+  updateMe(@User() user: IUser, @Body() body: UpdateUserInput) {
     return this.service.update(user.id, body);
   }
 
