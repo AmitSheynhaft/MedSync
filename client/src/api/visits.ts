@@ -70,7 +70,6 @@ export interface Visit {
 
 export interface CreateVisitInput {
   patientId: string;
-  caregiverId: string;
   slotId?: string;
   visitDate: string;
   bloodPressure?: string;

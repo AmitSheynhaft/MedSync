@@ -16,7 +16,6 @@ export type TFieldConfig = {
   select?: boolean;
   options?: TFieldOption[];
   inputLabelShrink?: boolean;
-  /** Show only for a specific role. undefined = show always */
   showFor?: 'therapist' | 'patient';
   getValue: (form: RegisterFormState) => string;
   onChange: (form: RegisterFormState, value: string) => void;

@@ -8,6 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { TokenService } from '../../auth/token.service';
 import { UsersService } from '../../users/users.service';
+import { getAccessTokenFromRequest } from '../../auth/auth-cookie.util';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { ALL_ROLES } from '../constants/roles';
 import { IRole } from '../../entities';
@@ -29,16 +30,10 @@ export class AuthGuard implements CanActivate {
     if (isPublic) return true;
 
     const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers['authorization'];
-    const bearer = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+    const token = getAccessTokenFromRequest(request);
 
-    if (!bearer || typeof bearer !== 'string' || !bearer.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing Bearer token');
-    }
-
-    const token = bearer.slice('Bearer '.length).trim();
     if (!token) {
-      throw new UnauthorizedException('Missing Bearer token');
+      throw new UnauthorizedException('Missing authentication cookie');
     }
 
     const payload = this.tokens.verifyAccessToken(token);

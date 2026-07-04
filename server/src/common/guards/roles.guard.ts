@@ -7,12 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
-import { ROLE_DOCTOR, ROLE_PATIENT } from '../constants/roles';
-
-const ROLE_HIERARCHY: Record<string, string[]> = {
-  [ROLE_DOCTOR]: [ROLE_DOCTOR, ROLE_PATIENT],
-  [ROLE_PATIENT]: [ROLE_PATIENT],
-};
+import { hasRequiredRole } from '../authorization/role-hierarchy';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -37,12 +32,7 @@ export class RolesGuard implements CanActivate {
       );
     }
 
-    // Get all roles the user effectively has (including inherited ones)
-    const effectiveRoles = ROLE_HIERARCHY[userRole] ?? [userRole];
-
-    const hasAccess = requiredRoles.some(role => effectiveRoles.includes(role));
-
-    if (!hasAccess) {
+    if (!hasRequiredRole(userRole, requiredRoles)) {
       throw new ForbiddenException(
         `Role "${userRole}" is not authorized. Required: ${requiredRoles.join(', ')}`,
       );

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { clearSession, loadSession, saveSession } from '../../../api/auth';
+import { logout } from '../../../auth/authApi';
+import { loadUserSession, saveSession } from '../../../auth/userSessionStore';
 import { getMe, updateMe, User } from '../../../api/users';
 import { getCaregiver } from '../../../api/caregivers';
 import { getPatientById, updatePatient } from '../../../api/patients';
@@ -9,7 +10,7 @@ import { toDateInput } from '../utils';
 
 export function useProfile() {
   const navigate = useNavigate();
-  const session = loadSession();
+  const session = loadUserSession();
   const role = (session?.role as 'patient' | 'doctor' | undefined) ?? 'patient';
   const isPatient = !!session?.patientId;
 
@@ -23,19 +24,21 @@ export function useProfile() {
   const [saving, setSaving] = useState(false);
   const { toast, setToast, showToast } = useToast();
 
+  const loadedRef = useRef(false);
   useEffect(() => {
-    if (!session) return;
-    getMe()
-      .then(u => {
-        setUser(u);
-        setPhone(u.phone ?? '');
-        setBirthDate(toDateInput(u.birthDate));
-      })
-      .catch(() => setUser(null));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.role]);
+    if (loadedRef.current) return;
+    loadedRef.current = true;
 
-  useEffect(() => {
+    if (session) {
+      getMe()
+        .then(u => {
+          setUser(u);
+          setPhone(u.phone ?? '');
+          setBirthDate(toDateInput(u.birthDate));
+        })
+        .catch(() => setUser(null));
+    }
+
     if (session?.role === 'doctor' && session?.caregiverId) {
       getCaregiver(session.caregiverId)
         .then(c => setIdNumber(c.licenseNumber ?? ''))
@@ -43,9 +46,7 @@ export function useProfile() {
     } else {
       setIdNumber('');
     }
-  }, [session?.role, session?.caregiverId]);
 
-  useEffect(() => {
     if (session?.patientId) {
       getPatientById(session.patientId)
         .then(p => {
@@ -57,7 +58,8 @@ export function useProfile() {
           setAddress('');
         });
     }
-  }, [session?.patientId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleEdit = () => {
     setPhone(user?.phone ?? '');
@@ -99,8 +101,8 @@ export function useProfile() {
     }
   };
 
-  const handleLogout = () => {
-    clearSession();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 

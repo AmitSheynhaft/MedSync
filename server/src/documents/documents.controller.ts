@@ -17,7 +17,7 @@ import {
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentsService } from './documents.service';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '../common/decorators/user.decorator';
 import { DocumentType } from '../entities/enums';
 
 const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -41,7 +41,7 @@ export class DocumentsController {
   )
   async upload(
     @UploadedFile() file: Express.Multer.File,
-    @CurrentUser() user: any,
+    @User() user: any,
     @Body('patientId') patientId?: string,
     @Body('documentType') documentType?: string,
   ) {

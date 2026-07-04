@@ -18,7 +18,7 @@ import {
   UpdatePatientInput,
 } from './patient.types';
 import { Roles } from '../common/decorators/roles.decorator';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '../common/decorators/user.decorator';
 import { ROLE_DOCTOR } from '../common/constants/roles';
 import { PatientMedicalSummaryService } from '../patient-medical-summary/patient-medical-summary.service';
 
@@ -38,7 +38,7 @@ export class PatientsController {
   @Get(':id')
   findOne(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @CurrentUser() user: any,
+    @User() user: any,
   ): Promise<Patient> {
     return this.patientsService.findOne(id, user);
   }
@@ -53,7 +53,7 @@ export class PatientsController {
   update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdatePatientInput,
-    @CurrentUser() user: any,
+    @User() user: any,
   ): Promise<Patient> {
     return this.patientsService.update(id, body, user);
   }

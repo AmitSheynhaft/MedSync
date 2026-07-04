@@ -2,7 +2,6 @@ import { apiDelete, apiGet, apiPatch, apiPost } from './client';
 
 export interface User {
   id: string;
-  roleId: string;
   fullName: string;
   email: string;
   phone?: string;
@@ -10,7 +9,7 @@ export interface User {
   gender?: string;
   createdAt: string;
   updatedAt: string;
-  role?: { id: string; name: string };
+  role?: { name: string };
 }
 
 export interface CreateUserInput {

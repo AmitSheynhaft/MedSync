@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { loadSession, verifySession, clearSession, getEffectiveRole, RoleMismatchError, RoleName } from '../../api/auth';
+import { verifySession, RoleMismatchError } from '../../auth/verifySession';
+import { clearSession } from '../../auth/userSessionStore';
+import { getEffectiveRole, homeForRole, isRoleViewTampered } from '../../auth/viewAs';
+import type { RoleName } from '../../auth/types';
+import { useCurrentUser } from '../../atoms/useCurrentUser';
 import { RoleMismatchDialog } from '../RoleMismatchDialog/RoleMismatchDialog';
 
 export interface IRequireRoleProps {
@@ -10,26 +14,24 @@ export interface IRequireRoleProps {
 export const RequireRole: React.FC<IRequireRoleProps> = ({ allow }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [session, setSession] = useState(loadSession);
-  const [verified, setVerified] = useState(false);
+  const currentUser = useCurrentUser();
+  // Gate rendering only on the first verification; later navigations re-verify
+  // in the background so the page subtree isn't unmounted and refetched.
+  const [hasVerifiedOnce, setHasVerifiedOnce] = useState(false);
   const [isRoleTampered, setIsRoleTampered] = useState(false);
 
   useEffect(() => {
     let active = true;
-    setVerified(false);
     verifySession()
-      .then(result => {
-        if (!active) return;
-        setSession(result);
-        setVerified(true);
+      .then(() => {
+        if (active) setHasVerifiedOnce(true);
       })
       .catch(error => {
         if (!active) return;
         if (error instanceof RoleMismatchError) {
           setIsRoleTampered(true);
         }
-        setSession(null);
-        setVerified(true);
+        setHasVerifiedOnce(true);
       });
     return () => { active = false; };
   }, [location.pathname]);
@@ -40,17 +42,17 @@ export const RequireRole: React.FC<IRequireRoleProps> = ({ allow }) => {
     navigate('/login', { replace: true });
   };
 
-  if (isRoleTampered) {
+  if (isRoleTampered || isRoleViewTampered()) {
     return <RoleMismatchDialog open onConfirm={handleConfirmRelogin} />;
   }
 
-  if (!verified) return null;
+  if (!hasVerifiedOnce) return null;
 
-  if (!session) {
+  if (!currentUser) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  const effectiveRole = getEffectiveRole() ?? session.role;
+  const effectiveRole = getEffectiveRole() ?? currentUser.role;
 
   if (allow && !allow.includes(effectiveRole)) {
     return <Navigate to={homeForRole(effectiveRole)} replace />;
@@ -58,8 +60,5 @@ export const RequireRole: React.FC<IRequireRoleProps> = ({ allow }) => {
 
   return <Outlet />;
 };
-
-export const homeForRole = (role: RoleName): string =>
-  role === 'doctor' ? '/patients' : '/dashboard';
 
 export default RequireRole;

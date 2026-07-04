@@ -1,32 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAudioRecorder } from '../../../hooks/useAudioRecorder';
+import { getEffectiveRole } from '../../../auth/viewAs';
+import { Role } from '../../../constants/roles';
 import {
   summarizeText, createVisit, upsertVisitSummary,
   addVisitDiagnosis, addVisitMedicine, updateVisit, getVisit,
   VisitSummaryObject,
 } from '../../../api/visits';
-import { loadSession } from '../../../api/auth';
 import { getDiagnoses, Diagnosis } from '../../../api/diagnoses';
 import { getMedicines, Medicine } from '../../../api/medicines';
 import { ToastState, DiagnosisItem, MedicineItem, PatientInfo } from '../constants';
 import { parseSummaryText, buildSummaryText } from '../utils';
 
-/**
- * Owns all VisitPage state: recorder, AI summary, visit loading, vitals,
- * diagnoses/medicines lists and the save flow.
- */
 export function useVisitForm() {
   const navigate = useNavigate();
   const { id: patientId, visitId } = useParams<{ id: string; visitId: string }>();
-  const session = loadSession();
   const { status, transcript, summary, timer, start, stop } = useAudioRecorder();
 
   const [subjective, setSubjective] = useState('');
   const [diagnosis, setDiagnosis] = useState('');
   const [plan, setPlan] = useState('');
   const [saving, setSaving] = useState(false);
-  const [isReadOnly, setIsReadOnly] = useState(false);
+  // Patients may only ever view a visit; recording and saving stay doctor-only.
+  const [isReadOnly] = useState(() => getEffectiveRole() !== Role.Doctor);
   const [visitDate, setVisitDate] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
 
@@ -62,29 +59,31 @@ export function useVisitForm() {
   const isRecording = status === 'recording';
   const isProcessing = status === 'processing';
 
-  // Pre-load options so the dropdowns are ready immediately.
+  // Pre-load catalog options for the editing dropdowns. These are doctor-only
+  // endpoints, so skip them in read-only (patient) mode to avoid 403s.
   useEffect(() => {
+    if (isReadOnly) return;
     getDiagnoses().then(res => setDiagnosisOptions(res.slice(0, 30))).catch(() => {});
     getMedicines().then(res => setMedicineOptions(res.slice(0, 30))).catch(() => {});
-  }, []);
+  }, [isReadOnly]);
 
   // Debounced diagnosis search.
   useEffect(() => {
-    if (!diagnosisSearch.trim()) return;
+    if (isReadOnly || !diagnosisSearch.trim()) return;
     const debounceTimer = window.setTimeout(() => {
       getDiagnoses(diagnosisSearch).then(res => setDiagnosisOptions(res.slice(0, 10))).catch(() => {});
     }, 250);
     return () => window.clearTimeout(debounceTimer);
-  }, [diagnosisSearch]);
+  }, [diagnosisSearch, isReadOnly]);
 
   // Debounced medicine search.
   useEffect(() => {
-    if (!medicineSearch.trim()) return;
+    if (isReadOnly || !medicineSearch.trim()) return;
     const debounceTimer = window.setTimeout(() => {
       getMedicines(medicineSearch).then(res => setMedicineOptions(res.slice(0, 10))).catch(() => {});
     }, 250);
     return () => window.clearTimeout(debounceTimer);
-  }, [medicineSearch]);
+  }, [medicineSearch, isReadOnly]);
 
   // Load existing visit when visitId is in the URL.
   useEffect(() => {
@@ -93,7 +92,6 @@ export function useVisitForm() {
     setIsLoadingVisit(true);
     getVisit(visitId).then(visitData => {
       if (!active) return;
-      setIsReadOnly(!!session?.patientId && !session?.caregiverId);
       setVisitDate(visitData.visitDate ? new Date(visitData.visitDate).toLocaleDateString() : null);
 
       const { subjective: patientComplaints, diagnosis: diagnosisText, recommendations } = parseSummaryText(visitData.summary?.summaryText ?? '');
@@ -170,21 +168,7 @@ export function useVisitForm() {
     setMedicinesList(prev => prev.filter((_, idx) => idx !== index));
 
   const handleSave = async () => {
-    if (saving) return;
-    if (!patientId) {
-      setToast({ severity: 'warning', message: 'פתח ביקור מפרופיל מטופל כדי לשמור.' });
-      return;
-    }
-    if (!session?.caregiverId) {
-      setToast({ severity: 'error', message: 'רק רופאים מחוברים יכולים לשמור ביקור.' });
-      return;
-    }
-    const hasAnyContent = subjective.trim() || diagnosis.trim() || plan.trim() || !!liveSummary;
-    if (!hasAnyContent) {
-      setToast({ severity: 'warning', message: 'הוסף תלונה, אבחנה או המלצות לפני שמירה.' });
-      return;
-    }
-
+    if (!patientId) return;
     setSaving(true);
     try {
       const vitalsAndMeta = {
@@ -201,7 +185,6 @@ export function useVisitForm() {
 
       const targetId = visitId ?? (await createVisit({
         patientId,
-        caregiverId: session.caregiverId,
         visitDate: new Date().toISOString(),
         ...vitalsAndMeta,
       })).id;

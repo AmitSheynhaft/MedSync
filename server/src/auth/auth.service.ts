@@ -11,6 +11,11 @@ import { Caregiver } from '../entities/caregiver/caregiverEntity';
 import { hashPassword, verifyPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
 import { TokenService, TokenPair } from './token.service';
+import { ROLE_DOCTOR, ROLE_PATIENT, ALL_ROLES } from '../common/constants/roles';
+import {
+  getEffectiveRoles,
+  normalizeRoleName,
+} from '../common/authorization/role-hierarchy';
 
 export interface RegisterPatientInput {
   role?: string;
@@ -75,7 +80,6 @@ export class AuthService {
     return this.tokens.issueRefreshToken(userId);
   }
 
-  /** Verifies a refresh token and mints a fresh access/refresh token pair. */
   async refresh(refreshToken: string): Promise<TokenPair> {
     if (!refreshToken) {
       throw new UnauthorizedException('Missing refresh token');
@@ -205,24 +209,11 @@ export class AuthService {
     }
 
     const roleName = user.role?.name;
-    if (!roleName || !['doctor', 'patient'].includes(roleName)) {
+    if (!roleName || !ALL_ROLES.includes(roleName)) {
       throw new UnauthorizedException('User does not have an assigned role. Contact an administrator.');
     }
 
-    // Validate expected role if provided.
-    // A doctor inherits patient access, so a doctor may log in via the patient
-    // interface too. A patient may only log in as a patient.
-    if (input.expectedRole) {
-      const expected = input.expectedRole === 'therapist' ? 'doctor' : input.expectedRole;
-      const effectiveRoles = roleName === 'doctor' ? ['doctor', 'patient'] : ['patient'];
-      if (!effectiveRoles.includes(expected)) {
-        throw new UnauthorizedException(
-          expected === 'doctor'
-            ? 'אין לך הרשאות מטפל'
-            : 'אין לך הרשאות מטופל',
-        );
-      }
-    }
+    this.assertRoleMatchesLoginInterface(roleName, input.expectedRole);
 
     return {
       userId: user.id,
@@ -232,8 +223,22 @@ export class AuthService {
       accessToken: this.issueAccessToken(user.id),
       refreshToken: this.issueRefreshToken(user.id),
       // Expose only the id that matches the user's role, mirroring /api/auth/me.
-      patientId: roleName === 'patient' ? user.patient?.id : undefined,
-      caregiverId: roleName === 'doctor' ? user.caregiver?.id : undefined,
+      patientId: roleName === ROLE_PATIENT ? user.patient?.id : undefined,
+      caregiverId: roleName === ROLE_DOCTOR ? user.caregiver?.id : undefined,
     };
+  }
+
+  private assertRoleMatchesLoginInterface(
+    roleName: string,
+    expectedRole?: string,
+  ): void {
+    if (!expectedRole) return;
+
+    const expected = normalizeRoleName(expectedRole);
+    if (!getEffectiveRoles(roleName).includes(expected)) {
+      throw new UnauthorizedException(
+        expected === ROLE_DOCTOR ? 'אין לך הרשאות מטפל' : 'אין לך הרשאות מטופל',
+      );
+    }
   }
 }

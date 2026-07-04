@@ -22,7 +22,7 @@ import {
   VisitSummaryInput,
 } from './visit-records.service';
 import { Roles } from '../common/decorators/roles.decorator';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '../common/decorators/user.decorator';
 import { ROLE_DOCTOR, ROLE_PATIENT } from '../common/constants/roles';
 
 @Controller('api/visits-records')
@@ -31,7 +31,7 @@ export class VisitRecordsController {
 
   @Get()
   findAll(
-    @CurrentUser() user: any,
+    @User() user: any,
     @Query('patientId') patientId?: string,
     @Query('caregiverId') caregiverId?: string,
   ) {
@@ -49,7 +49,7 @@ export class VisitRecordsController {
 
   @Get(':id')
   async findOne(
-    @CurrentUser() user: any,
+    @User() user: any,
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     const visit = await this.service.findOne(id);

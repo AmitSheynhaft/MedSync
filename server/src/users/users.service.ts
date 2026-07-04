@@ -44,6 +44,11 @@ export class UsersService {
     if (!user) return user;
     const clone: any = { ...user };
     delete clone.password;
+    // Never expose the role's internal uuid — only its name is meaningful to clients.
+    delete clone.roleId;
+    if (clone.role) {
+      clone.role = { name: clone.role.name };
+    }
     return clone;
   }
 

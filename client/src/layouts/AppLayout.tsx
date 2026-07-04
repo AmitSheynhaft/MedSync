@@ -8,7 +8,9 @@ import PersonIcon from '@mui/icons-material/Person';
 import PeopleIcon from '@mui/icons-material/People';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlineRounded';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { clearSession, getEffectiveRole } from '../api/auth';
+import { getEffectiveRole } from '../auth/viewAs';
+import { logout } from '../auth/authApi';
+import { useCurrentUser } from '../atoms/useCurrentUser';
 import SystemInfoModal from '../components/SystemInfoModal/SystemInfoModal';
 import { consumeWelcomePending } from '../components/SystemInfoModal/welcomeFlag';
 import {
@@ -34,6 +36,7 @@ const NavItem: React.FC<{ to: string; title: string; icon: React.ReactNode }> = 
 
 export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
+  useCurrentUser();
   const role = getEffectiveRole();
   const isDoctor = role === 'doctor';
   const [showWelcomeSystemInfo, setShowWelcomeSystemInfo] = React.useState(consumeWelcomePending);
@@ -74,7 +77,7 @@ export const AppLayout: React.FC = () => {
           </Tooltip>
           <Tooltip title="התנתק" placement="left">
             <IconButton
-              onClick={() => { clearSession(); navigate('/login'); }}
+              onClick={() => { logout().finally(() => navigate('/login')); }}
               sx={[logoutButtonSx, { display: { xs: isDoctor ? 'inline-flex' : 'none', md: 'inline-flex' } }] as SxProps<Theme>}
             >
               <LogoutIcon fontSize="small" />

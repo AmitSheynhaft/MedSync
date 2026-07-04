@@ -45,7 +45,6 @@ export class TokenService {
     return process.env.JWT_REFRESH_EXPIRES_IN || '7d';
   }
 
-  /** Mints a fresh access/refresh token pair for the given user. */
   generateTokenPair(userId: string): TokenPair {
     return {
       accessToken: this.issueAccessToken(userId),

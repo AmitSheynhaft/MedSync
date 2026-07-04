@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerDoctor, registerPatient, saveSession } from '../../../api/auth';
+import { registerDoctor, registerPatient } from '../../../auth/authApi';
+import { saveSession } from '../../../auth/userSessionStore';
 import { markWelcomePending } from '../../../components/SystemInfoModal/welcomeFlag';
 
-/**
- * Holds all register form fields, step navigation, validation and submission
- * for both patient and therapist (doctor) registration flows.
- */
 export function useRegisterForm(isTherapist: boolean) {
   const navigate = useNavigate();
 

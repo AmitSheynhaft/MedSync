@@ -15,7 +15,7 @@ import {
   UpdateUserInput,
   UsersService,
 } from './users.service';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { User } from '../common/decorators/user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ROLE_DOCTOR } from '../common/constants/roles';
 
@@ -23,17 +23,13 @@ import { ROLE_DOCTOR } from '../common/constants/roles';
 export class UsersController {
   constructor(private readonly service: UsersService) {}
 
-  /**
-   * Current user's own profile. Identity is taken from the auth token, so the
-   * client never sends (or needs to know) its own user id.
-   */
   @Get('me')
-  findMe(@CurrentUser() user: any) {
+  findMe(@User() user: any) {
     return this.service.findOne(user.id);
   }
 
   @Patch('me')
-  updateMe(@CurrentUser() user: any, @Body() body: UpdateUserInput) {
+  updateMe(@User() user: any, @Body() body: UpdateUserInput) {
     return this.service.update(user.id, body);
   }
 
