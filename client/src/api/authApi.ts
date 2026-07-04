@@ -1,5 +1,5 @@
 import { apiGet, apiPost } from './client';
-import { clearSession } from '../auth/userSessionStore';
+import { clearUserDataSession } from '../auth/userDataSessionStore';
 import type {
   AuthResult,
   RegisterDoctorInput,
@@ -26,7 +26,7 @@ export async function logout(): Promise<void> {
   try {
     await apiPost('/api/auth/logout');
   } finally {
-    clearSession();
+    clearUserDataSession();
   }
 }
 

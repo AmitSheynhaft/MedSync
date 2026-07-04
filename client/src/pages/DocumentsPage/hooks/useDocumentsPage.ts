@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { loadUserSession } from '../../../auth/userSessionStore';
+import { loadUserDataSession } from '../../../auth/userDataSessionStore';
 import { getPatientById, Patient } from '../../../api/patients';
 import { uploadDocument } from '../../../api/documents';
 import { getMedicalDocuments, MedicalDocument, DocumentTypeEnum } from '../../../api/medical-documents';
@@ -12,9 +12,9 @@ import { TFilterKey, DOC_TYPE_LABELS } from '../utils';
 export function useDocumentsPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const session = loadUserSession();
+  const userDataSession = loadUserDataSession();
   const isDoctorView = !!id;
-  const patientId = id ?? session?.patientId;
+  const patientId = id ?? userDataSession?.patientId;
 
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<TFilterKey>('all');

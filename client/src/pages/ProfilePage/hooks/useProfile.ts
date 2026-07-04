@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../../api/authApi';
-import { loadUserSession, saveSession } from '../../../auth/userSessionStore';
+import { loadUserDataSession, saveUserDataSession } from '../../../auth/userDataSessionStore';
 import { getMe, updateMe, User } from '../../../api/users';
 import { getCaregiver } from '../../../api/caregivers';
 import { getPatientById, updatePatient } from '../../../api/patients';
@@ -10,9 +10,9 @@ import { toDateInput } from '../utils';
 
 export function useProfile() {
   const navigate = useNavigate();
-  const session = loadUserSession();
-  const role = (session?.role as 'patient' | 'doctor' | undefined) ?? 'patient';
-  const isPatient = !!session?.patientId;
+  const userDataSession = loadUserDataSession();
+  const role = (userDataSession?.role as 'patient' | 'doctor' | undefined) ?? 'patient';
+  const isPatient = !!userDataSession?.patientId;
 
   const [user, setUser] = useState<User | null>(null);
   const [idNumber, setIdNumber] = useState('');
@@ -29,7 +29,7 @@ export function useProfile() {
     if (loadedRef.current) return;
     loadedRef.current = true;
 
-    if (session) {
+    if (userDataSession) {
       getMe()
         .then(u => {
           setUser(u);
@@ -39,16 +39,16 @@ export function useProfile() {
         .catch(() => setUser(null));
     }
 
-    if (session?.role === 'doctor' && session?.caregiverId) {
-      getCaregiver(session.caregiverId)
+    if (userDataSession?.role === 'doctor' && userDataSession?.caregiverId) {
+      getCaregiver(userDataSession.caregiverId)
         .then(c => setIdNumber(c.licenseNumber ?? ''))
         .catch(() => setIdNumber(''));
     } else {
       setIdNumber('');
     }
 
-    if (session?.patientId) {
-      getPatientById(session.patientId)
+    if (userDataSession?.patientId) {
+      getPatientById(userDataSession.patientId)
         .then(p => {
           setHmo(p.hmo ?? '');
           setAddress(p.address ?? '');
@@ -74,7 +74,7 @@ export function useProfile() {
   };
 
   const handleSave = async () => {
-    if (!session) return;
+    if (!userDataSession) return;
     setSaving(true);
     try {
       const updated = await updateMe({
@@ -82,15 +82,15 @@ export function useProfile() {
         birthDate: birthDate || undefined,
       });
       setUser(updated);
-      if (isPatient && session?.patientId) {
-        await updatePatient(session.patientId, {
+      if (isPatient && userDataSession?.patientId) {
+        await updatePatient(userDataSession.patientId, {
           phone: phone.trim() || undefined,
           hmo: hmo.trim() || undefined,
           address: address.trim() || undefined,
         });
       }
-      if (session) {
-        saveSession({ ...session, fullName: updated.fullName, email: updated.email });
+      if (userDataSession) {
+        saveUserDataSession({ ...userDataSession, fullName: updated.fullName, email: updated.email });
       }
       setEditing(false);
       showToast('success', 'פרופיל עודכן.');
@@ -107,7 +107,7 @@ export function useProfile() {
   };
 
   return {
-    session, role, isPatient, user, idNumber,
+    session: userDataSession, role, isPatient, user, idNumber,
     editing, phone, setPhone, birthDate, setBirthDate,
     hmo, setHmo, address, setAddress,
     saving, toast, setToast,

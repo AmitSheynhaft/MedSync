@@ -1,6 +1,6 @@
 import { getCurrentUser, setCurrentUser } from '../atoms/useCurrentUser';
 import { fetchCurrentSession } from '../api/authApi';
-import { clearSession } from './userSessionStore';
+import { clearUserDataSession } from './userDataSessionStore';
 import type { AuthResult } from './types';
 
 export class RoleMismatchError extends Error {
@@ -30,7 +30,7 @@ export async function verifySession(options?: {
     try {
       serverSession = await fetchCurrentSession();
     } catch {
-      clearSession();
+      clearUserDataSession();
       return null;
     } finally {
       verifyInFlight = null;
@@ -38,7 +38,7 @@ export async function verifySession(options?: {
 
     const previous = getCurrentUser();
     if (previous && previous.role !== serverSession.role) {
-      clearSession();
+      clearUserDataSession();
       throw new RoleMismatchError();
     }
 

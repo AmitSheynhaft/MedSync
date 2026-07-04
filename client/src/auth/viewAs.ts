@@ -1,6 +1,6 @@
 import { Role } from '../constants/roles';
 import { VIEW_AS_KEY } from './storageKeys';
-import { loadUserSession } from './userSessionStore';
+import { loadUserDataSession } from './userDataSessionStore';
 import type { RoleName } from './types';
 
 export function setViewAs(role: RoleName): void {
@@ -16,11 +16,11 @@ export function clearViewAs(): void {
 }
 
 export function getEffectiveRole(): RoleName | null {
-  return loadUserSession()?.role ?? null;
+  return loadUserDataSession()?.role ?? null;
 }
 
 export function isRoleViewTampered(): boolean {
-  const session = loadUserSession();
+  const session = loadUserDataSession();
   if (!session) return false;
   const viewAs = getViewAs();
   return viewAs !== null && viewAs !== session.role;

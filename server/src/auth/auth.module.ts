@@ -9,6 +9,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TokenService } from './token.service';
 import { RolesModule } from '../roles/roles.module';
+import { requireEnv } from '../common/config/require-env';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { RolesModule } from '../roles/roles.module';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET'),
+        secret: requireEnv('JWT_SECRET'),
         signOptions: {
           expiresIn: (config.get<string>('JWT_EXPIRES_IN') || '5d') as any,
         },

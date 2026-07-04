@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { TokenExpiredError } from 'jsonwebtoken';
+import { requireEnv } from '../common/config/require-env';
 
 export interface TokenPair {
   accessToken: string;
@@ -25,24 +26,16 @@ interface RawJwtPayload {
 
 @Injectable()
 export class TokenService {
-  constructor(private readonly jwtService: JwtService) {}
+  private readonly accessSecret: string;
+  private readonly refreshSecret: string;
+  private readonly accessExpiresIn: string;
+  private readonly refreshExpiresIn: string;
 
-  private get accessSecret(): string {
-    return process.env.JWT_SECRET || 'dev-jwt-secret-change-me';
-  }
-
-  private get accessExpiresIn(): string {
-    return process.env.JWT_EXPIRES_IN || '15m';
-  }
-
-  private get refreshSecret(): string {
-    return (
-      process.env.JWT_REFRESH_SECRET || 'dev-jwt-refresh-secret-change-me'
-    );
-  }
-
-  private get refreshExpiresIn(): string {
-    return process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+  constructor(private readonly jwtService: JwtService) {
+    this.accessSecret = requireEnv('JWT_SECRET');
+    this.refreshSecret = requireEnv('JWT_REFRESH_SECRET');
+    this.accessExpiresIn = process.env.JWT_EXPIRES_IN || '15m';
+    this.refreshExpiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
   }
 
   generateTokenPair(userId: string): TokenPair {

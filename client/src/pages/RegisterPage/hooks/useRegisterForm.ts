@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registerDoctor, registerPatient } from '../../../api/authApi';
-import { saveSession } from '../../../auth/userSessionStore';
+import { saveUserDataSession } from '../../../auth/userDataSessionStore';
 import { markWelcomePending } from '../../../components/SystemInfoModal/welcomeFlag';
 
 export function useRegisterForm(isTherapist: boolean) {
@@ -64,7 +64,7 @@ export function useRegisterForm(isTherapist: boolean) {
       const result = isTherapist
         ? await registerDoctor({ role: 'doctor', fullName, email, password, licenseNumber: idOrLicense || 'TBD', specialization: specialization || 'General', phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined })
         : await registerPatient({ role: 'patient', fullName, email, password, idNumber: idOrLicense || undefined, address: address || '', hmo: hmo || undefined, phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined });
-      saveSession(result);
+      saveUserDataSession(result);
       markWelcomePending();
       navigate(result.role === 'patient' ? '/dashboard' : '/patients');
     } catch (err) {

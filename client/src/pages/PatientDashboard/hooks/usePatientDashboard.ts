@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { loadUserSession } from "../../../auth/userSessionStore";
+import { loadUserDataSession } from "../../../auth/userDataSessionStore";
 import { uploadDocument } from "../../../api/documents";
 import { DocumentTypeEnum } from "../../../api/medical-documents";
 import { PatientDocument, Patient, Encounter, getPatientById } from "../../../api/patients";
@@ -35,9 +35,9 @@ function initialsFromName(name: string): string {
 }
 
 export function usePatientDashboard() {
-  const session = loadUserSession();
-  const patientId = session?.patientId;
-  const userName = session?.fullName || "Patient";
+  const userDataSession = loadUserDataSession();
+  const patientId = userDataSession?.patientId;
+  const userName = userDataSession?.fullName || "Patient";
   const userInitials = initialsFromName(userName);
   const firstName = userName.split(" ")[0];
 

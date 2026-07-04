@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { verifySession, RoleMismatchError } from '../../auth/verifySession';
-import { clearSession } from '../../auth/userSessionStore';
+import { clearUserDataSession } from '../../auth/userDataSessionStore';
 import { getEffectiveRole, homeForRole, isRoleViewTampered } from '../../auth/viewAs';
 import type { RoleName } from '../../auth/types';
 import { useCurrentUser } from '../../atoms/useCurrentUser';
@@ -37,7 +37,7 @@ export const RequireRole: React.FC<IRequireRoleProps> = ({ allow }) => {
   }, [location.pathname]);
 
   const handleConfirmRelogin = () => {
-    clearSession();
+    clearUserDataSession();
     setIsRoleTampered(false);
     navigate('/login', { replace: true });
   };

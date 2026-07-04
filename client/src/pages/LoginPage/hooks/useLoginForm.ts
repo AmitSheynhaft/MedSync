@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../../../api/authApi';
-import { saveSession } from '../../../auth/userSessionStore';
+import { saveUserDataSession } from '../../../auth/userDataSessionStore';
 import { setViewAs, homeForRole } from '../../../auth/viewAs';
 
 export function useLoginForm(role?: string) {
@@ -20,12 +20,10 @@ export function useLoginForm(role?: string) {
     }
     setSubmitting(true);
     try {
-      const result = await login(email, password, role);
-      saveSession(result);
-      // Pin the view to the authenticated role; any later divergence is treated
-      // as tampering and forces a re-login.
-      setViewAs(result.role);
-      navigate(homeForRole(result.role));
+      const userData = await login(email, password, role);
+      saveUserDataSession(userData);
+      setViewAs(userData.role);
+      navigate(homeForRole(userData.role));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'התחברות נכשלה');
     } finally {
