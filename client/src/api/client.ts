@@ -51,6 +51,17 @@ async function readError(res: Response): Promise<string> {
   }
 }
 
+const NO_REFRESH_PATHS = [
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/refresh',
+  '/api/auth/logout',
+];
+
+function shouldSkipRefresh(path: string): boolean {
+  return NO_REFRESH_PATHS.some((p) => path.startsWith(p));
+}
+
 export async function apiRequest<T = any>(
   path: string,
   options: RequestInit = {},
@@ -59,7 +70,7 @@ export async function apiRequest<T = any>(
   const res = await fetch(`${BASE_URL}${path}`, { ...options, credentials: 'include' });
   if (!res.ok) {
     if (res.status === 401) {
-      if (allowRefresh && !path.startsWith('/api/auth/refresh')) {
+      if (allowRefresh && !shouldSkipRefresh(path)) {
         const refreshed = await refreshSession();
         if (refreshed) {
           return apiRequest<T>(path, options, false);
