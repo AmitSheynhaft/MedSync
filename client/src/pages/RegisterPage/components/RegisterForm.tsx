@@ -8,17 +8,17 @@ import { StepActions } from './StepActions';
 
 interface IRegisterFormProps {
   form: RegisterFormState;
-  isTherapist: boolean;
+  isDoctor: boolean;
   color: string;
 }
 
-export const RegisterForm: React.FC<IRegisterFormProps> = ({ form, isTherapist, color }) => (
+export const RegisterForm: React.FC<IRegisterFormProps> = ({ form, isDoctor, color }) => (
   <Box component="form" onSubmit={form.handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
     {form.step === 0 ? (
-      <AccountStep form={form} isTherapist={isTherapist} color={color} />
+      <AccountStep form={form} isDoctor={isDoctor} color={color} />
     ) : (
       <>
-        <PersonalStep form={form} isTherapist={isTherapist} />
+        <PersonalStep form={form} isDoctor={isDoctor} />
         <TermsCheckbox agreed={form.agreed} onChange={form.setAgreed} color={color} />
         <StepActions color={color} submitting={form.submitting} onBack={form.handleBack} />
       </>

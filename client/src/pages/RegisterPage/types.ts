@@ -7,7 +7,7 @@ export type TFieldOption = {
 
 export type TFieldConfig = {
   key: string;
-  placeholder?: string | ((isTherapist: boolean) => string);
+  placeholder?: string | ((isDoctor: boolean) => string);
   label?: string;
   type?: string;
   autoComplete?: string;
@@ -16,7 +16,7 @@ export type TFieldConfig = {
   select?: boolean;
   options?: TFieldOption[];
   inputLabelShrink?: boolean;
-  showFor?: 'therapist' | 'patient';
+  showFor?: 'doctor' | 'patient';
   getValue: (form: RegisterFormState) => string;
   onChange: (form: RegisterFormState, value: string) => void;
 };

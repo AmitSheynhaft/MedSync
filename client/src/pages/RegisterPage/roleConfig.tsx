@@ -10,7 +10,7 @@ export interface RegisterRoleConfig {
   subtitle: string;
 }
 
-export const roleConfig: Record<'patient' | 'therapist', RegisterRoleConfig> = {
+export const roleConfig: Record<'patient' | 'doctor', RegisterRoleConfig> = {
   patient: {
     label: 'מטופל',
     icon: <PersonIcon sx={{ fontSize: 16 }} />,
@@ -18,7 +18,7 @@ export const roleConfig: Record<'patient' | 'therapist', RegisterRoleConfig> = {
     heading: 'יצירת חשבון מטופל',
     subtitle: 'נהל את הרשומות הרפואיות שלך במקום אחד.',
   },
-  therapist: {
+  doctor: {
     label: 'רופא',
     icon: <LocalHospitalIcon sx={{ fontSize: 16 }} />,
     color: '#7048e8',

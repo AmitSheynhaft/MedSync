@@ -6,13 +6,13 @@ import { ACCOUNT_FIELDS } from '../config/accountFields';
 
 interface IAccountStepProps {
   form: RegisterFormState;
-  isTherapist: boolean;
+  isDoctor: boolean;
   color: string;
 }
 
-export const AccountStep: React.FC<IAccountStepProps> = ({ form, isTherapist, color }) => (
+export const AccountStep: React.FC<IAccountStepProps> = ({ form, isDoctor, color }) => (
   <>
-    <FormFields fields={ACCOUNT_FIELDS} form={form} isTherapist={isTherapist} />
+    <FormFields fields={ACCOUNT_FIELDS} form={form} isDoctor={isDoctor} />
     <Button
       type="button"
       variant="contained"

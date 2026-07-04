@@ -12,10 +12,7 @@ import { hashPassword, verifyPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
 import { TokenService, TokenPair } from './token.service';
 import { ROLE_DOCTOR, ROLE_PATIENT, ALL_ROLES } from '../common/constants/roles';
-import {
-  getEffectiveRoles,
-  normalizeRoleName,
-} from '../common/authorization/role-hierarchy';
+import { getEffectiveRoles } from '../common/authorization/role-hierarchy';
 
 export interface RegisterPatientInput {
   role?: string;
@@ -234,10 +231,9 @@ export class AuthService {
   ): void {
     if (!expectedRole) return;
 
-    const expected = normalizeRoleName(expectedRole);
-    if (!getEffectiveRoles(roleName).includes(expected)) {
+    if (!getEffectiveRoles(roleName).includes(expectedRole as any)) {
       throw new UnauthorizedException(
-        expected === ROLE_DOCTOR ? 'אין לך הרשאות מטפל' : 'אין לך הרשאות מטופל',
+        expectedRole === ROLE_DOCTOR ? 'אין לך הרשאות מטפל' : 'אין לך הרשאות מטופל',
       );
     }
   }

@@ -16,7 +16,3 @@ export function hasRequiredRole(
   const effectiveRoles = getEffectiveRoles(userRole);
   return requiredRoles.some((role) => effectiveRoles.includes(role as TRoleName));
 }
-
-export function normalizeRoleName(role: string): string {
-  return role === 'therapist' ? ROLE_DOCTOR : role;
-}

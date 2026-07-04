@@ -4,7 +4,7 @@ import { registerDoctor, registerPatient } from '../../../api/authApi';
 import { saveUserDataSession } from '../../../auth/userDataSessionStore';
 import { markWelcomePending } from '../../../components/SystemInfoModal/welcomeFlag';
 
-export function useRegisterForm(isTherapist: boolean) {
+export function useRegisterForm(isDoctor: boolean) {
   const navigate = useNavigate();
 
   const [step, setStep] = useState(0);
@@ -43,7 +43,7 @@ export function useRegisterForm(isTherapist: boolean) {
       setError('יש לאשר את תנאי השימוש ומדיניות הפרטיות');
       return;
     }
-    if (isTherapist && !specialization.trim()) {
+    if (isDoctor && !specialization.trim()) {
       setError('התמחות היא שדה חובה');
       return;
     }
@@ -51,17 +51,17 @@ export function useRegisterForm(isTherapist: boolean) {
       setError('טלפון הוא שדה חובה');
       return;
     }
-    if (!isTherapist && !hmo.trim()) {
+    if (!isDoctor && !hmo.trim()) {
       setError('קופת חולים היא שדה חובה');
       return;
     }
-    if (!isTherapist && !address.trim()) {
+    if (!isDoctor && !address.trim()) {
       setError('כתובת היא שדה חובה');
       return;
     }
     setSubmitting(true);
     try {
-      const result = isTherapist
+      const result = isDoctor
         ? await registerDoctor({ role: 'doctor', fullName, email, password, licenseNumber: idOrLicense || 'TBD', specialization: specialization || 'General', phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined })
         : await registerPatient({ role: 'patient', fullName, email, password, idNumber: idOrLicense || undefined, address: address || '', hmo: hmo || undefined, phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined });
       saveUserDataSession(result);

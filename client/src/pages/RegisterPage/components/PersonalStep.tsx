@@ -5,11 +5,11 @@ import { PERSONAL_FIELDS } from '../config/personalFields';
 
 interface IPersonalStepProps {
   form: RegisterFormState;
-  isTherapist: boolean;
+  isDoctor: boolean;
 }
 
-export const PersonalStep: React.FC<IPersonalStepProps> = ({ form, isTherapist }) => (
-  <FormFields fields={PERSONAL_FIELDS} form={form} isTherapist={isTherapist} />
+export const PersonalStep: React.FC<IPersonalStepProps> = ({ form, isDoctor }) => (
+  <FormFields fields={PERSONAL_FIELDS} form={form} isDoctor={isDoctor} />
 );
 
 export default PersonalStep;

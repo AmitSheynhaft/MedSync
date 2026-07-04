@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { login } from '../../../api/authApi';
 import { saveUserDataSession } from '../../../auth/userDataSessionStore';
 import { setViewAs, homeForRole } from '../../../auth/viewAs';
+import { canActAs } from '../../../auth/roleHierarchy';
 
 export function useLoginForm(role?: string) {
   const navigate = useNavigate();
@@ -22,8 +23,13 @@ export function useLoginForm(role?: string) {
     try {
       const userData = await login(email, password, role);
       saveUserDataSession(userData);
-      setViewAs(userData.role);
-      navigate(homeForRole(userData.role));
+      const selectedRole = role ??  userData.role;
+      const viewRole = canActAs(userData.role, selectedRole)
+        ? selectedRole
+        : userData.role;
+
+      setViewAs(viewRole);
+      navigate(homeForRole(viewRole));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'התחברות נכשלה');
     } finally {
