@@ -12,7 +12,10 @@ import {
   Post,
   Put,
   Query,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import { Response } from 'express';
 import {
   VisitDiagnosisInput,
   VisitInput,
@@ -62,6 +65,34 @@ export class VisitRecordsController {
       throw new NotFoundException('Visit not found');
     }
     return visit;
+  }
+
+  @Get(':id/summary-pdf')
+  async downloadSummaryPdf(
+    @User() user: IUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const visit = await this.service.findOne(id);
+    if (
+      user?.role?.name === ROLE_PATIENT &&
+      visit.patientId !== user.patient?.id
+    ) {
+      throw new NotFoundException('Visit not found');
+    }
+
+    const dateSuffix = new Date(visit.visitDate)
+      .toISOString()
+      .slice(0, 10)
+      .replace(/-/g, '');
+    const filename = `medsync-visit-summary-${dateSuffix}.pdf`;
+
+    const file = await this.service.generateSummaryPdf(id);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    return new StreamableFile(file);
   }
 
   @Roles(ROLE_DOCTOR)
