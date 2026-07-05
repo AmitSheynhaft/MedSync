@@ -47,3 +47,9 @@ export * from './patientMedicalSummary/patientMedicalSummaryEntity';
 
 export * from './patientClinicalAlert/patientClinicalAlertInterface';
 export * from './patientClinicalAlert/patientClinicalAlertEntity';
+
+export * from './clinic/clinicInterface';
+export * from './clinic/clinicEntity';
+
+export * from './patientClinic/patientClinicInterface';
+export * from './patientClinic/patientClinicEntity';

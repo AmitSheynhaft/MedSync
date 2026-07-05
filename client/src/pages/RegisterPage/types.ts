@@ -14,7 +14,7 @@ export type TFieldConfig = {
   required?: boolean;
   icon?: React.ReactElement;
   select?: boolean;
-  options?: TFieldOption[];
+  options?: TFieldOption[] | ((form: RegisterFormState) => TFieldOption[]);
   inputLabelShrink?: boolean;
   showFor?: 'doctor' | 'patient';
   getValue: (form: RegisterFormState) => string;

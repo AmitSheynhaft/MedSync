@@ -15,27 +15,30 @@ export const FormFields: React.FC<IFormFieldsProps> = ({ fields, form, isDoctor 
 
   return (
     <>
-      {visibleFields.map(({ key, placeholder, label, type, autoComplete, required, icon, select, options, inputLabelShrink, getValue, onChange }) => (
-        <TextField
-          key={key}
-          required={required}
-          type={type}
-          placeholder={typeof placeholder === 'function' ? placeholder(isDoctor) : placeholder}
-          label={label}
-          autoComplete={autoComplete}
-          select={select}
-          value={getValue(form)}
-          onChange={e => onChange(form, e.target.value)}
-          slotProps={{
-            ...(icon ? { input: { startAdornment: <InputAdornment position="start">{icon}</InputAdornment> } } : {}),
-            ...(inputLabelShrink ? { inputLabel: { shrink: true } } : {}),
-          }}
-        >
-          {options?.map(opt => (
-            <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-          ))}
-        </TextField>
-      ))}
+      {visibleFields.map(({ key, placeholder, label, type, autoComplete, required, icon, select, options, inputLabelShrink, getValue, onChange }) => {
+        const resolvedOptions = typeof options === 'function' ? options(form) : options;
+        return (
+          <TextField
+            key={key}
+            required={required}
+            type={type}
+            placeholder={typeof placeholder === 'function' ? placeholder(isDoctor) : placeholder}
+            label={label}
+            autoComplete={autoComplete}
+            select={select}
+            value={getValue(form)}
+            onChange={e => onChange(form, e.target.value)}
+            slotProps={{
+              ...(icon ? { input: { startAdornment: <InputAdornment position="start">{icon}</InputAdornment> } } : {}),
+              ...(inputLabelShrink ? { inputLabel: { shrink: true } } : {}),
+            }}
+          >
+            {resolvedOptions?.map(opt => (
+              <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+            ))}
+          </TextField>
+        );
+      })}
     </>
   );
 };

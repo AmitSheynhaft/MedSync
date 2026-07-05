@@ -9,6 +9,7 @@ export interface ICaregiver {
   licenseNumber: string;
   specialization: string;
   clinicName?: string;
+  clinicId?: string;
   createdAt: Date;
   updatedAt: Date;
   slots?: ISlot[];

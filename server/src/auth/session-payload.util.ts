@@ -6,6 +6,7 @@ export interface SessionInfo {
   role: string;
   patientId?: string;
   caregiverId?: string;
+  clinicId?: string;
 }
 
 interface SessionUser {
@@ -13,7 +14,7 @@ interface SessionUser {
   email: string;
   fullName: string;
   patient?: { id: string } | null;
-  caregiver?: { id: string } | null;
+  caregiver?: { id: string; clinicId?: string } | null;
 }
 
 export function buildSessionInfo(user: SessionUser, role: string): SessionInfo {
@@ -23,5 +24,6 @@ export function buildSessionInfo(user: SessionUser, role: string): SessionInfo {
     role,
     patientId: role === ROLE_PATIENT ? user.patient?.id : undefined,
     caregiverId: role === ROLE_DOCTOR ? user.caregiver?.id : undefined,
+    clinicId: role === ROLE_DOCTOR ? user.caregiver?.clinicId : undefined,
   };
 }

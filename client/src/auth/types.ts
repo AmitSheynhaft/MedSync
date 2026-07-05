@@ -9,6 +9,7 @@ export interface AuthResult {
   role: RoleName;
   patientId?: string;
   caregiverId?: string;
+  clinicId?: string;
 }
 
 export interface RegisterPatientInput {
@@ -23,6 +24,7 @@ export interface RegisterPatientInput {
   hmo?: string;
   address?: string;
   bloodType?: string;
+  clinicId?: string;
 }
 
 export interface RegisterDoctorInput {
@@ -33,6 +35,7 @@ export interface RegisterDoctorInput {
   licenseNumber: string;
   specialization: string;
   clinicName?: string;
+  clinicId?: string;
   phone?: string;
   birthDate?: string;
   gender?: string;

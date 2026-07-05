@@ -13,6 +13,7 @@ import { VisitDiagnosis } from '../entities/visitDiagnosis/visitDiagnosisEntity'
 import { VisitMedicine } from '../entities/visitMedicine/visitMedicineEntity';
 import { Diagnosis } from '../entities/diagnosis/diagnosisEntity';
 import { Medicine } from '../entities/medicine/medicineEntity';
+import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
 import { RecordingStatus, VisitSummaryType, VisitType } from '../entities/enums';
 import { DiagnosesService } from '../diagnoses/diagnoses.service';
 import { MedicinesService } from '../medicines/medicines.service';
@@ -23,6 +24,7 @@ export interface VisitInput {
   caregiverId: string;
   slotId?: string;
   visitDate: string | Date;
+  actingClinicId?: string;
   bloodPressure?: string;
   pulse?: string;
   bodyTemp?: string;
@@ -80,28 +82,39 @@ export class VisitRecordsService {
     private readonly diagnosesRepo: Repository<Diagnosis>,
     @InjectRepository(Medicine)
     private readonly medicinesRepo: Repository<Medicine>,
+    @InjectRepository(PatientClinic)
+    private readonly patientClinics: Repository<PatientClinic>,
     private readonly diagnosesService: DiagnosesService,
     private readonly medicinesService: MedicinesService,
     private readonly dataSource: DataSource,
     private readonly medicalSummaryService: PatientMedicalSummaryService,
   ) {}
 
-  findAll(patientId?: string, caregiverId?: string): Promise<Visit[]> {
-    const where: any = {};
-    if (patientId) where.patientId = patientId;
-    if (caregiverId) where.caregiverId = caregiverId;
-    return this.visits.find({
-      where,
-      relations: [
-        'patient',
-        'patient.user',
-        'caregiver',
-        'caregiver.user',
-        'summary',
-        'recording',
-      ],
-      order: { visitDate: 'DESC' },
-    });
+  findAll(patientId?: string, caregiverId?: string, actingClinicId?: string): Promise<Visit[]> {
+    const qb = this.visits
+      .createQueryBuilder('visit')
+      .leftJoinAndSelect('visit.patient', 'patient')
+      .leftJoinAndSelect('patient.user', 'patientUser')
+      .leftJoinAndSelect('visit.caregiver', 'caregiver')
+      .leftJoinAndSelect('caregiver.user', 'caregiverUser')
+      .leftJoinAndSelect('visit.summary', 'summary')
+      .leftJoinAndSelect('visit.recording', 'recording')
+      .orderBy('visit.visitDate', 'DESC');
+
+    if (patientId) qb.andWhere('visit.patientId = :patientId', { patientId });
+    if (caregiverId) qb.andWhere('visit.caregiverId = :caregiverId', { caregiverId });
+
+    // When called by a doctor, restrict to visits whose patient belongs to that clinic.
+    if (actingClinicId) {
+      qb.innerJoin(
+        'patient_clinics',
+        'pc',
+        'pc.patient_id = visit.patientId AND pc.clinic_id = :actingClinicId',
+        { actingClinicId },
+      );
+    }
+
+    return qb.getMany();
   }
 
   async findOne(id: string): Promise<Visit> {
@@ -148,6 +161,23 @@ export class VisitRecordsService {
       referralNotes: input.referralNotes,
     });
     const saved = await this.visits.save(visit);
+
+    // Ensure the patient is a member of the doctor's clinic. If the caregiver
+    // has a clinicId and no membership exists yet, create one automatically.
+    if (input.actingClinicId) {
+      const exists = await this.patientClinics.findOne({
+        where: { patientId: input.patientId, clinicId: input.actingClinicId },
+      });
+      if (!exists) {
+        await this.patientClinics.save(
+          this.patientClinics.create({
+            patientId: input.patientId,
+            clinicId: input.actingClinicId,
+          }),
+        );
+      }
+    }
+
     return this.findOne(saved.id);
   }
 

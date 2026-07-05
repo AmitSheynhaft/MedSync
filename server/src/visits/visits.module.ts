@@ -14,6 +14,7 @@ import { VisitDiagnosis } from '../entities/visitDiagnosis/visitDiagnosisEntity'
 import { VisitMedicine } from '../entities/visitMedicine/visitMedicineEntity';
 import { Diagnosis } from '../entities/diagnosis/diagnosisEntity';
 import { Medicine } from '../entities/medicine/medicineEntity';
+import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
 import { DiagnosesModule } from '../diagnoses/diagnoses.module';
 import { MedicinesModule } from '../medicines/medicines.module';
 import { PatientMedicalSummaryModule } from '../patient-medical-summary/patient-medical-summary.module';
@@ -29,6 +30,7 @@ import { PatientMedicalSummaryModule } from '../patient-medical-summary/patient-
       VisitMedicine,
       Diagnosis,
       Medicine,
+      PatientClinic,
     ]),
     DiagnosesModule,
     MedicinesModule,

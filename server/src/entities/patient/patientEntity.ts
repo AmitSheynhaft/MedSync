@@ -15,6 +15,7 @@ import { MedicalDocument } from '../medicalDocument/medicalDocumentEntity';
 import { Visit } from '../visit/visitEntity';
 import { PatientMedicalSummary } from '../patientMedicalSummary/patientMedicalSummaryEntity';
 import { PatientClinicalAlert } from '../patientClinicalAlert/patientClinicalAlertEntity';
+import { PatientClinic } from '../patientClinic/patientClinicEntity';
 import { IPatient } from './patientInterface';
 
 @Entity({ name: 'patients' })
@@ -64,4 +65,7 @@ export class Patient extends BaseEntity implements IPatient {
 
   @OneToMany(() => PatientClinicalAlert, (alert) => alert.patient)
   clinicalAlerts: PatientClinicalAlert[];
+
+  @OneToMany(() => PatientClinic, (patientClinic) => patientClinic.patient)
+  patientClinics: PatientClinic[];
 }

@@ -61,4 +61,15 @@ export const PERSONAL_FIELDS: TFieldConfig[] = [
     getValue: f => f.address,
     onChange: (f, v) => f.setAddress(v),
   },
+  {
+    key: 'clinicId',
+    label: 'מרפאה',
+    select: true,
+    options: f => [
+      { value: '', label: 'בחר מרפאה' },
+      ...f.clinics.map(c => ({ value: c.id, label: c.name })),
+    ],
+    getValue: f => f.clinicId,
+    onChange: (f, v) => f.setClinicId(v),
+  },
 ];

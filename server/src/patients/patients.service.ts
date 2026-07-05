@@ -7,12 +7,13 @@ import {
 } from '@nestjs/common';
 import { ROLE_DOCTOR } from '../common/constants/roles';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, ILike, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Patient as PatientEntity } from '../entities/patient/patientEntity';
 import { User } from '../entities/user/userEntity';
 import { Visit } from '../entities/visit/visitEntity';
 import { MedicalDocument } from '../entities/medicalDocument/medicalDocumentEntity';
 import { PatientMedicalSummary } from '../entities/patientMedicalSummary/patientMedicalSummaryEntity';
+import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
 import { RolesService } from '../roles/roles.service';
 import { hashPassword } from '../common/password.util';
 import { ClinicalAlertsService } from '../clinical-alerts/clinical-alerts.service';
@@ -71,6 +72,8 @@ export class PatientsService {
     private readonly documents: Repository<MedicalDocument>,
     @InjectRepository(PatientMedicalSummary)
     private readonly medicalSummaries: Repository<PatientMedicalSummary>,
+    @InjectRepository(PatientClinic)
+    private readonly patientClinics: Repository<PatientClinic>,
     private readonly roles: RolesService,
     private readonly dataSource: DataSource,
     private readonly clinicalAlertsService: ClinicalAlertsService,
@@ -152,34 +155,77 @@ export class PatientsService {
     };
   }
 
-  async findAll(search?: string): Promise<PatientSummary[]> {
+  async findAll(search?: string, actingUser?: any): Promise<PatientSummary[]> {
     const trimmed = search?.trim();
-    const list = await this.patients.find({
-      relations: ['user'],
-      where: trimmed
-        ? [
-            { user: { fullName: ILike(`%${trimmed}%`) } as any },
-            { user: { email: ILike(`%${trimmed}%`) } as any },
-          ]
-        : undefined,
-      order: { createdAt: 'DESC' },
-    });
+    const clinicId = this.getActingClinicId(actingUser);
+
+    const qb = this.patients
+      .createQueryBuilder('patient')
+      .leftJoinAndSelect('patient.user', 'user')
+      .orderBy('patient.createdAt', 'DESC');
+
+    // Doctors only see patients that belong to their own clinic.
+    if (clinicId) {
+      qb.innerJoin(
+        'patient_clinics',
+        'pc',
+        'pc.patient_id = patient.id AND pc.clinic_id = :clinicId',
+        { clinicId },
+      );
+    }
+
+    if (trimmed) {
+      qb.andWhere(
+        '(user.fullName ILIKE :q OR user.email ILIKE :q)',
+        { q: `%${trimmed}%` },
+      );
+    }
+
+    const list = await qb.getMany();
     return list.map((p) => this.toSummary(p));
   }
 
   /**
-   * Ensures the acting user is allowed to touch this patient record.
-   * Doctors may access any patient; a patient may only access their own.
+   * Resolves the clinic a doctor belongs to. Returns undefined for
+   * non-doctor callers or internal calls without a user context.
    */
-  private assertCanAccess(patientId: string, actingUser?: any): void {
+  private getActingClinicId(actingUser?: any): string | undefined {
+    if (!actingUser) return undefined;
+    if (actingUser.role?.name !== ROLE_DOCTOR) return undefined;
+    return actingUser.caregiver?.clinicId ?? undefined;
+  }
+
+  private async isPatientInClinic(
+    patientId: string,
+    clinicId: string,
+  ): Promise<boolean> {
+    const membership = await this.patientClinics.findOne({
+      where: { patientId, clinicId },
+    });
+    return !!membership;
+  }
+
+  /**
+   * Ensures the acting user is allowed to touch this patient record.
+   * Doctors may access patients in their own clinic; a patient may only
+   * access their own record.
+   */
+  private async assertCanAccess(patientId: string, actingUser?: any): Promise<void> {
     if (!actingUser) return; // no user context (internal call) — skip
-    if (actingUser.role?.name === ROLE_DOCTOR) return;
+    if (actingUser.role?.name === ROLE_DOCTOR) {
+      const clinicId = this.getActingClinicId(actingUser);
+      // A doctor without a clinic cannot be scoped — deny by default.
+      if (clinicId && (await this.isPatientInClinic(patientId, clinicId))) return;
+      throw new ForbiddenException(
+        'You are not allowed to access this patient record',
+      );
+    }
     if (actingUser.patient?.id === patientId) return;
     throw new ForbiddenException('You are not allowed to access this patient record');
   }
 
   async findOne(id: string, actingUser?: any): Promise<Patient> {
-    this.assertCanAccess(id, actingUser);
+    await this.assertCanAccess(id, actingUser);
     const patient = await this.patients.findOne({
       where: { id },
       relations: ['user'],
@@ -188,7 +234,7 @@ export class PatientsService {
     return this.toDetail(patient);
   }
 
-  async create(input: CreatePatientInput): Promise<Patient> {
+  async create(input: CreatePatientInput, actingUser?: any): Promise<Patient> {
     if (!input?.email || !input?.password || !input?.fullName) {
       throw new BadRequestException('fullName, email and password are required');
     }
@@ -219,14 +265,27 @@ export class PatientsService {
         notes: input.notes,
       });
       const savedPatient = await manager.getRepository(PatientEntity).save(patient);
+
+      // Attach the new patient to the creating doctor's clinic so it stays
+      // visible to that clinic (and hidden from others).
+      const clinicId = this.getActingClinicId(actingUser);
+      if (clinicId) {
+        await manager.getRepository(PatientClinic).save(
+          manager.getRepository(PatientClinic).create({
+            patientId: savedPatient.id,
+            clinicId,
+          }),
+        );
+      }
+
       return savedPatient.id;
     });
 
-    return this.findOne(newId);
+    return this.findOne(newId, actingUser);
   }
 
   async update(id: string, input: UpdatePatientInput, actingUser?: any): Promise<Patient> {
-    this.assertCanAccess(id, actingUser);
+    await this.assertCanAccess(id, actingUser);
     const patient = await this.patients.findOne({
       where: { id },
       relations: ['user'],
@@ -251,7 +310,7 @@ export class PatientsService {
       await manager.getRepository(PatientEntity).save(patient);
     });
 
-    return this.findOne(id);
+    return this.findOne(id, actingUser);
   }
 
   async remove(id: string): Promise<void> {

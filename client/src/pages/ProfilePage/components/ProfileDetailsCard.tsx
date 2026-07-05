@@ -6,6 +6,7 @@ import CakeIcon from '@mui/icons-material/Cake';
 import BadgeIcon from '@mui/icons-material/Badge';
 import HomeIcon from '@mui/icons-material/Home';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import EditIcon from '@mui/icons-material/Edit';
 import { ProfileRow } from './ProfileRow';
 import { formatDob } from '../utils';
@@ -19,7 +20,7 @@ interface ProfileDetailsCardProps {
 
 export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ profile, email, phoneDisplay }) => {
   const {
-    role, isPatient, user, idNumber, editing,
+    role, isPatient, user, idNumber, editing, clinicName,
     phone, setPhone, birthDate, setBirthDate,
     hmo, setHmo, address, setAddress,
     saving, handleEdit, handleCancel, handleSave,
@@ -75,6 +76,12 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ profile,
                 label={role === 'doctor' ? 'מספר רישיון' : 'תעודת זהות'}
                 value={idNumber}
               />
+            </>
+          )}
+          {role === 'doctor' && (
+            <>
+              <Divider sx={{ my: 1.5 }} />
+              <ProfileRow icon={<MeetingRoomIcon fontSize="small" />} label="מרפאה" value={clinicName || '—'} />
             </>
           )}
           {isPatient && (

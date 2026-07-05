@@ -32,8 +32,11 @@ export class PatientsController {
 
   @Roles(ROLE_DOCTOR)
   @Get()
-  findAll(@Query('search') search?: string): Promise<PatientSummary[]> {
-    return this.patientsService.findAll(search);
+  findAll(
+    @Query('search') search: string | undefined,
+    @User() user: IUser,
+  ): Promise<PatientSummary[]> {
+    return this.patientsService.findAll(search, user);
   }
 
   @Get(':id')
@@ -46,8 +49,8 @@ export class PatientsController {
 
   @Roles(ROLE_DOCTOR)
   @Post()
-  create(@Body() body: CreatePatientInput): Promise<Patient> {
-    return this.patientsService.create(body);
+  create(@Body() body: CreatePatientInput, @User() user: IUser): Promise<Patient> {
+    return this.patientsService.create(body, user);
   }
 
   @Patch(':id')

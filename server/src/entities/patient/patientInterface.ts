@@ -2,6 +2,7 @@ import { IUser } from '../user/userInterface';
 import { ISlot } from '../slot/slotInterface';
 import { IMedicalDocument } from '../medicalDocument/medicalDocumentInterface';
 import { IVisit } from '../visit/visitInterface';
+import { IPatientClinic } from '../patientClinic/patientClinicInterface';
 
 export interface IPatient {
   id: string;
@@ -17,4 +18,5 @@ export interface IPatient {
   slots?: ISlot[];
   documents?: IMedicalDocument[];
   visits?: IVisit[];
+  patientClinics?: IPatientClinic[];
 }

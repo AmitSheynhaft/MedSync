@@ -20,6 +20,7 @@ import { AuthGuard } from './common/guards/auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PatientMedicalSummaryModule } from './patient-medical-summary/patient-medical-summary.module';
 import { ClinicalAlertsModule } from './clinical-alerts/clinical-alerts.module';
+import { ClinicsModule } from './clinics/clinics.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { ClinicalAlertsModule } from './clinical-alerts/clinical-alerts.module';
     DocumentsModule,
     PatientMedicalSummaryModule,
     ClinicalAlertsModule,
+    ClinicsModule,
   ],
   controllers: [AppController],
   providers: [

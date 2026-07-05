@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registerDoctor, registerPatient } from '../../../api/authApi';
+import { getClinics, type Clinic } from '../../../api/clinics';
 import { saveUserDataSession } from '../../../auth/userDataSessionStore';
 import { markWelcomePending } from '../../../components/SystemInfoModal/welcomeFlag';
 
@@ -19,8 +20,14 @@ export function useRegisterForm(isDoctor: boolean) {
   const [gender, setGender] = useState('');
   const [hmo, setHmo] = useState('');
   const [address, setAddress] = useState('');
+  const [clinicId, setClinicId] = useState('');
+  const [clinics, setClinics] = useState<Clinic[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getClinics().then(setClinics).catch(() => setClinics([]));
+  }, []);
 
   const handleNext = () => {
     setError(null);
@@ -62,8 +69,8 @@ export function useRegisterForm(isDoctor: boolean) {
     setSubmitting(true);
     try {
       const result = isDoctor
-        ? await registerDoctor({ role: 'doctor', fullName, email, password, licenseNumber: idOrLicense || 'TBD', specialization: specialization || 'General', phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined })
-        : await registerPatient({ role: 'patient', fullName, email, password, idNumber: idOrLicense || undefined, address: address || '', hmo: hmo || undefined, phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined });
+        ? await registerDoctor({ role: 'doctor', fullName, email, password, licenseNumber: idOrLicense || 'TBD', specialization: specialization || 'General', phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined, clinicId: clinicId || undefined })
+        : await registerPatient({ role: 'patient', fullName, email, password, idNumber: idOrLicense || undefined, address: address || '', hmo: hmo || undefined, phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined, clinicId: clinicId || undefined });
       saveUserDataSession(result);
       markWelcomePending();
       navigate(result.role === 'patient' ? '/dashboard' : '/patients');
@@ -86,6 +93,8 @@ export function useRegisterForm(isDoctor: boolean) {
     gender, setGender,
     hmo, setHmo,
     address, setAddress,
+    clinicId, setClinicId,
+    clinics,
     submitting, error,
     handleNext, handleBack, handleSubmit,
   };

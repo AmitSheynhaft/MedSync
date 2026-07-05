@@ -5,6 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../entities/user/userEntity';
 import { Patient } from '../entities/patient/patientEntity';
 import { Caregiver } from '../entities/caregiver/caregiverEntity';
+import { Clinic } from '../entities/clinic/clinicEntity';
+import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TokenService } from './token.service';
@@ -23,7 +25,7 @@ import { requireEnv } from '../common/config/require-env';
         },
       }),
     }),
-    TypeOrmModule.forFeature([User, Patient, Caregiver]),
+    TypeOrmModule.forFeature([User, Patient, Caregiver, Clinic, PatientClinic]),
     RolesModule,
   ],
   controllers: [AuthController],

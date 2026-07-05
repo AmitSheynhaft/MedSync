@@ -45,7 +45,8 @@ export class VisitRecordsController {
       }
       return this.service.findAll(ownPatientId, undefined);
     }
-    return this.service.findAll(patientId, caregiverId);
+    const actingClinicId = user?.caregiver?.clinicId;
+    return this.service.findAll(patientId, caregiverId, actingClinicId);
   }
 
   @Get(':id')
@@ -71,7 +72,8 @@ export class VisitRecordsController {
     if (!caregiverId) {
       throw new ForbiddenException('No caregiver profile for this user');
     }
-    return this.service.create({ ...body, caregiverId });
+    const actingClinicId = user?.caregiver?.clinicId;
+    return this.service.create({ ...body, caregiverId, actingClinicId });
   }
 
   @Roles(ROLE_DOCTOR)

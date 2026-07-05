@@ -5,6 +5,7 @@ import { loadUserDataSession, saveUserDataSession } from '../../../auth/userData
 import { getMe, updateMe, User } from '../../../api/users';
 import { getCaregiver } from '../../../api/caregivers';
 import { getPatientById, updatePatient } from '../../../api/patients';
+import { getClinics } from '../../../api/clinics';
 import { useToast } from '../../../hooks/useToast';
 import { toDateInput } from '../utils';
 
@@ -21,6 +22,7 @@ export function useProfile() {
   const [birthDate, setBirthDate] = useState('');
   const [hmo, setHmo] = useState('');
   const [address, setAddress] = useState('');
+  const [clinicName, setClinicName] = useState('');
   const [saving, setSaving] = useState(false);
   const { toast, setToast, showToast } = useToast();
 
@@ -45,6 +47,15 @@ export function useProfile() {
         .catch(() => setIdNumber(''));
     } else {
       setIdNumber('');
+    }
+
+    if (userDataSession?.role === 'doctor' && userDataSession?.clinicId) {
+      getClinics()
+        .then(clinics => {
+          const match = clinics.find(c => c.id === userDataSession.clinicId);
+          setClinicName(match?.name ?? '');
+        })
+        .catch(() => setClinicName(''));
     }
 
     if (userDataSession?.patientId) {
@@ -109,7 +120,7 @@ export function useProfile() {
   return {
     session: userDataSession, role, isPatient, user, idNumber,
     editing, phone, setPhone, birthDate, setBirthDate,
-    hmo, setHmo, address, setAddress,
+    hmo, setHmo, address, setAddress, clinicName,
     saving, toast, setToast,
     handleEdit, handleCancel, handleSave, handleLogout,
   };

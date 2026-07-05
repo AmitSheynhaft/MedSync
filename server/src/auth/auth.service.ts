@@ -8,6 +8,8 @@ import { DataSource, Repository } from 'typeorm';
 import { User } from '../entities/user/userEntity';
 import { Patient } from '../entities/patient/patientEntity';
 import { Caregiver } from '../entities/caregiver/caregiverEntity';
+import { Clinic } from '../entities/clinic/clinicEntity';
+import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
 import { hashPassword, verifyPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
 import { TokenService, TokenPair } from './token.service';
@@ -26,6 +28,7 @@ export interface RegisterPatientInput {
   hmo?: string;
   address?: string;
   bloodType?: string;
+  clinicId?: string;
 }
 
 export interface RegisterDoctorInput {
@@ -36,6 +39,7 @@ export interface RegisterDoctorInput {
   licenseNumber: string;
   specialization: string;
   clinicName?: string;
+  clinicId?: string;
   phone?: string;
   birthDate?: string;
   gender?: string;
@@ -56,6 +60,7 @@ export interface AuthResult {
   refreshToken?: string;
   patientId?: string;
   caregiverId?: string;
+  clinicId?: string;
 }
 
 @Injectable()
@@ -64,10 +69,16 @@ export class AuthService {
     @InjectRepository(User) private readonly users: Repository<User>,
     @InjectRepository(Patient) private readonly patients: Repository<Patient>,
     @InjectRepository(Caregiver) private readonly caregivers: Repository<Caregiver>,
+    @InjectRepository(Clinic) private readonly clinics: Repository<Clinic>,
     private readonly roles: RolesService,
     private readonly tokens: TokenService,
     private readonly dataSource: DataSource,
   ) {}
+
+  private async assertClinicExists(clinicId: string): Promise<void> {
+    const clinic = await this.clinics.findOne({ where: { id: clinicId } });
+    if (!clinic) throw new BadRequestException('Selected clinic does not exist');
+  }
 
   private issueAccessToken(userId: string): string {
     return this.tokens.issueAccessToken(userId);
@@ -110,6 +121,9 @@ export class AuthService {
       'Patient role',
     );
 
+    const clinicId = input.clinicId?.trim() || undefined;
+    if (clinicId) await this.assertClinicExists(clinicId);
+
     return this.dataSource.transaction(async (manager) => {
       const user = manager.getRepository(User).create({
         roleId: role.id,
@@ -130,6 +144,15 @@ export class AuthService {
         address: input.address || '',
       });
       const savedPatient = await manager.getRepository(Patient).save(patient);
+
+      if (clinicId) {
+        await manager.getRepository(PatientClinic).save(
+          manager.getRepository(PatientClinic).create({
+            patientId: savedPatient.id,
+            clinicId,
+          }),
+        );
+      }
 
       return {
         userId: savedUser.id,
@@ -161,6 +184,9 @@ export class AuthService {
       'Doctor role',
     );
 
+    const clinicId = input.clinicId?.trim() || undefined;
+    if (clinicId) await this.assertClinicExists(clinicId);
+
     return this.dataSource.transaction(async (manager) => {
       const user = manager.getRepository(User).create({
         roleId: role.id,
@@ -178,6 +204,7 @@ export class AuthService {
         licenseNumber: input.licenseNumber,
         specialization: input.specialization,
         clinicName: input.clinicName,
+        clinicId,
       });
       const savedCaregiver = await manager.getRepository(Caregiver).save(caregiver);
 
@@ -189,6 +216,7 @@ export class AuthService {
         accessToken: this.issueAccessToken(savedUser.id),
         refreshToken: this.issueRefreshToken(savedUser.id),
         caregiverId: savedCaregiver.id,
+        clinicId: savedCaregiver.clinicId,
       };
     });
   }
@@ -222,6 +250,7 @@ export class AuthService {
       // Expose only the id that matches the user's role, mirroring /api/auth/me.
       patientId: roleName === ROLE_PATIENT ? user.patient?.id : undefined,
       caregiverId: roleName === ROLE_DOCTOR ? user.caregiver?.id : undefined,
+      clinicId: roleName === ROLE_DOCTOR ? user.caregiver?.clinicId : undefined,
     };
   }
 
