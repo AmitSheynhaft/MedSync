@@ -2,9 +2,6 @@ import { useMemo, useState } from 'react';
 import { getPatients, PatientSummary } from '../../../api/patients';
 import { useAsyncData } from '../../../hooks/useAsyncData';
 
-/**
- * Loads the patient list and filters it client-side by name or ID number.
- */
 export function usePatientSearch() {
   const [query, setQuery] = useState('');
   const { data: patients, status } = useAsyncData<PatientSummary[]>(getPatients, []);

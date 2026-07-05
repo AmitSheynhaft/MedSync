@@ -11,7 +11,10 @@ import {
   Query,
 } from '@nestjs/common';
 import { DiagnosesService, DiagnosisInput } from './diagnoses.service';
+import { Roles } from '../common/decorators/roles.decorator';
+import { ROLE_DOCTOR } from '../common/constants/roles';
 
+@Roles(ROLE_DOCTOR)
 @Controller('api/diagnoses')
 export class DiagnosesController {
   constructor(private readonly service: DiagnosesService) {}

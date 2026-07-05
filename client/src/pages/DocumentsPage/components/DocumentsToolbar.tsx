@@ -27,7 +27,16 @@ export const DocumentsToolbar: React.FC<IDocumentsToolbarProps> = ({ query, onQu
         },
       }}
     />
-    <Stack direction="row-reverse" sx={{ flexShrink: 0, gap: 1.5 }}>
+    <Box
+      sx={{
+        width: { xs: '100%', sm: 'auto' },
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        scrollbarWidth: 'thin',
+        WebkitOverflowScrolling: 'touch',
+      }}
+    >
+      <Stack direction="row" sx={{ gap: 1.5, flexWrap: 'nowrap', width: 'max-content', py: 0.25 }}>
       {FILTERS.map(filterOption => {
         const isActive = activeFilter === filterOption.key;
         return (
@@ -37,11 +46,12 @@ export const DocumentsToolbar: React.FC<IDocumentsToolbarProps> = ({ query, onQu
             onClick={() => onFilterChange(filterOption.key)}
             variant={isActive ? 'filled' : 'outlined'}
             color={isActive ? 'primary' : 'default'}
-            sx={{ borderRadius: 999, fontWeight: 600, fontSize: 13, px: 1.5, height: 38, bgcolor: isActive ? undefined : '#fff' }}
+            sx={{ borderRadius: 999, fontWeight: 600, fontSize: 13, px: 1.5, height: 38, bgcolor: isActive ? undefined : '#fff', flexShrink: 0 }}
           />
         );
       })}
-    </Stack>
+      </Stack>
+    </Box>
   </Box>
 );
 

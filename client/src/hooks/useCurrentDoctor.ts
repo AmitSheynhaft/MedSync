@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { loadSession } from '../api/auth';
+import { useCurrentUser } from '../atoms/useCurrentUser';
 import { getCaregiver } from '../api/caregivers';
 
 export interface CurrentDoctor {
@@ -29,7 +29,7 @@ const doctorCache = new Map<string, CurrentDoctor>();
 const inflight = new Map<string, Promise<CurrentDoctor>>();
 
 export function useCurrentDoctor(): CurrentDoctor {
-  const session = loadSession();
+  const session = useCurrentUser();
   const cached = session?.caregiverId
     ? doctorCache.get(session.caregiverId)
     : undefined;
@@ -46,7 +46,7 @@ export function useCurrentDoctor(): CurrentDoctor {
 
   useEffect(() => {
     const caregiverId = session?.caregiverId;
-    if (!caregiverId) return;
+    if (session?.role !== 'doctor' || !caregiverId) return;
     if (doctorCache.has(caregiverId)) {
       setDoctor(doctorCache.get(caregiverId)!);
       return;
@@ -77,7 +77,7 @@ export function useCurrentDoctor(): CurrentDoctor {
     return () => {
       active = false;
     };
-  }, [session?.caregiverId, session?.fullName]);
+  }, [session?.role, session?.caregiverId, session?.fullName]);
 
   return doctor;
 }

@@ -1,35 +1,33 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAudioRecorder } from '../../../hooks/useAudioRecorder';
+import { getEffectiveRole } from '../../../auth/viewAs';
+import { Role } from '../../../constants/roles';
 import {
   createVisit, upsertVisitSummary,
   addVisitDiagnosis, addVisitMedicine, updateVisit, getVisit,
 } from '../../../api/visits';
-import { loadSession } from '../../../api/auth';
 import { getDiagnoses, Diagnosis } from '../../../api/diagnoses';
 import { getMedicines, Medicine } from '../../../api/medicines';
 import { ToastState, DiagnosisItem, MedicineItem, PatientInfo } from '../constants';
 import { parseSummaryText, buildSummaryText } from '../utils';
 
-/**
- * Owns all VisitPage state: recorder, visit loading, vitals,
- * diagnoses/medicines lists and the save flow.
- */
 export function useVisitForm() {
   const navigate = useNavigate();
   const { id: patientId, visitId } = useParams<{ id: string; visitId: string }>();
-  const session = loadSession();
   const { status, isStarting, transcript, summary, timer, start, stop } = useAudioRecorder();
 
   const [subjective, setSubjective] = useState('');
   const [diagnosis, setDiagnosis] = useState('');
   const [plan, setPlan] = useState('');
   const [saving, setSaving] = useState(false);
-  const [isReadOnly, setIsReadOnly] = useState(false);
+  // Patients may only ever view a visit; recording and saving stay doctor-only.
+  const [isReadOnly] = useState(() => getEffectiveRole() !== Role.Doctor);
   const [visitDate, setVisitDate] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
 
   const [isLoadingVisit, setIsLoadingVisit] = useState(false);
+  const isSavingRef = useRef(false);
   const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null);
 
   // Vitals
@@ -58,29 +56,31 @@ export function useVisitForm() {
   const isRecording = status === 'recording';
   const isProcessing = status === 'processing';
 
-  // Pre-load options so the dropdowns are ready immediately.
+  // Pre-load catalog options for the editing dropdowns. These are doctor-only
+  // endpoints, so skip them in read-only (patient) mode to avoid 403s.
   useEffect(() => {
+    if (isReadOnly) return;
     getDiagnoses().then(res => setDiagnosisOptions(res.slice(0, 30))).catch(() => {});
     getMedicines().then(res => setMedicineOptions(res.slice(0, 30))).catch(() => {});
-  }, []);
+  }, [isReadOnly]);
 
   // Debounced diagnosis search.
   useEffect(() => {
-    if (!diagnosisSearch.trim()) return;
+    if (isReadOnly || !diagnosisSearch.trim()) return;
     const debounceTimer = window.setTimeout(() => {
       getDiagnoses(diagnosisSearch).then(res => setDiagnosisOptions(res.slice(0, 10))).catch(() => {});
     }, 250);
     return () => window.clearTimeout(debounceTimer);
-  }, [diagnosisSearch]);
+  }, [diagnosisSearch, isReadOnly]);
 
   // Debounced medicine search.
   useEffect(() => {
-    if (!medicineSearch.trim()) return;
+    if (isReadOnly || !medicineSearch.trim()) return;
     const debounceTimer = window.setTimeout(() => {
       getMedicines(medicineSearch).then(res => setMedicineOptions(res.slice(0, 10))).catch(() => {});
     }, 250);
     return () => window.clearTimeout(debounceTimer);
-  }, [medicineSearch]);
+  }, [medicineSearch, isReadOnly]);
 
   // Load existing visit when visitId is in the URL.
   useEffect(() => {
@@ -89,7 +89,6 @@ export function useVisitForm() {
     setIsLoadingVisit(true);
     getVisit(visitId).then(visitData => {
       if (!active) return;
-      setIsReadOnly(!!session?.patientId && !session?.caregiverId);
       setVisitDate(visitData.visitDate ? new Date(visitData.visitDate).toLocaleDateString() : null);
 
       const { subjective: patientComplaints, diagnosis: diagnosisText, recommendations } = parseSummaryText(visitData.summary?.summaryText ?? '');
@@ -163,43 +162,48 @@ export function useVisitForm() {
     setMedicinesList(prev => prev.filter((_, idx) => idx !== index));
 
   const handleSave = async () => {
-    if (saving) return;
+    // Guard against re-entrancy (fast double-clicks) and read-only callers.
+    if (isReadOnly || isSavingRef.current) return;
     if (!patientId) {
-      setToast({ severity: 'warning', message: 'פתח ביקור מפרופיל מטופל כדי לשמור.' });
-      return;
-    }
-    if (!session?.caregiverId) {
-      setToast({ severity: 'error', message: 'רק רופאים מחוברים יכולים לשמור ביקור.' });
-      return;
-    }
-    const hasAnyContent = subjective.trim() || diagnosis.trim() || plan.trim();
-    if (!hasAnyContent) {
-      setToast({ severity: 'warning', message: 'הוסף תלונה, אבחנה או המלצות לפני שמירה.' });
+      setToast({ severity: 'error', message: 'יש לבחור מטופל לפני שמירת ביקור.' });
       return;
     }
 
+    const vitalsAndMeta = {
+      bloodPressure: bloodPressure.trim() || undefined,
+      pulse: pulse.trim() || undefined,
+      bodyTemp: bodyTemp.trim() || undefined,
+      weight: weight.trim() || undefined,
+      height: height.trim() || undefined,
+      oxygenSat: oxygenSat.trim() || undefined,
+      visitType: visitType || undefined,
+      followUpDate: followUpDate || undefined,
+      referralNotes: referralNotes.trim() || undefined,
+    };
+
+    const summaryText = buildSummaryText(subjective, diagnosis, plan);
+
+    // Refuse to create an empty record: require at least a summary, some
+    // vitals/metadata, a diagnosis or a medicine.
+    const hasContent =
+      !!summaryText ||
+      Object.values(vitalsAndMeta).some(v => v !== undefined) ||
+      diagnosesList.length > 0 ||
+      medicinesList.length > 0;
+    if (!hasContent) {
+      setToast({ severity: 'error', message: 'לא ניתן לשמור ביקור ריק.' });
+      return;
+    }
+
+    isSavingRef.current = true;
     setSaving(true);
     try {
-      const vitalsAndMeta = {
-        bloodPressure: bloodPressure.trim() || undefined,
-        pulse: pulse.trim() || undefined,
-        bodyTemp: bodyTemp.trim() || undefined,
-        weight: weight.trim() || undefined,
-        height: height.trim() || undefined,
-        oxygenSat: oxygenSat.trim() || undefined,
-        visitType: visitType || undefined,
-        followUpDate: followUpDate || undefined,
-        referralNotes: referralNotes.trim() || undefined,
-      };
-
       const targetId = visitId ?? (await createVisit({
         patientId,
-        caregiverId: session.caregiverId,
         visitDate: new Date().toISOString(),
         ...vitalsAndMeta,
       })).id;
 
-      const summaryText = buildSummaryText(subjective, diagnosis, plan);
       if (summaryText) {
         await upsertVisitSummary(targetId, {
           summaryText,
@@ -226,6 +230,7 @@ export function useVisitForm() {
     } catch (err: any) {
       setToast({ severity: 'error', message: err?.message || 'שמירת ביקור נכשלה.' });
     } finally {
+      isSavingRef.current = false;
       setSaving(false);
     }
   };

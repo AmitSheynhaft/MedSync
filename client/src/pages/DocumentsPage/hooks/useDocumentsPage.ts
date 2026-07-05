@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { loadSession } from '../../../api/auth';
+import { loadUserDataSession } from '../../../auth/userDataSessionStore';
 import { getPatientById, Patient } from '../../../api/patients';
 import { uploadDocument } from '../../../api/documents';
 import { getMedicalDocuments, MedicalDocument, DocumentTypeEnum } from '../../../api/medical-documents';
@@ -12,9 +12,9 @@ import { TFilterKey, DOC_TYPE_LABELS } from '../utils';
 export function useDocumentsPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const session = loadSession();
+  const userDataSession = loadUserDataSession();
   const isDoctorView = !!id;
-  const patientId = id ?? session?.patientId;
+  const patientId = id ?? userDataSession?.patientId;
 
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<TFilterKey>('all');
@@ -68,7 +68,7 @@ export function useDocumentsPage() {
     setUploading(true);
     setUploadError(null);
     try {
-      await uploadDocument(file, patientId, session?.userId, documentType);
+      await uploadDocument(file, patientId, documentType);
       setRefreshKey(key => key + 1);
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'העלאת המסמך נכשלה.');

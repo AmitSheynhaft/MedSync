@@ -26,24 +26,29 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        px: 4,
-        height: 68,
+        gap: 1.5,
+        px: { xs: 2, sm: 4 },
+        minHeight: 68,
         borderBottom: "1px solid #e9ecef",
         bgcolor: "#fff",
         flexShrink: 0,
       }}
     >
-      <Box>
-        <Typography variant="h6" sx={{ fontWeight: 700, color: "#1a1a2e" }}>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography
+          variant="h6"
+          noWrap
+          sx={{ fontWeight: 700, color: "#1a1a2e", fontSize: { xs: 16, sm: 20 } }}
+        >
           {getGreeting()}, {firstName} 👋
         </Typography>
-        <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+        <Typography sx={{ fontSize: 13, color: "text.secondary" }} noWrap>
           זהו סיכום הבריאות שלך.
         </Typography>
       </Box>
 
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-        <Box sx={{ textAlign: "right" }}>
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", flexShrink: 0 }}>
+        <Box sx={{ textAlign: "right", display: { xs: "none", sm: "block" } }}>
           <Typography sx={{ fontSize: 14, fontWeight: 600, color: "#1a1a2e" }}>
             {userName}
           </Typography>

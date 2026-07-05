@@ -1,23 +1,33 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Box, Tooltip, IconButton } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PersonIcon from '@mui/icons-material/Person';
 import PeopleIcon from '@mui/icons-material/People';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutlineRounded';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { clearSession, loadSession } from '../api/auth';
-
-const NAV_ITEM_SX = {
-  width: 40, height: 40, borderRadius: '10px', color: '#adb5bd',
-  '&:hover': { background: '#f1f3f5', color: '#495057' },
-  '&.active': { background: '#eef2ff', color: '#3b5bdb' },
-};
+import { getEffectiveRole } from '../auth/viewAs';
+import { logout } from '../api/authApi';
+import { useCurrentUser } from '../atoms/useCurrentUser';
+import SystemInfoModal from '../components/SystemInfoModal/SystemInfoModal';
+import { consumeWelcomePending } from '../components/SystemInfoModal/welcomeFlag';
+import {
+  asideSx,
+  logoSx,
+  logoutButtonSx,
+  utilityGroupSx,
+  mainSx,
+  navGroupSx,
+  navItemSx,
+  rootSx,
+} from './AppLayout.styles';
 
 const NavItem: React.FC<{ to: string; title: string; icon: React.ReactNode }> = ({ to, title, icon }) => {
   return (
     <Tooltip title={title} placement="left">
-      <IconButton component={NavLink} to={to} sx={NAV_ITEM_SX}>
+      <IconButton component={NavLink} to={to} sx={navItemSx}>
         {icon}
       </IconButton>
     </Tooltip>
@@ -26,31 +36,30 @@ const NavItem: React.FC<{ to: string; title: string; icon: React.ReactNode }> = 
 
 export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
-  const isDoctor = loadSession()?.role === 'doctor';
+  useCurrentUser();
+  const role = getEffectiveRole();
+  const isDoctor = role === 'doctor';
+  const [showWelcomeSystemInfo, setShowWelcomeSystemInfo] = React.useState(consumeWelcomePending);
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      <Outlet />
-      <Box
-        component="aside"
-        sx={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          width: 64, borderLeft: '1px solid #e9ecef', py: 2, flexShrink: 0, bgcolor: '#fff',
-        }}
-      >
-        <Box
-          sx={{
-            width: 38, height: 38, bgcolor: 'primary.main', borderRadius: '10px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 800, fontSize: 18, mb: 2,
-          }}
-        >
+    <Box sx={rootSx}>
+      {showWelcomeSystemInfo && (
+        <SystemInfoModal role={role ?? undefined} onClose={() => setShowWelcomeSystemInfo(false)} />
+      )}
+      <Box component="main" sx={mainSx}>
+        <Outlet />
+      </Box>
+      <Box component="aside" sx={asideSx}>
+        <Box sx={logoSx}>
           M
         </Box>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, flex: 1 }}>
+        <Box sx={navGroupSx}>
           {isDoctor ? (
-            <NavItem to="/patients" title="מטופלים" icon={<PeopleIcon fontSize="small" />} />
+            <>
+              <NavItem to="/patients" title="מטופלים" icon={<PeopleIcon fontSize="small" />} />
+              <NavItem to="/profile"  title="פרופיל"  icon={<PersonIcon fontSize="small" />} />
+            </>
           ) : (
             <>
               <NavItem to="/dashboard" title="בית"      icon={<HomeIcon        fontSize="small" />} />
@@ -60,14 +69,21 @@ export const AppLayout: React.FC = () => {
           )}
         </Box>
 
-        <Tooltip title="התנתק" placement="left">
-          <IconButton
-            onClick={() => { clearSession(); navigate('/login'); }}
-            sx={{ width: 40, height: 40, borderRadius: '10px', color: '#adb5bd', '&:hover': { background: '#f1f3f5', color: '#495057' } }}
-          >
-            <LogoutIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <Box sx={utilityGroupSx}>
+          <Tooltip title="מדריך המערכת" placement="left">
+            <IconButton onClick={() => setShowWelcomeSystemInfo(true)} sx={navItemSx}>
+              <HelpOutlineIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="התנתק" placement="left">
+            <IconButton
+              onClick={() => { logout().finally(() => navigate('/login')); }}
+              sx={[logoutButtonSx, { display: { xs: isDoctor ? 'inline-flex' : 'none', md: 'inline-flex' } }] as SxProps<Theme>}
+            >
+              <LogoutIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
     </Box>
   );

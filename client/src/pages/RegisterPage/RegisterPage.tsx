@@ -8,36 +8,40 @@ import { RegisterForm } from "./components/RegisterForm";
 export const RegisterPage: React.FC = () => {
   const { role } = useParams<{ role: string }>();
   const config = resolveRegisterRole(role);
-  const isTherapist = role === "therapist";
-  const form = useRegisterForm(isTherapist);
+  const isDoctor = role === "doctor";
+  const form = useRegisterForm(isDoctor);
 
   return (
-    <Box sx={{ width: "100%", maxWidth: 420, p: 4, direction: "rtl", textAlign: "right" }}>
-      <Chip
-        icon={config.icon}
-        label={config.label}
-        size="small"
-        sx={{
-          mb: 3,
-          fontWeight: 600,
-          bgcolor: `${config.color}14`,
-          color: config.color,
-          border: `1px solid ${config.color}30`,
-          "& .MuiChip-icon": { color: config.color },
-        }}
-      />
+    <Box sx={{ width: "100%", maxWidth: 420, p: { xs: 1, sm: 4 } }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 3 }}>
+        <Chip
+          icon={config.icon}
+          label={config.label}
+          size="small"
+          sx={{
+            fontWeight: 600,
+            bgcolor: `${config.color}14`,
+            color: config.color,
+            border: `1px solid ${config.color}30`,
+            "& .MuiChip-icon": { color: config.color },
+          }}
+        />
+      </Box>
 
-      <Typography variant="h5" sx={{ fontWeight: 700, color: "#1a1a2e", mb: 0.5 }}>
+      <Typography
+        variant="h5"
+        sx={{ fontWeight: 700, color: "#1a1a2e", mb: 0.5, width: "100%" }}
+      >
         {config.heading}
       </Typography>
-      <Typography sx={{ fontSize: 14, color: "text.secondary", mb: 2.5 }}>
+      <Typography sx={{ fontSize: 14, color: "text.secondary", mb: 2.5, width: "100%" }}>
         {config.subtitle}
       </Typography>
 
       <Stepper
         activeStep={form.step}
         alternativeLabel
-        dir="ltr"
+        dir="rtl"
         sx={{
           mb: 3,
           "& .MuiStepIcon-root.Mui-active": { color: config.color },
@@ -55,7 +59,7 @@ export const RegisterPage: React.FC = () => {
 
       {form.error && <Alert severity="error" sx={{ mb: 2 }}>{form.error}</Alert>}
 
-      <RegisterForm form={form} isTherapist={isTherapist} color={config.color} />
+      <RegisterForm form={form} isDoctor={isDoctor} color={config.color} />
 
       <Typography sx={{ textAlign: "center", mt: 2, fontSize: 14, color: "text.secondary" }}>
         כבר יש לך חשבון?{" "}

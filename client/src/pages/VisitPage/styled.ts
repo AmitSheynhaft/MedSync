@@ -3,21 +3,31 @@ import { styled } from '@mui/material/styles';
 
 export const PageRoot = styled(Box)({
   display: 'flex', flexDirection: 'column', flex: 1,
-  overflow: 'hidden', background: '#f8f9fa', direction: 'rtl',
+  overflow: 'hidden', background: '#f6f8fb',
 });
 
 export const PatientInfoBarRoot = styled(Box)({
   display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-  padding: '8px 28px', background: '#f8f9fa',
-  borderBottom: '1px solid #e9ecef', flexShrink: 0,
+  padding: '8px 24px', background: '#f1f6ff',
+  borderBottom: '1px solid #dde6f4', flexShrink: 0,
 });
 
 export const FormColumn = styled(Box)({
-  display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto', padding: 24, gap: 16,
+  display: 'flex',
+  flexDirection: 'column',
+  flex: 1,
+  overflowY: 'visible',
+  padding: 14,
+  gap: 12,
+  '@media (min-width:900px)': {
+    overflowY: 'auto',
+    padding: 20,
+    gap: 14,
+  },
 });
 
 export const FormCard = styled(Paper)({
-  borderRadius: 14, padding: 20, display: 'flex', flexDirection: 'column',
+  borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column',
   gap: 14, position: 'relative', overflow: 'visible',
-  border: '1px solid #e9ecef', boxShadow: 'none',
+  border: '1px solid #dde4ee', boxShadow: '0 1px 2px rgba(15,23,42,0.03)',
 });

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -15,6 +16,8 @@ import { SlotsModule } from './slots/slots.module';
 import { DiagnosesModule } from './diagnoses/diagnoses.module';
 import { MedicinesModule } from './medicines/medicines.module';
 import { MedicalDocumentsModule } from './medical-documents/medical-documents.module';
+import { AuthGuard } from './common/guards/auth.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 import { PatientMedicalSummaryModule } from './patient-medical-summary/patient-medical-summary.module';
 import { ClinicalAlertsModule } from './clinical-alerts/clinical-alerts.module';
 
@@ -50,6 +53,10 @@ import { ClinicalAlertsModule } from './clinical-alerts/clinical-alerts.module';
     ClinicalAlertsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+  ],
 })
 export class AppModule {}

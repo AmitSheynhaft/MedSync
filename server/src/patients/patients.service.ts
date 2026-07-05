@@ -3,7 +3,9 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
+import { ROLE_DOCTOR } from '../common/constants/roles';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, ILike, Repository } from 'typeorm';
 import { Patient as PatientEntity } from '../entities/patient/patientEntity';
@@ -165,7 +167,19 @@ export class PatientsService {
     return list.map((p) => this.toSummary(p));
   }
 
-  async findOne(id: string): Promise<Patient> {
+  /**
+   * Ensures the acting user is allowed to touch this patient record.
+   * Doctors may access any patient; a patient may only access their own.
+   */
+  private assertCanAccess(patientId: string, actingUser?: any): void {
+    if (!actingUser) return; // no user context (internal call) — skip
+    if (actingUser.role?.name === ROLE_DOCTOR) return;
+    if (actingUser.patient?.id === patientId) return;
+    throw new ForbiddenException('You are not allowed to access this patient record');
+  }
+
+  async findOne(id: string, actingUser?: any): Promise<Patient> {
+    this.assertCanAccess(id, actingUser);
     const patient = await this.patients.findOne({
       where: { id },
       relations: ['user'],
@@ -211,7 +225,8 @@ export class PatientsService {
     return this.findOne(newId);
   }
 
-  async update(id: string, input: UpdatePatientInput): Promise<Patient> {
+  async update(id: string, input: UpdatePatientInput, actingUser?: any): Promise<Patient> {
+    this.assertCanAccess(id, actingUser);
     const patient = await this.patients.findOne({
       where: { id },
       relations: ['user'],

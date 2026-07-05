@@ -147,9 +147,7 @@ export const DocumentSummaryModal: React.FC<IDocumentSummaryModalProps> = ({
           </Typography>
         )}
         {!loading && !error && (
-          <Box sx={{ direction: "rtl" }}>
-            <MedicalSummary text={summaryText ?? ""} />
-          </Box>
+          <MedicalSummary text={summaryText ?? ""} />
         )}
       </DialogContent>
     </Dialog>

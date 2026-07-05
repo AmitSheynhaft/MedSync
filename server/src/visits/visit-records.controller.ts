@@ -2,8 +2,10 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -19,6 +21,10 @@ import {
   VisitRecordsService,
   VisitSummaryInput,
 } from './visit-records.service';
+import { Roles } from '../common/decorators/roles.decorator';
+import { User } from '../common/decorators/user.decorator';
+import { IUser } from '../entities';
+import { ROLE_DOCTOR, ROLE_PATIENT } from '../common/constants/roles';
 
 @Controller('api/visits-records')
 export class VisitRecordsController {
@@ -26,22 +32,49 @@ export class VisitRecordsController {
 
   @Get()
   findAll(
+    @User() user: IUser,
     @Query('patientId') patientId?: string,
     @Query('caregiverId') caregiverId?: string,
   ) {
+    // Patients may only ever read their own visit records; ignore any
+    // client-supplied filters that could target another patient's data.
+    if (user?.role?.name === ROLE_PATIENT) {
+      const ownPatientId = user.patient?.id;
+      if (!ownPatientId) {
+        throw new ForbiddenException('No patient profile for this user');
+      }
+      return this.service.findAll(ownPatientId, undefined);
+    }
     return this.service.findAll(patientId, caregiverId);
   }
 
   @Get(':id')
-  findOne(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.service.findOne(id);
+  async findOne(
+    @User() user: IUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    const visit = await this.service.findOne(id);
+    // Patients may only read a visit that belongs to them.
+    if (
+      user?.role?.name === ROLE_PATIENT &&
+      visit.patientId !== user.patient?.id
+    ) {
+      throw new NotFoundException('Visit not found');
+    }
+    return visit;
   }
 
+  @Roles(ROLE_DOCTOR)
   @Post()
-  create(@Body() body: VisitInput) {
-    return this.service.create(body);
+  create(@User() user: IUser, @Body() body: VisitInput) {
+    const caregiverId = user?.caregiver?.id;
+    if (!caregiverId) {
+      throw new ForbiddenException('No caregiver profile for this user');
+    }
+    return this.service.create({ ...body, caregiverId });
   }
 
+  @Roles(ROLE_DOCTOR)
   @Patch(':id')
   update(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -50,12 +83,14 @@ export class VisitRecordsController {
     return this.service.update(id, body);
   }
 
+  @Roles(ROLE_DOCTOR)
   @Delete(':id')
   @HttpCode(204)
   remove(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.service.remove(id);
   }
 
+  @Roles(ROLE_DOCTOR)
   @Put(':id/recording')
   upsertRecording(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -64,6 +99,7 @@ export class VisitRecordsController {
     return this.service.upsertRecording(id, body);
   }
 
+  @Roles(ROLE_DOCTOR)
   @Put(':id/summary')
   upsertSummary(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -72,6 +108,7 @@ export class VisitRecordsController {
     return this.service.upsertSummary(id, body);
   }
 
+  @Roles(ROLE_DOCTOR)
   @Post(':id/diagnoses')
   addDiagnosis(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -80,6 +117,7 @@ export class VisitRecordsController {
     return this.service.addDiagnosis(id, body);
   }
 
+  @Roles(ROLE_DOCTOR)
   @Delete(':id/diagnoses/:diagnosisId')
   @HttpCode(204)
   removeDiagnosis(
@@ -89,6 +127,7 @@ export class VisitRecordsController {
     return this.service.removeDiagnosis(id, diagnosisId);
   }
 
+  @Roles(ROLE_DOCTOR)
   @Post(':id/medicines')
   addMedicine(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -97,6 +136,7 @@ export class VisitRecordsController {
     return this.service.addMedicine(id, body);
   }
 
+  @Roles(ROLE_DOCTOR)
   @Delete(':id/medicines/:medicineId')
   @HttpCode(204)
   removeMedicine(

@@ -10,7 +10,10 @@ import {
   Post,
 } from '@nestjs/common';
 import { CaregiverInput, CaregiversService } from './caregivers.service';
+import { Roles } from '../common/decorators/roles.decorator';
+import { ROLE_DOCTOR } from '../common/constants/roles';
 
+@Roles(ROLE_DOCTOR)
 @Controller('api/caregivers')
 export class CaregiversController {
   constructor(private readonly service: CaregiversService) {}

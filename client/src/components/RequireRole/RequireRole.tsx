@@ -1,6 +1,11 @@
-import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { loadSession, RoleName } from '../../api/auth';
+import React, { useEffect, useState } from 'react';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { verifySession, RoleMismatchError } from '../../auth/verifySession';
+import { clearUserDataSession } from '../../auth/userDataSessionStore';
+import { getEffectiveRole, homeForRole, isRoleViewTampered } from '../../auth/viewAs';
+import type { RoleName } from '../../auth/types';
+import { useCurrentUser } from '../../atoms/useCurrentUser';
+import { RoleMismatchDialog } from '../RoleMismatchDialog/RoleMismatchDialog';
 
 export interface IRequireRoleProps {
   allow?: RoleName[];
@@ -8,20 +13,52 @@ export interface IRequireRoleProps {
 
 export const RequireRole: React.FC<IRequireRoleProps> = ({ allow }) => {
   const location = useLocation();
-  const session = loadSession();
+  const navigate = useNavigate();
+  const currentUser = useCurrentUser();
+  // Gate rendering only on the first verification; later navigations re-verify
+  // in the background so the page subtree isn't unmounted and refetched.
+  const [hasVerifiedOnce, setHasVerifiedOnce] = useState(false);
+  const [isRoleTampered, setIsRoleTampered] = useState(false);
 
-  if (!session) {
+  useEffect(() => {
+    let active = true;
+    verifySession()
+      .then(() => {
+        if (active) setHasVerifiedOnce(true);
+      })
+      .catch(error => {
+        if (!active) return;
+        if (error instanceof RoleMismatchError) {
+          setIsRoleTampered(true);
+        }
+        setHasVerifiedOnce(true);
+      });
+    return () => { active = false; };
+  }, [location.pathname]);
+
+  const handleConfirmRelogin = () => {
+    clearUserDataSession();
+    setIsRoleTampered(false);
+    navigate('/login', { replace: true });
+  };
+
+  if (isRoleTampered || isRoleViewTampered()) {
+    return <RoleMismatchDialog open onConfirm={handleConfirmRelogin} />;
+  }
+
+  if (!hasVerifiedOnce) return null;
+
+  if (!currentUser) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  if (allow && !allow.includes(session.role)) {
-    return <Navigate to={homeForRole(session.role)} replace />;
+  const effectiveRole = getEffectiveRole() ?? currentUser.role;
+
+  if (allow && !allow.includes(effectiveRole)) {
+    return <Navigate to={homeForRole(effectiveRole)} replace />;
   }
 
   return <Outlet />;
 };
-
-export const homeForRole = (role: RoleName): string =>
-  role === 'doctor' ? '/patients' : '/dashboard';
 
 export default RequireRole;

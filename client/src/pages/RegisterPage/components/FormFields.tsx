@@ -6,11 +6,11 @@ import type { TFieldConfig } from '../types';
 export interface IFormFieldsProps {
   fields: TFieldConfig[];
   form: RegisterFormState;
-  isTherapist: boolean;
+  isDoctor: boolean;
 }
 
-export const FormFields: React.FC<IFormFieldsProps> = ({ fields, form, isTherapist }) => {
-  const roleKey = isTherapist ? 'therapist' : 'patient';
+export const FormFields: React.FC<IFormFieldsProps> = ({ fields, form, isDoctor }) => {
+  const roleKey = isDoctor ? 'doctor' : 'patient';
   const visibleFields = fields.filter(f => !f.showFor || f.showFor === roleKey);
 
   return (
@@ -20,7 +20,7 @@ export const FormFields: React.FC<IFormFieldsProps> = ({ fields, form, isTherapi
           key={key}
           required={required}
           type={type}
-          placeholder={typeof placeholder === 'function' ? placeholder(isTherapist) : placeholder}
+          placeholder={typeof placeholder === 'function' ? placeholder(isDoctor) : placeholder}
           label={label}
           autoComplete={autoComplete}
           select={select}
