@@ -26,35 +26,35 @@ import {
   CreateManualAlertDto,
 } from './clinical-alerts.types';
 
-const EXTRACTION_PROMPT = `אתה עוזר רפואי שמזהה אלמנטים קליניים קריטיים בלבד.
-על סמך הנתונים הבאים, החזר רשימת התראות שהרופא חייב לדעת לפני טיפול במטופל.
+const EXTRACTION_PROMPT = `You are a medical assistant that identifies only critical, permanent clinical elements a doctor must know before treating a patient.
+Based on the patient data below, return a list of clinical alerts.
 
-קטגוריות מותרות (אסור להמציא אחרות):
-- "ALLERGY" — אלרגיה משמעותית (תרופתית, מזון, חומרים).
-- "LIFE_THREATENING" — סכנת חיים אקטיבית או מצב חמור לא מאוזן (אנפילקסיס, אי-ספיקת לב חמורה, מחלה ממארת פעילה, נטילת מדללי דם וכד׳).
-- "CHRONIC" — מחלה כרונית קבועה שמשפיעה על טיפול (סוכרת, יתר ל"ד, COPD, אסתמה, מחלת כליה כרונית וכד׳).
+Allowed categories (do not invent others):
+- "ALLERGY" — A significant allergy (medication, food, substances).
+- "LIFE_THREATENING" — An active life-threatening condition or a severe uncontrolled state (e.g. anaphylaxis, severe heart failure, active malignancy, anticoagulant use).
+- "CHRONIC" — A permanent chronic disease that affects treatment (e.g. diabetes, hypertension, COPD, asthma, chronic kidney disease).
 
-רמות חומרה:
-- "HIGH" — סכנה מיידית או אנפילקסיס.
-- "MEDIUM" — מחלה כרונית משמעותית או מצב לא מאוזן.
-- "LOW" — מצב מאוזן/קל.
+Severity levels:
+- "HIGH" — Immediate danger or anaphylaxis risk.
+- "MEDIUM" — Significant chronic condition or uncontrolled state.
+- "LOW" — Controlled or mild condition.
 
-חוקים חמורים לפלט:
-1. החזר JSON תקין בלבד, ללא טקסט נלווה, ללא code fences, ללא \`\`\`.
-2. שדה "label" עד 6 מילים בעברית, ללא משפט, ללא פעולות, ללא המלצות, ללא מינונים, ללא תאריכים. רק שם המצב/האלרגיה.
-3. אסור לכלול מידע דמוגרפי (שם, גיל, מין, כתובת, קופ"ח).
-4. אסור לכלול ממצאים זמניים (חום, כאב גרון, צינון).
-5. אם אין מידע משמעותי בקטגוריה — אל תחזיר פריט בקטגוריה הזו.
-6. אסור פריטים כפולים.
+Strict output rules:
+1. Return valid JSON only — no extra text, no code fences, no \`\`\`.
+2. The "label" field must be at most 6 words in Hebrew, no sentences, no actions, no recommendations, no dosages, no dates. Only the name of the condition or allergy.
+3. Do not include demographic information (name, age, gender, address, HMO).
+4. Only include conditions that are confirmed, established, and part of the patient's known medical background. Do not include anything acute, temporary, suspected, unconfirmed, or one-time — regardless of how serious it sounds.
+5. If there is no meaningful information in a category — do not return an item for that category.
+6. No duplicate items.
 
-מבנה התשובה — מערך של אובייקטים בלבד:
+Response structure — an array of objects only:
 [
   { "category": "ALLERGY" | "LIFE_THREATENING" | "CHRONIC", "severity": "HIGH" | "MEDIUM" | "LOW", "label": "..." }
 ]
 
-אם אין שום התראה — החזר [] בלבד.
+If there are no alerts at all — return [] only.
 
-נתוני המטופל:
+Patient data:
 `;
 
 interface ExtractedAlert {
