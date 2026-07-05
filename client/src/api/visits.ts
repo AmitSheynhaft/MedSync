@@ -127,10 +127,6 @@ export function transcribeAudio(audioBlob: Blob): Promise<{ transcript: string; 
   });
 }
 
-export function summarizeText(text: string): Promise<{ summary: VisitSummaryObject }> {
-  return apiPost<{ summary: VisitSummaryObject }>('/api/visits/summarize', { text });
-}
-
 // ── CRUD endpoints ────────────────────────────────
 export const getVisits = (params: { patientId?: string; caregiverId?: string } = {}) => {
   const qs = new URLSearchParams();
