@@ -22,6 +22,8 @@ export const VisitFormCard: React.FC<IVisitFormCardProps> = ({ form }) => (
     <FormCardHeader
       isReadOnly={form.isReadOnly}
       isProcessing={form.isProcessing}
+      isStarting={form.isStarting}
+      isRecording={form.isRecording}
       onRecord={form.handleRecord}
     />
 

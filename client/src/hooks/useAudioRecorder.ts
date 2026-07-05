@@ -5,6 +5,7 @@ type Status = 'idle' | 'recording' | 'processing' | 'done';
 
 export function useAudioRecorder() {
   const [status, setStatus] = useState<Status>('idle');
+  const [isStarting, setIsStarting] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [summary, setSummary] = useState<VisitSummaryObject | null>(null);
   const [timer, setTimer] = useState(0);
@@ -12,20 +13,29 @@ export function useAudioRecorder() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startLockRef = useRef(false);
 
   const start = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mediaRecorder = new MediaRecorder(stream);
-    mediaRecorderRef.current = mediaRecorder;
-    chunksRef.current = [];
+    if (startLockRef.current || isStarting || status === 'recording' || status === 'processing') return;
+    startLockRef.current = true;
+    setIsStarting(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
 
-    mediaRecorder.ondataavailable = (e) => chunksRef.current.push(e.data);
-    mediaRecorder.onstop = handleStop;
-    mediaRecorder.start();
+      mediaRecorder.ondataavailable = (e) => chunksRef.current.push(e.data);
+      mediaRecorder.onstop = handleStop;
+      mediaRecorder.start();
 
-    setStatus('recording');
-    setTimer(0);
-    timerRef.current = setInterval(() => setTimer((t) => t + 1), 1000);
+      setStatus('recording');
+      setTimer(0);
+      timerRef.current = setInterval(() => setTimer((t) => t + 1), 1000);
+    } finally {
+      setIsStarting(false);
+      startLockRef.current = false;
+    }
   };
 
   const stop = () => {
@@ -59,5 +69,5 @@ export function useAudioRecorder() {
     setStatus('done');
   };
 
-  return { status, transcript, summary, timer, start, stop, cancel };
+  return { status, isStarting, transcript, summary, timer, start, stop, cancel };
 }
