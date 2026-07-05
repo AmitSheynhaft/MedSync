@@ -65,6 +65,7 @@ export const PERSONAL_FIELDS: TFieldConfig[] = [
     key: 'clinicId',
     label: 'מרפאה',
     select: true,
+    required: true,
     options: f => [
       { value: '', label: 'בחר מרפאה' },
       ...f.clinics.map(c => ({ value: c.id, label: c.name })),

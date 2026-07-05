@@ -23,7 +23,7 @@ export const roleConfig: Record<'patient' | 'doctor', RegisterRoleConfig> = {
     icon: <LocalHospitalIcon sx={{ fontSize: 16 }} />,
     color: '#7048e8',
     heading: 'יצירת חשבון רופא',
-    subtitle: 'הגדר את הפרקטיקה שלך ונהל מטופלים.',
+    subtitle: 'נהל מטופלים, ביקורים ותיעוד רפואי במקום אחד.',
   },
 };
 

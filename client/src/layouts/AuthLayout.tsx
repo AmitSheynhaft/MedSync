@@ -21,7 +21,7 @@ const themes = {
     gradient: "linear-gradient(135deg, #5f3dc4 0%, #7048e8 50%, #9775fa 100%)",
     title: "ניהול חכם. טיפול טוב יותר.",
     subtitle:
-      "נהל מטופלים, תעד ביקורים בסיוע בינה מלאכותית, והתמקד במה שחשוב — הטיפול.",
+      "נהל מטופלים, תעד ביקורים בסיוע בינה מלאכותית, והתמקד במה שחשוב  - הטיפול.",
     badge: {
       icon: <MedicalServicesIcon />,
       title: "מותאם לרופאים ומטפלים",
@@ -151,6 +151,7 @@ export const AuthLayout: React.FC = () => {
           justifyContent: "center",
           bgcolor: "#fff",
           p: { xs: 2, sm: 4 },
+          overflowY: "auto",
         }}
       >
         <Outlet />

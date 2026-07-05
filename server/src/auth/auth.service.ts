@@ -122,7 +122,8 @@ export class AuthService {
     );
 
     const clinicId = input.clinicId?.trim() || undefined;
-    if (clinicId) await this.assertClinicExists(clinicId);
+    if (!clinicId) throw new BadRequestException('יש לבחור מרפאה');
+    await this.assertClinicExists(clinicId);
 
     return this.dataSource.transaction(async (manager) => {
       const user = manager.getRepository(User).create({
@@ -185,7 +186,8 @@ export class AuthService {
     );
 
     const clinicId = input.clinicId?.trim() || undefined;
-    if (clinicId) await this.assertClinicExists(clinicId);
+    if (!clinicId) throw new BadRequestException('יש לבחור מרפאה');
+    await this.assertClinicExists(clinicId);
 
     return this.dataSource.transaction(async (manager) => {
       const user = manager.getRepository(User).create({

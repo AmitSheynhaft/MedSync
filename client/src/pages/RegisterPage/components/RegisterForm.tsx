@@ -13,7 +13,7 @@ interface IRegisterFormProps {
 }
 
 export const RegisterForm: React.FC<IRegisterFormProps> = ({ form, isDoctor, color }) => (
-  <Box component="form" onSubmit={form.handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+  <Box component="form" onSubmit={form.handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
     {form.step === 0 ? (
       <AccountStep form={form} isDoctor={isDoctor} color={color} />
     ) : (

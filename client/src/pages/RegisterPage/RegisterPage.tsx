@@ -12,8 +12,8 @@ export const RegisterPage: React.FC = () => {
   const form = useRegisterForm(isDoctor);
 
   return (
-    <Box sx={{ width: "100%", maxWidth: 420, p: { xs: 1, sm: 4 } }}>
-      <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 3 }}>
+    <Box sx={{ width: "100%", maxWidth: 420, p: { xs: 1, sm: 3 } }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 1.5 }}>
         <Chip
           icon={config.icon}
           label={config.label}
@@ -34,7 +34,7 @@ export const RegisterPage: React.FC = () => {
       >
         {config.heading}
       </Typography>
-      <Typography sx={{ fontSize: 14, color: "text.secondary", mb: 2.5, width: "100%" }}>
+      <Typography sx={{ fontSize: 14, color: "text.secondary", mb: 1.5, width: "100%" }}>
         {config.subtitle}
       </Typography>
 
@@ -43,7 +43,7 @@ export const RegisterPage: React.FC = () => {
         alternativeLabel
         dir="rtl"
         sx={{
-          mb: 3,
+          mb: 2,
           "& .MuiStepIcon-root.Mui-active": { color: config.color },
           "& .MuiStepIcon-root.Mui-completed": { color: config.color },
           "& .MuiStepLabel-label": { fontSize: 13, mt: 0.5 },
@@ -61,7 +61,7 @@ export const RegisterPage: React.FC = () => {
 
       <RegisterForm form={form} isDoctor={isDoctor} color={config.color} />
 
-      <Typography sx={{ textAlign: "center", mt: 2, fontSize: 14, color: "text.secondary" }}>
+      <Typography sx={{ textAlign: "center", mt: 1.5, fontSize: 14, color: "text.secondary" }}>
         כבר יש לך חשבון?{" "}
         <Typography component={Link} to={`/login/${role}`}
           sx={{ color: config.color, fontWeight: 600, textDecoration: "none", "&:hover": { textDecoration: "underline" } }}>
@@ -69,7 +69,7 @@ export const RegisterPage: React.FC = () => {
         </Typography>
       </Typography>
 
-      <Typography sx={{ textAlign: "center", mt: 1.5, fontSize: 13, color: "text.secondary" }}>
+      <Typography sx={{ textAlign: "center", mt: 1, fontSize: 13, color: "text.secondary" }}>
         <Typography component={Link} to="/register"
           sx={{ color: "text.secondary", textDecoration: "none", "&:hover": { textDecoration: "underline" } }}>
           ← החלף תפקיד

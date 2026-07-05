@@ -114,7 +114,7 @@ export const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
       </Typography>
       {documents.length === 0 ? (
         <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
-          אין מסמכים עדיין. העלה מסמך להתחיל.
+          אין מסמכים עדיין.
         </Typography>
       ) : (
         <Stack spacing={1}>

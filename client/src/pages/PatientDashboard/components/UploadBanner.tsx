@@ -42,7 +42,7 @@ export const UploadBanner: React.FC<UploadBannerProps> = ({
             maxWidth: 320,
           }}
         >
-          העלה תוצאות בדיקות או הפניות לפני ביקור הבא.
+          העלה תוצאות בדיקות או סיכומי ביקור לפני ביקור הבא.
         </Typography>
         <Button
           variant="contained"

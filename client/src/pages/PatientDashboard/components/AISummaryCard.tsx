@@ -7,7 +7,7 @@ interface AISummaryCardProps {
 }
 
 const PLACEHOLDER =
-  "סיכום בריאות המופק בבינה מלאכותית יופיע כאן עם צבירת מספיק של נתונים.";
+  "סיכום בריאות המופק בבינה מלאכותית יופיע כאן עם צבירת מספיק נתונים.";
 
 export const AISummaryCard: React.FC<AISummaryCardProps> = ({ overview }) => {
   return (

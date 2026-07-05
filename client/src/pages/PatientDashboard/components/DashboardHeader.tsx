@@ -43,7 +43,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           {getGreeting()}, {firstName} 👋
         </Typography>
         <Typography sx={{ fontSize: 13, color: "text.secondary" }} noWrap>
-          זהו סיכום הבריאות שלך.
+          כל המידע הרפואי שלך במקום אחד.
         </Typography>
       </Box>
 

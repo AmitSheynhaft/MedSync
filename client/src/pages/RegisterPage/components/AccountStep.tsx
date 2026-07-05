@@ -19,7 +19,7 @@ export const AccountStep: React.FC<IAccountStepProps> = ({ form, isDoctor, color
       size="large"
       fullWidth
       onClick={form.handleNext}
-      sx={{ mt: 0.5, py: 1.4, fontSize: 16, bgcolor: color, '&:hover': { bgcolor: color, filter: 'brightness(0.9)' } }}
+      sx={{ mt: 0.5, py: 1, fontSize: 15, bgcolor: color, '&:hover': { bgcolor: color, filter: 'brightness(0.9)' } }}
     >
       המשך
     </Button>

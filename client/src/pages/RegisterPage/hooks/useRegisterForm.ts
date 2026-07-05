@@ -66,6 +66,10 @@ export function useRegisterForm(isDoctor: boolean) {
       setError('כתובת היא שדה חובה');
       return;
     }
+    if (!clinicId) {
+      setError('יש לבחור מרפאה');
+      return;
+    }
     setSubmitting(true);
     try {
       const result = isDoctor
