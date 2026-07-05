@@ -7,7 +7,7 @@ const theme = createTheme({
     background: { default: '#f8f9fa' },
   },
   typography: {
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontFamily: "'Heebo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   },
   shape: { borderRadius: 12 },
   components: {

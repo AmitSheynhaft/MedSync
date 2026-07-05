@@ -52,7 +52,7 @@ const VisitPage: React.FC = () => {
                 }}>
                 {isRecording ? `עצור הקלטה  ${formatRecordingTime(timer)}` : 'הקלט שמע לביקור'}
               </Button>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <Button variant="contained" size="large" onClick={handleSave} disabled={saving}
                   sx={{ borderRadius: '12px', px: 4.5, py: 1.5, fontSize: 15, fontWeight: 700, letterSpacing: '0.02em', background: '#3b5bdb', '&:hover': { background: '#3451c7' } }}>
                   {saving ? 'שומר…' : 'שמור ואשר'}
