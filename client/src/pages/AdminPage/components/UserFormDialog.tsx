@@ -29,7 +29,7 @@ const GENDER_OPTIONS = [
 ];
 
 const ROLE_LABELS: Record<string, string> = {
-  admin: 'אדמין', doctor: 'רופא', patient: 'מטופל',
+  admin: 'אדמין', doctor: 'רופא', patient: 'מטופל', secretary: 'מזכירה',
 };
 
 /* ── Validators ──────────────────────────────────────────── */
