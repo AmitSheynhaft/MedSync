@@ -23,11 +23,14 @@ interface Props {
   onDelete: (id: string) => Promise<void>;
 }
 
-const ROLE_COLORS: Record<string, 'error' | 'primary' | 'success' | 'default'> = {
-  admin: 'error', doctor: 'primary', patient: 'success',
+const ROLE_CHIP: Record<string, { bg: string; fg: string }> = {
+  admin:     { bg: '#fff0f0', fg: '#fa5252' },
+  doctor:    { bg: '#f3f0ff', fg: '#7048e8' },
+  secretary: { bg: '#e7f5ff', fg: '#3b5bdb' },
+  patient:   { bg: '#ebfbee', fg: '#40c057' },
 };
 const ROLE_LABELS: Record<string, string> = {
-  admin: 'אדמין', doctor: 'רופא', patient: 'מטופל',
+  admin: 'אדמין', doctor: 'רופא', patient: 'מטופל', secretary: 'מזכירה',
 };
 const GENDER_LABELS: Record<string, string> = {
   male: 'זכר', female: 'נקבה', MALE: 'זכר', FEMALE: 'נקבה',
@@ -124,8 +127,7 @@ const UsersTable: React.FC<Props> = ({ users, roles, onCreate, onUpdate, onDelet
                         key={s}
                         label={ROLE_LABELS[s] ?? s}
                         size="small"
-                        color={ROLE_COLORS[s] ?? 'default'}
-                        sx={{ height: 18, fontSize: 11, fontWeight: 700, '& .MuiChip-label': { px: 0.75 } }}
+                        sx={{ height: 18, fontSize: 11, fontWeight: 700, '& .MuiChip-label': { px: 0.75 }, bgcolor: ROLE_CHIP[s]?.bg, color: ROLE_CHIP[s]?.fg }}
                       />
                     ))}
                   </Box>
@@ -166,7 +168,7 @@ const UsersTable: React.FC<Props> = ({ users, roles, onCreate, onUpdate, onDelet
                   <Box
                     sx={{
                       width: 8, height: 8, borderRadius: '50%', mr: 1, flexShrink: 0,
-                      bgcolor: r.name === 'admin' ? '#fa5252' : r.name === 'doctor' ? '#3b5bdb' : '#40c057',
+                      bgcolor: r.name === 'admin' ? '#fa5252' : r.name === 'doctor' ? '#7048e8' : r.name === 'secretary' ? '#3b5bdb' : '#40c057',
                     }}
                   />
                   <ListItemText
@@ -225,8 +227,7 @@ const UsersTable: React.FC<Props> = ({ users, roles, onCreate, onUpdate, onDelet
                     <Chip
                       label={ROLE_LABELS[user.role?.name ?? ''] ?? (user.role?.name ?? '—')}
                       size="small"
-                      color={ROLE_COLORS[user.role?.name ?? ''] ?? 'default'}
-                      sx={{ fontWeight: 600, fontSize: 11 }}
+                      sx={{ fontWeight: 600, fontSize: 11, bgcolor: ROLE_CHIP[user.role?.name ?? '']?.bg, color: ROLE_CHIP[user.role?.name ?? '']?.fg }}
                     />
                   </TableCell>
                   <TableCell sx={{ color: '#495057' }}>{user.phone ?? '—'}</TableCell>
