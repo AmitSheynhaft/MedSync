@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
-import { Box, Stack, Typography, Alert } from '@mui/material';
+import { Box, Stack, Alert, LinearProgress } from '@mui/material';
 import PageHeader from '../../components/PageHeader/PageHeader';
-import { LazyAutocomplete } from '../../components/LazyAutocomplete/LazyAutocomplete';
-import { DocumentUploadSection } from '../SecretarySchedulePage/components/DocumentUploadSection';
-import { getBookablePatients, type BookablePatient } from '../../api/slots';
-import { SectionCard } from '../SecretarySchedulePage/styled';
+import { UploadModal, UPLOAD_ACCEPT_ATTR } from '../PatientDashboard/components/UploadModal';
+import type { BookablePatient } from '../../api/slots';
+import { useSecretaryDocumentUpload } from './hooks/useSecretaryDocumentUpload';
+import { PatientSelectCard } from './components/PatientSelectCard';
+import { UploadDocumentCard } from './components/UploadDocumentCard';
+import { UploadResultDialog } from './components/UploadResultDialog';
 
 export const SecretaryDocumentsPage: React.FC = () => {
   const [patient, setPatient] = useState<BookablePatient | null>(null);
+  const upload = useSecretaryDocumentUpload(patient);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+      {upload.uploading && <LinearProgress sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1300 }} />}
+
       <PageHeader
         title="העלאת מסמכים למטופל"
         subtitle="בחרו מטופל והעלו עבורו מסמכים רפואיים"
@@ -19,43 +24,43 @@ export const SecretaryDocumentsPage: React.FC = () => {
 
       <Box sx={{ flex: 1, overflow: 'auto', bgcolor: '#f6f8fb', p: { xs: 2, sm: 3 } }}>
         <Stack spacing={2} sx={{ maxWidth: 760, mx: 'auto' }}>
-          <SectionCard>
-            <Typography sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1.5 }}>
-              בחירת מטופל
-            </Typography>
-            <LazyAutocomplete<BookablePatient>
-              label="מטופל"
-              placeholder="חיפוש לפי שם או אימייל"
-              value={patient}
-              onChange={setPatient}
-              fetchPage={getBookablePatients}
-              getOptionLabel={p => p.fullName}
-              isOptionEqualToValue={(a, b) => a.userId === b.userId}
-              renderOptionContent={p => (
-                <Stack>
-                  <Typography sx={{ fontSize: 14 }}>{p.fullName}</Typography>
-                  <Typography sx={{ fontSize: 12, color: '#868e96' }}>{p.email}</Typography>
-                </Stack>
-              )}
-            />
-          </SectionCard>
+          <PatientSelectCard value={patient} onChange={setPatient} />
 
           {patient ? (
-            <SectionCard>
-              <Typography sx={{ fontWeight: 700, color: '#1a1a2e', mb: 1.5 }}>
-                העלאת מסמך
-              </Typography>
-              <DocumentUploadSection
-                key={patient.userId}
-                patientUserId={patient.userId}
-                patientName={patient.fullName}
-              />
-            </SectionCard>
+            <UploadDocumentCard onUpload={upload.openUploadModal} />
           ) : (
             <Alert severity="info">בחרו מטופל כדי להעלות עבורו מסמכים.</Alert>
           )}
         </Stack>
       </Box>
+
+      <input
+        ref={upload.fileInputRef}
+        type="file"
+        accept={UPLOAD_ACCEPT_ATTR}
+        onChange={upload.handleFileInputChange}
+        style={{ display: 'none' }}
+      />
+
+      <UploadModal
+        open={upload.uploadOpen}
+        onClose={upload.closeUploadModal}
+        cameraMode={upload.cameraStream.cameraMode}
+        onStartCamera={() => upload.cameraStream.setCameraMode(true)}
+        onStopCamera={upload.cameraStream.stopCamera}
+        cameraError={upload.cameraStream.cameraError}
+        videoRef={upload.cameraStream.videoRef}
+        canvasRef={upload.cameraStream.canvasRef}
+        onCapture={upload.captureFromCamera}
+        onChooseFile={() => upload.fileInputRef.current?.click()}
+        documentType={upload.documentType}
+        onDocumentTypeChange={upload.setDocumentType}
+        fileError={upload.fileError}
+        selectedFileName={upload.selectedFile?.name ?? null}
+        onConfirmUpload={upload.confirmUpload}
+      />
+
+      <UploadResultDialog result={upload.result} onClose={upload.dismissResult} />
     </Box>
   );
 };
