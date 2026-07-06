@@ -37,6 +37,7 @@ export const roleConfig: Record<'patient' | 'doctor' | 'admin' | 'secretary', Lo
     heading: 'כניסת מנהל',
     subtitle: 'התחבר לממשק ניהול המערכת.',
     redirect: '/admin',
+  },
   secretary: {
     label: 'מזכירות',
     icon: <SupportAgentIcon sx={{ fontSize: 16 }} />,

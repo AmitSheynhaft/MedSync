@@ -109,7 +109,7 @@ export const RoleSelectPage: React.FC = () => {
             hoverShadow="0 12px 40px rgba(224,49,49,0.15)"
             onClick={() => navigate(`${basePath}/admin`)}
           />
-        }
+        )}
       </Box>
 
       {showStaffOptions && (
