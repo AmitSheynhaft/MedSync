@@ -4,6 +4,7 @@ import type {
   AuthResult,
   RegisterDoctorInput,
   RegisterPatientInput,
+  RegisterSecretaryInput,
 } from '../auth/types';
 
 export function registerPatient(input: RegisterPatientInput): Promise<AuthResult> {
@@ -12,6 +13,12 @@ export function registerPatient(input: RegisterPatientInput): Promise<AuthResult
 
 export function registerDoctor(input: RegisterDoctorInput): Promise<AuthResult> {
   return apiPost<AuthResult>('/api/auth/register/doctor', input);
+}
+
+export function registerSecretary(
+  input: RegisterSecretaryInput,
+): Promise<AuthResult> {
+  return apiPost<AuthResult>('/api/auth/register/secretary', input);
 }
 
 export function login(

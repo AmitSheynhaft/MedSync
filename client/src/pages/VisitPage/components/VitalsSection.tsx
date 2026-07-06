@@ -43,7 +43,7 @@ export const VitalsSection: React.FC<IVitalsSectionProps> = ({
   return (
     <>
       <SectionHeader icon={<MonitorHeartIcon sx={{ fontSize: 16 }} />} label="מדדים" color="#0c8599" bg="#e3fafc" />
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, gap: 1.5 }}>
         {VITALS_FIELDS.map(({ label, placeholder, value, onChange }) => (
           <TextField
             key={label}

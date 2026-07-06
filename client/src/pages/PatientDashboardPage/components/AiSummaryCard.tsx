@@ -10,9 +10,10 @@ interface AiSummaryCardProps {
   onStartVisit: () => void;
   onRefresh?: () => void;
   refreshing?: boolean;
+  canStartVisit?: boolean;
 }
 
-export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({ overview, onStartVisit, onRefresh, refreshing }) => (
+export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({ overview, onStartVisit, onRefresh, refreshing, canStartVisit = true }) => (
   <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid #dfe4ec', borderInlineStart: '4px solid #3b5bdb', p: { xs: 2, sm: 2.5 }, boxShadow: '0 1px 2px rgba(15,23,42,0.03)' }}>
     <Stack sx={{ flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'stretch', md: 'center' }, justifyContent: 'space-between', mb: 1.5, gap: { xs: 1.5, md: 2 } }}>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0 }}>
@@ -33,9 +34,11 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({ overview, onStartV
             {refreshing ? 'מעדכן...' : 'רענן סיכום'}
           </Button>
         )}
-        <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={onStartVisit} sx={{ borderRadius: 999, fontWeight: 700, fontSize: 14, flex: { xs: 1, md: 'none' }, whiteSpace: 'nowrap', px: 2.25, boxShadow: 'none', '&:hover': { boxShadow: 'none', background: '#3451c7' } }}>
-          התחל ביקור
-        </Button>
+        {canStartVisit && (
+          <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={onStartVisit} sx={{ borderRadius: 999, fontWeight: 700, fontSize: 14, flex: { xs: 1, md: 'none' }, whiteSpace: 'nowrap', px: 2.25, boxShadow: 'none', '&:hover': { boxShadow: 'none', background: '#3451c7' } }}>
+            התחל ביקור
+          </Button>
+        )}
       </Stack>
     </Stack>
     {overview ? (

@@ -26,7 +26,7 @@ export const VisitDetailsSection: React.FC<IVisitDetailsSectionProps> = ({
 }) => (
   <>
     <SectionHeader icon={<AssignmentIcon sx={{ fontSize: 16 }} />} label="פרטי ביקור" color="#3b5bdb" bg="#eef2ff" />
-    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
       <TextField select size="small" fullWidth label="סוג ביקור" value={visitType} onChange={e => setVisitType(e.target.value)}
         disabled={isReadOnly} slotProps={{ inputLabel: { shrink: true } }}>
         {VISIT_TYPE_OPTIONS.map(option => (

@@ -66,7 +66,7 @@ export const MedicinesSection: React.FC<IMedicinesSectionProps> = ({
           noOptionsText="לא נמצאו תרופות"
           slotProps={{ popper: { placement: 'bottom-start', modifiers: [{ name: 'flip', enabled: false }] } }}
         />
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 1 }}>
           <TextField size="small" placeholder="מינון (100mg)" value={medicineDosage}
             onChange={e => setMedicineDosage(e.target.value)} slotProps={{ htmlInput: RTL_TEXT_DIRECTION }} />
           <TextField size="small" placeholder="תדירות (פעם ביום)" value={medicineFrequency}

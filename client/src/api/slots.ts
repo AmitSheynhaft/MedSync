@@ -1,42 +1,128 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from './client';
+import { apiDelete, apiGet, apiPost } from './client';
+
+export type SlotStatus = 'scheduled' | 'cancelled';
+
+export interface SlotPatient {
+  patientId: string;
+  userId: string;
+  fullName: string;
+  idNumber?: string;
+  gender?: string;
+  age?: number;
+}
+
+export interface SlotTherapist {
+  caregiverId: string;
+  fullName: string;
+  specialization: string;
+}
 
 export interface Slot {
   id: string;
-  patientId: string;
-  caregiverId: string;
+  date: string;
+  time: string;
   slotTime: string;
-  hasReferral: boolean;
-  createdAt: string;
-  patient?: { id: string; user?: { fullName: string } };
-  caregiver?: { id: string; specialization?: string; user?: { fullName: string } };
+  status: SlotStatus;
+  patient: SlotPatient;
+  therapist: SlotTherapist;
 }
 
-export interface CreateSlotInput {
-  patientId: string;
+export interface SlotTimeOption {
+  time: string;
+  available: boolean;
+}
+
+export interface SlotAvailability {
+  date: string;
   caregiverId: string;
-  slotTime: string;
+  slots: SlotTimeOption[];
+}
+
+export interface TherapistOption {
+  caregiverId: string;
+  fullName: string;
+  specialization: string;
+}
+
+export interface BookablePatient {
+  userId: string;
+  fullName: string;
+  email: string;
+  role: string;
+  patientId?: string;
+}
+
+export interface BookSlotInput {
+  caregiverId: string;
+  patientUserId: string;
+  date: string;
+  time: string;
   hasReferral?: boolean;
 }
 
-export interface SlotQuery {
-  patientId?: string;
-  caregiverId?: string;
-  from?: string;
-  to?: string;
+/** Page envelope returned by the lazily-loaded dropdown endpoints. */
+export interface Paginated<T> {
+  items: T[];
+  total: number;
+  page: number;
+  hasMore: boolean;
 }
 
-export const getSlots = (q: SlotQuery = {}) => {
-  const params = new URLSearchParams();
-  if (q.patientId) params.set('patientId', q.patientId);
-  if (q.caregiverId) params.set('caregiverId', q.caregiverId);
-  if (q.from) params.set('from', q.from);
-  if (q.to) params.set('to', q.to);
-  const qs = params.toString();
-  return apiGet<Slot[]>(`/api/slots${qs ? `?${qs}` : ''}`);
-};
-export const getSlot = (id: string) => apiGet<Slot>(`/api/slots/${id}`);
-export const createSlot = (input: CreateSlotInput) =>
-  apiPost<Slot>('/api/slots', input);
-export const updateSlot = (id: string, input: Partial<CreateSlotInput>) =>
-  apiPatch<Slot>(`/api/slots/${id}`, input);
-export const deleteSlot = (id: string) => apiDelete<void>(`/api/slots/${id}`);
+export function bookSlot(input: BookSlotInput): Promise<Slot> {
+  return apiPost<Slot>('/api/slots/book', input);
+}
+
+export function getTherapistOptions(
+  search = '',
+  page = 1,
+): Promise<Paginated<TherapistOption>> {
+  const params = new URLSearchParams({ page: String(page) });
+  if (search) params.set('search', search);
+  return apiGet<Paginated<TherapistOption>>(`/api/slots/therapists?${params}`);
+}
+
+export function getBookablePatients(
+  search = '',
+  page = 1,
+): Promise<Paginated<BookablePatient>> {
+  const params = new URLSearchParams({ page: String(page) });
+  if (search) params.set('search', search);
+  return apiGet<Paginated<BookablePatient>>(`/api/slots/patients?${params}`);
+}
+
+export function getAvailability(
+  caregiverId: string,
+  date: string,
+): Promise<SlotAvailability> {
+  const params = new URLSearchParams({ caregiverId, date });
+  return apiGet<SlotAvailability>(`/api/slots/availability?${params}`);
+}
+
+export function getCaregiverSlots(date: string): Promise<Slot[]> {
+  const params = new URLSearchParams({ date });
+  return apiGet<Slot[]>(`/api/slots/caregiver?${params}`);
+}
+
+export function getUpcomingPatientSlots(): Promise<Slot[]> {
+  return apiGet<Slot[]>('/api/slots/patient/upcoming');
+}
+
+export function getPastPatientSlots(): Promise<Slot[]> {
+  return apiGet<Slot[]>('/api/slots/patient/past');
+}
+
+export function getCancelledPatientSlots(): Promise<Slot[]> {
+  return apiGet<Slot[]>('/api/slots/patient/cancelled');
+}
+
+export function getSecretaryUpcomingSlots(): Promise<Slot[]> {
+  return apiGet<Slot[]>('/api/slots/secretary/upcoming');
+}
+
+export function getSecretaryPastSlots(): Promise<Slot[]> {
+  return apiGet<Slot[]>('/api/slots/secretary/past');
+}
+
+export function deleteSlotAsSecretary(id: string): Promise<void> {
+  return apiDelete<void>(`/api/slots/secretary/${id}`);
+}

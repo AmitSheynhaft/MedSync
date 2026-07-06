@@ -14,6 +14,7 @@ import { VisitMedicine } from '../entities/visitMedicine/visitMedicineEntity';
 import { Diagnosis } from '../entities/diagnosis/diagnosisEntity';
 import { Medicine } from '../entities/medicine/medicineEntity';
 import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
+import { Patient } from '../entities/patient/patientEntity';
 import { RecordingStatus, VisitSummaryType, VisitType } from '../entities/enums';
 import { DiagnosesService } from '../diagnoses/diagnoses.service';
 import { MedicinesService } from '../medicines/medicines.service';
@@ -25,6 +26,7 @@ export interface VisitInput {
   slotId?: string;
   visitDate: string | Date;
   actingClinicId?: string;
+  actingUserId?: string;
   bloodPressure?: string;
   pulse?: string;
   bodyTemp?: string;
@@ -84,6 +86,8 @@ export class VisitRecordsService {
     private readonly medicinesRepo: Repository<Medicine>,
     @InjectRepository(PatientClinic)
     private readonly patientClinics: Repository<PatientClinic>,
+    @InjectRepository(Patient)
+    private readonly patientsRepo: Repository<Patient>,
     private readonly diagnosesService: DiagnosesService,
     private readonly medicinesService: MedicinesService,
     private readonly dataSource: DataSource,
@@ -143,6 +147,17 @@ export class VisitRecordsService {
       throw new BadRequestException(
         'patientId, caregiverId and visitDate are required',
       );
+    }
+    if (input.actingUserId) {
+      const patient = await this.patientsRepo.findOne({
+        where: { id: input.patientId },
+        select: ['id', 'userId'],
+      });
+      if (patient && patient.userId === input.actingUserId) {
+        throw new BadRequestException(
+          'לא ניתן ליצור ביקור עבור עצמך',
+        );
+      }
     }
     const visit = this.visits.create({
       patientId: input.patientId,

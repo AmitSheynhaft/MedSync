@@ -8,15 +8,31 @@ export interface DocumentUploadResult {
   patientId: string;
 }
 
+export interface UploadDocumentOptions {
+  patientId?: string;
+  patientUserId?: string;
+  documentType?: DocumentTypeEnum;
+}
+
 export function uploadDocument(
   file: File,
   patientId?: string,
   documentType?: DocumentTypeEnum,
 ): Promise<DocumentUploadResult> {
+  return uploadDocumentFor(file, { patientId, documentType });
+}
+
+export function uploadDocumentFor(
+  file: File,
+  options: UploadDocumentOptions,
+): Promise<DocumentUploadResult> {
   const formData = new FormData();
   formData.append('document', file);
-  if (patientId) formData.append('patientId', patientId);
-  if (documentType) formData.append('documentType', documentType);
+  if (options.patientId) formData.append('patientId', options.patientId);
+  if (options.patientUserId)
+    formData.append('patientUserId', options.patientUserId);
+  if (options.documentType)
+    formData.append('documentType', options.documentType);
 
   return apiRequest<DocumentUploadResult>('/api/documents/upload', {
     method: 'POST',

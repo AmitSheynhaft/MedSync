@@ -28,6 +28,7 @@ export function useDocumentsPage() {
   const [uploading, setUploading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isUploadingRef = useRef(false);
 
   const { data: patient } = useAsyncData<Patient | null>(
     () => (patientId ? getPatientById(patientId) : Promise.resolve(null)),
@@ -65,6 +66,9 @@ export function useDocumentsPage() {
 
   const handleUploadFile = async (file: File) => {
     if (!patientId || !documentType) return;
+    // Prevent duplicate submissions if an upload is already in flight.
+    if (isUploadingRef.current) return;
+    isUploadingRef.current = true;
     setUploading(true);
     setUploadError(null);
     try {
@@ -74,6 +78,7 @@ export function useDocumentsPage() {
       setUploadError(error instanceof Error ? error.message : 'העלאת המסמך נכשלה.');
     } finally {
       setUploading(false);
+      isUploadingRef.current = false;
     }
   };
 

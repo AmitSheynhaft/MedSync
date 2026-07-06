@@ -8,12 +8,14 @@ import { DocumentSummaryService } from './document-summary.service';
 import { MedicalDocument } from '../entities/medicalDocument/medicalDocumentEntity';
 import { DocumentSummary } from '../entities/documentSummary/documentSummaryEntity';
 import { PatientMedicalSummaryModule } from '../patient-medical-summary/patient-medical-summary.module';
+import { PatientsModule } from '../patients/patients.module';
 
 @Module({
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([MedicalDocument, DocumentSummary]),
     PatientMedicalSummaryModule,
+    PatientsModule,
   ],
   controllers: [DocumentsController],
   providers: [DocumentsService, OcrService, DocumentSummaryService],

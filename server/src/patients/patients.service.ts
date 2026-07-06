@@ -5,15 +5,17 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
-import { ROLE_DOCTOR } from '../common/constants/roles';
+import { ROLE_DOCTOR, ROLE_SECRETARY } from '../common/constants/roles';
+import { calcAge as calcAgeYears } from '../common/age.util';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Patient as PatientEntity } from '../entities/patient/patientEntity';
 import { User } from '../entities/user/userEntity';
 import { Visit } from '../entities/visit/visitEntity';
 import { MedicalDocument } from '../entities/medicalDocument/medicalDocumentEntity';
 import { PatientMedicalSummary } from '../entities/patientMedicalSummary/patientMedicalSummaryEntity';
 import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
+import { Secretary } from '../entities/secretary/secretaryEntity';
 import { RolesService } from '../roles/roles.service';
 import { hashPassword } from '../common/password.util';
 import { ClinicalAlertsService } from '../clinical-alerts/clinical-alerts.service';
@@ -31,14 +33,6 @@ function splitName(fullName: string | undefined): { first: string; last: string 
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return { first: parts[0], last: '' };
   return { first: parts[0], last: parts.slice(1).join(' ') };
-}
-
-function calcAge(birthDate?: Date | null): number {
-  if (!birthDate) return 0;
-  const d = new Date(birthDate);
-  if (Number.isNaN(d.getTime())) return 0;
-  const diff = Date.now() - d.getTime();
-  return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
 }
 
 function formatDob(birthDate?: Date | null): string {
@@ -74,6 +68,8 @@ export class PatientsService {
     private readonly medicalSummaries: Repository<PatientMedicalSummary>,
     @InjectRepository(PatientClinic)
     private readonly patientClinics: Repository<PatientClinic>,
+    @InjectRepository(Secretary)
+    private readonly secretaries: Repository<Secretary>,
     private readonly roles: RolesService,
     private readonly dataSource: DataSource,
     private readonly clinicalAlertsService: ClinicalAlertsService,
@@ -86,7 +82,7 @@ export class PatientsService {
       idNumber: p.idNumber,
       firstName: first,
       lastName: last,
-      age: calcAge(p.user?.birthDate),
+      age: calcAgeYears(p.user?.birthDate) ?? 0,
       gender: (p.user?.gender as any) || '',
     };
   }
@@ -136,7 +132,7 @@ export class PatientsService {
       firstName: first,
       lastName: last,
       fullName: p.user?.fullName ?? '',
-      age: calcAge(p.user?.birthDate),
+      age: calcAgeYears(p.user?.birthDate) ?? 0,
       gender: (p.user?.gender as any) || '',
       dob: formatDob(p.user?.birthDate),
       email: p.user?.email ?? '',
@@ -164,7 +160,6 @@ export class PatientsService {
       .leftJoinAndSelect('patient.user', 'user')
       .orderBy('patient.createdAt', 'DESC');
 
-    // Doctors only see patients that belong to their own clinic.
     if (clinicId) {
       qb.innerJoin(
         'patient_clinics',
@@ -172,6 +167,10 @@ export class PatientsService {
         'pc.patient_id = patient.id AND pc.clinic_id = :clinicId',
         { clinicId },
       );
+    }
+
+    if (actingUser?.id) {
+      qb.andWhere('user.id != :actingUserId', { actingUserId: actingUser.id });
     }
 
     if (trimmed) {
@@ -185,10 +184,6 @@ export class PatientsService {
     return list.map((p) => this.toSummary(p));
   }
 
-  /**
-   * Resolves the clinic a doctor belongs to. Returns undefined for
-   * non-doctor callers or internal calls without a user context.
-   */
   private getActingClinicId(actingUser?: any): string | undefined {
     if (!actingUser) return undefined;
     if (actingUser.role?.name !== ROLE_DOCTOR) return undefined;
@@ -205,16 +200,17 @@ export class PatientsService {
     return !!membership;
   }
 
-  /**
-   * Ensures the acting user is allowed to touch this patient record.
-   * Doctors may access patients in their own clinic; a patient may only
-   * access their own record.
-   */
   private async assertCanAccess(patientId: string, actingUser?: any): Promise<void> {
-    if (!actingUser) return; // no user context (internal call) — skip
+    if (!actingUser) return;
     if (actingUser.role?.name === ROLE_DOCTOR) {
       const clinicId = this.getActingClinicId(actingUser);
-      // A doctor without a clinic cannot be scoped — deny by default.
+      if (clinicId && (await this.isPatientInClinic(patientId, clinicId))) return;
+      throw new ForbiddenException(
+        'You are not allowed to access this patient record',
+      );
+    }
+    if (actingUser.role?.name === ROLE_SECRETARY) {
+      const clinicId = await this.getSecretaryClinicId(actingUser.id);
       if (clinicId && (await this.isPatientInClinic(patientId, clinicId))) return;
       throw new ForbiddenException(
         'You are not allowed to access this patient record',
@@ -222,6 +218,18 @@ export class PatientsService {
     }
     if (actingUser.patient?.id === patientId) return;
     throw new ForbiddenException('You are not allowed to access this patient record');
+  }
+
+  async assertCanAccessPatient(patientId: string, actingUser?: any): Promise<void> {
+    await this.assertCanAccess(patientId, actingUser);
+  }
+
+  private async getSecretaryClinicId(userId: string): Promise<string> {
+    const secretary = await this.secretaries.findOne({ where: { userId } });
+    if (!secretary?.clinicId) {
+      throw new ForbiddenException('Secretary is not assigned to a clinic');
+    }
+    return secretary.clinicId;
   }
 
   async findOne(id: string, actingUser?: any): Promise<Patient> {
@@ -266,8 +274,6 @@ export class PatientsService {
       });
       const savedPatient = await manager.getRepository(PatientEntity).save(patient);
 
-      // Attach the new patient to the creating doctor's clinic so it stays
-      // visible to that clinic (and hidden from others).
       const clinicId = this.getActingClinicId(actingUser);
       if (clinicId) {
         await manager.getRepository(PatientClinic).save(
@@ -282,6 +288,24 @@ export class PatientsService {
     });
 
     return this.findOne(newId, actingUser);
+  }
+
+  async ensureForUser(
+    userId: string,
+    manager?: EntityManager,
+  ): Promise<PatientEntity> {
+    const patientRepo = manager
+      ? manager.getRepository(PatientEntity)
+      : this.patients;
+    const userRepo = manager ? manager.getRepository(User) : this.users;
+
+    const existing = await patientRepo.findOne({ where: { userId } });
+    if (existing) return existing;
+
+    const user = await userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException(`User ${userId} not found`);
+
+    return patientRepo.save(patientRepo.create({ userId, address: '' }));
   }
 
   async update(id: string, input: UpdatePatientInput, actingUser?: any): Promise<Patient> {

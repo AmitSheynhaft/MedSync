@@ -14,6 +14,11 @@ const RoleSelectPage       = lazy(() => import("./pages/RoleSelectPage/RoleSelec
 const PatientsListPage     = lazy(() => import("./pages/PatientsListPage/PatientsListPage"));
 const PatientDashboardPage = lazy(() => import("./pages/PatientDashboardPage/PatientDashboardPage"));
 const ProfilePage          = lazy(() => import("./pages/ProfilePage/ProfilePage"));
+const SecretarySchedulePage = lazy(() => import("./pages/SecretarySchedulePage/SecretarySchedulePage"));
+const SecretaryDocumentsPage = lazy(() => import("./pages/SecretaryDocumentsPage/SecretaryDocumentsPage"));
+const SecretarySlotsPage = lazy(() => import("./pages/SecretarySlotsPage/SecretarySlotsPage"));
+const TherapistSlotsPage = lazy(() => import("./pages/TherapistSlotsPage/TherapistSlotsPage"));
+const PatientSlotsPage = lazy(() => import("./pages/PatientSlotsPage/PatientSlotsPage"));
 
 export interface RouteConfig {
   path: string;
@@ -43,6 +48,17 @@ export const routes: RouteConfig[] = [
   { path: "/patients/:id/visit", element: <VisitPage />, layout: "app", allowRoles: [Role.Doctor] },
   { path: "/patients/:id/visits/:visitId", element: <VisitPage />, layout: "app", allowRoles: [Role.Patient, Role.Doctor] },
   { path: "/patients/:id/documents", element: <DocumentsPage />, layout: "app", allowRoles: [Role.Doctor] },
+
+  // App layout — secretary only
+  { path: "/schedule", element: <SecretarySchedulePage />, layout: "app", allowRoles: [Role.Secretary] },
+  { path: "/clinic-slots", element: <SecretarySlotsPage />, layout: "app", allowRoles: [Role.Secretary] },
+  { path: "/secretary-documents", element: <SecretaryDocumentsPage />, layout: "app", allowRoles: [Role.Secretary] },
+
+  // App layout — doctor slots
+  { path: "/slots", element: <TherapistSlotsPage />, layout: "app", allowRoles: [Role.Doctor] },
+
+  // App layout — patient slots
+  { path: "/my-slots", element: <PatientSlotsPage />, layout: "app", allowRoles: [Role.Patient] },
 
   // App layout — any authenticated user
   { path: "/profile", element: <ProfilePage />, layout: "app" },

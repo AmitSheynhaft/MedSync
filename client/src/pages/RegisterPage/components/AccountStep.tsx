@@ -1,18 +1,19 @@
 import React from 'react';
 import { Button } from '@mui/material';
 import type { RegisterFormState } from '../hooks/useRegisterForm';
+import type { RegisterRole } from '../types';
 import { FormFields } from './FormFields';
 import { ACCOUNT_FIELDS } from '../config/accountFields';
 
 interface IAccountStepProps {
   form: RegisterFormState;
-  isDoctor: boolean;
+  role: RegisterRole;
   color: string;
 }
 
-export const AccountStep: React.FC<IAccountStepProps> = ({ form, isDoctor, color }) => (
+export const AccountStep: React.FC<IAccountStepProps> = ({ form, role, color }) => (
   <>
-    <FormFields fields={ACCOUNT_FIELDS} form={form} isDoctor={isDoctor} />
+    <FormFields fields={ACCOUNT_FIELDS} form={form} role={role} />
     <Button
       type="button"
       variant="contained"

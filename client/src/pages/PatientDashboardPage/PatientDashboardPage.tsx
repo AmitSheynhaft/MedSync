@@ -11,10 +11,12 @@ import { AiSummaryCard } from './components/AiSummaryCard';
 import { EncountersList } from './components/EncountersList';
 import { DocumentsList } from './components/DocumentsList';
 import ClinicalAlertsCard from './components/ClinicalAlertsCard';
+import { useCurrentUser } from '../../atoms/useCurrentUser';
 
 export const PatientDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const currentUser = useCurrentUser();
   const { data: patient, status } = useAsyncData<Patient>(() => getPatientById(id!), [id]);
   const [summaryModal, setSummaryModal] = useState<{ id: string; name: string } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -89,6 +91,7 @@ export const PatientDashboardPage: React.FC = () => {
           onStartVisit={() => navigate(`/patients/${displayPatient.id}/visit`)}
           onRefresh={handleRefreshSummary}
           refreshing={refreshing}
+          canStartVisit={!currentUser?.userId || displayPatient.userId !== currentUser.userId}
         />
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: { xs: 2, sm: 3 } }}>

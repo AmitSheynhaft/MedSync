@@ -8,6 +8,10 @@ import SmartToyIcon from "@mui/icons-material/SmartToy";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
 import WavingHandIcon from "@mui/icons-material/WavingHand";
+import SearchIcon from "@mui/icons-material/Search";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 import type { RoleName } from "../../../auth/types";
 import type { TGuideRole, IRoleGuide } from "../types";
 
@@ -94,8 +98,59 @@ const ROLE_GUIDES_CONFIG: Record<TGuideRole, IRoleGuide> = {
       },
     ],
   },
+  secretary: {
+    color: "#1c7ed6",
+    accent: "#e7f5ff",
+    steps: [
+      {
+        icon: <SupportAgentIcon />,
+        title: "ברוכה הבאה ל-MedSync",
+        description:
+          "מרכז הניהול של המזכירות במרפאה. מכאן ניתן לקבוע תורים, לנהל אותם ולתחזק את מסמכי המטופלים.",
+        tip: "אפשר לחזור למדריך הזה בכל עת מהתפריט העליון.",
+      },
+      {
+        icon: <EventAvailableIcon />,
+        title: "קביעת תורים",
+        description:
+          "שיבוץ תור חדש בין מטפל למטופל במרפאה שלך. המערכת מציגה את השעות הפנויות של המטפל בתאריך שבחרת.",
+        tip: "התור נקבע בפסיקה של 30 דקות. אישור מוצג מיד לאחר השיבוץ.",
+      },
+      {
+        icon: <SearchIcon />,
+        title: "חיפוש חכם",
+        description:
+          "רשימות המטפלים והמטופלים מסוננות אוטומטית למרפאה שלך, כולל חיפוש חופשי ותוצאות טעונות בהדרגה.",
+        tip: "ניתן לנקות את הבחירה בכל שלב ולחזור למצב ההתחלתי.",
+      },
+      {
+        icon: <DescriptionIcon />,
+        title: "העלאת מסמכים",
+        description:
+          "אפשר להעלות מסמכים עבור המטופל בכל עת — גם ללא שיבוץ תור פעיל. המסמכים מוצמדים אוטומטית לתיק המטופל.",
+        tip: "בחירת מטופל מציגה את אזור ההעלאה מיד מתחת.",
+      },
+      {
+        icon: <EventNoteIcon />,
+        title: "צפייה וניהול תורים",
+        description:
+          "רשימת התורים הקרובים במרפאה נטענת אוטומטית ומתעדכנת אחרי כל שינוי, ללא צורך בריענון.",
+      },
+      {
+        icon: <DeleteOutlineIcon />,
+        title: "מחיקת תורים",
+        description:
+          "ניתן למחוק תור בלחיצה על סמל הפח. תופיע חלונית אישור לפני הביצוע כדי למנוע טעויות.",
+        tip: "רק תורים במרפאה שלך ניתנים למחיקה.",
+      },
+    ],
+  },
 };
 
 export function useRoleGuide(role?: RoleName): IRoleGuide {
-  return useMemo(() => (role === "doctor" ? ROLE_GUIDES_CONFIG.doctor : ROLE_GUIDES_CONFIG.patient), [role]);
+  return useMemo(() => {
+    if (role === "doctor") return ROLE_GUIDES_CONFIG.doctor;
+    if (role === "secretary") return ROLE_GUIDES_CONFIG.secretary;
+    return ROLE_GUIDES_CONFIG.patient;
+  }, [role]);
 }

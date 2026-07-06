@@ -8,12 +8,13 @@ import { DataSource, Repository } from 'typeorm';
 import { User } from '../entities/user/userEntity';
 import { Patient } from '../entities/patient/patientEntity';
 import { Caregiver } from '../entities/caregiver/caregiverEntity';
+import { Secretary } from '../entities/secretary/secretaryEntity';
 import { Clinic } from '../entities/clinic/clinicEntity';
 import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
 import { hashPassword, verifyPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
 import { TokenService, TokenPair } from './token.service';
-import { ROLE_DOCTOR, ROLE_PATIENT, ALL_ROLES } from '../common/constants/roles';
+import { ROLE_DOCTOR, ROLE_PATIENT, ROLE_SECRETARY, ALL_ROLES } from '../common/constants/roles';
 import { getEffectiveRoles } from '../common/authorization/role-hierarchy';
 
 export interface RegisterPatientInput {
@@ -45,12 +46,23 @@ export interface RegisterDoctorInput {
   gender?: string;
 }
 
+export interface RegisterSecretaryInput {
+  role?: string;
+  fullName: string;
+  email: string;
+  password: string;
+  idNumber: string;
+  clinicId: string;
+  phone?: string;
+  birthDate?: string;
+  gender?: string;
+}
+
 export interface LoginInput {
   email: string;
   password: string;
   expectedRole?: string;
 }
-
 export interface AuthResult {
   userId: string;
   email: string;
@@ -60,6 +72,7 @@ export interface AuthResult {
   refreshToken?: string;
   patientId?: string;
   caregiverId?: string;
+  secretaryId?: string;
   clinicId?: string;
 }
 
@@ -69,6 +82,7 @@ export class AuthService {
     @InjectRepository(User) private readonly users: Repository<User>,
     @InjectRepository(Patient) private readonly patients: Repository<Patient>,
     @InjectRepository(Caregiver) private readonly caregivers: Repository<Caregiver>,
+    @InjectRepository(Secretary) private readonly secretaries: Repository<Secretary>,
     @InjectRepository(Clinic) private readonly clinics: Repository<Clinic>,
     private readonly roles: RolesService,
     private readonly tokens: TokenService,
@@ -223,13 +237,70 @@ export class AuthService {
     });
   }
 
+  async registerSecretary(input: RegisterSecretaryInput): Promise<AuthResult> {
+    if (!input?.email || !input?.password || !input?.fullName) {
+      throw new BadRequestException('fullName, email and password are required');
+    }
+
+    const idNumber = input.idNumber?.trim();
+    if (!idNumber) throw new BadRequestException('יש להזין תעודת זהות');
+
+    const clinicId = input.clinicId?.trim() || undefined;
+    if (!clinicId) throw new BadRequestException('יש לבחור מרפאה');
+    await this.assertClinicExists(clinicId);
+
+    const email = input.email.toLowerCase();
+    const existing = await this.users.findOne({ where: { email } });
+    if (existing) throw new BadRequestException('Email already in use');
+
+    const existingSecretary = await this.secretaries.findOne({
+      where: { idNumber },
+    });
+    if (existingSecretary) throw new BadRequestException('תעודת זהות כבר קיימת במערכת');
+
+    const role = await this.roles.getOrCreate(ROLE_SECRETARY, 'Secretary role');
+
+    return this.dataSource.transaction(async (manager) => {
+      const user = manager.getRepository(User).create({
+        roleId: role.id,
+        fullName: input.fullName,
+        email,
+        password: hashPassword(input.password),
+        phone: input.phone,
+        birthDate: input.birthDate ? new Date(input.birthDate) : null,
+        gender: input.gender,
+      });
+      const savedUser = await manager.getRepository(User).save(user);
+
+      const secretary = manager.getRepository(Secretary).create({
+        userId: savedUser.id,
+        idNumber,
+        clinicId,
+      });
+      const savedSecretary = await manager
+        .getRepository(Secretary)
+        .save(secretary);
+
+      return {
+        userId: savedUser.id,
+        email: savedUser.email,
+        fullName: savedUser.fullName,
+        role: role.name,
+        accessToken: this.issueAccessToken(savedUser.id),
+        refreshToken: this.issueRefreshToken(savedUser.id),
+        secretaryId: savedSecretary.id,
+        clinicId: savedSecretary.clinicId,
+      };
+    });
+  }
+
   async login(input: LoginInput): Promise<AuthResult> {
     if (!input?.email || !input?.password) {
       throw new BadRequestException('email and password are required');
     }
     const user = await this.users.findOne({
       where: { email: input.email.toLowerCase() },
-      relations: ['role', 'patient', 'caregiver'],
+      relations: ['role', 'patient', 'caregiver', 'secretary'],
     });
     if (!user || !verifyPassword(input.password, user.password)) {
       throw new UnauthorizedException('Invalid email or password');
@@ -242,6 +313,26 @@ export class AuthService {
 
     this.assertRoleMatchesLoginInterface(roleName, input.expectedRole);
 
+    // A secretary may sign in through the patient interface only if she also
+    // exists as a patient (has a patient profile in a clinic). Without this the
+    // patient screens would have no record to show.
+    if (
+      roleName === ROLE_SECRETARY &&
+      input.expectedRole === ROLE_PATIENT &&
+      !user.patient
+    ) {
+      throw new UnauthorizedException('אינך רשומה כמטופלת במרפאה');
+    }
+
+    // The effective role the user is signing in as. Determines which id/clinic
+    // context is surfaced so a secretary logging in as a patient gets patient
+    // context rather than secretary context.
+    const effectiveRole =
+      input.expectedRole &&
+      getEffectiveRoles(roleName).includes(input.expectedRole as any)
+        ? input.expectedRole
+        : roleName;
+
     return {
       userId: user.id,
       email: user.email,
@@ -249,10 +340,19 @@ export class AuthService {
       role: roleName,
       accessToken: this.issueAccessToken(user.id),
       refreshToken: this.issueRefreshToken(user.id),
-      // Expose only the id that matches the user's role, mirroring /api/auth/me.
-      patientId: roleName === ROLE_PATIENT ? user.patient?.id : undefined,
+      // Expose the patient id whenever the user has a patient profile so that
+      // doctors/secretaries acting as patients get their own patient context.
+      patientId: user.patient?.id,
       caregiverId: roleName === ROLE_DOCTOR ? user.caregiver?.id : undefined,
-      clinicId: roleName === ROLE_DOCTOR ? user.caregiver?.clinicId : undefined,
+      secretaryId: roleName === ROLE_SECRETARY ? user.secretary?.id : undefined,
+      clinicId:
+        effectiveRole === ROLE_PATIENT
+          ? undefined
+          : roleName === ROLE_DOCTOR
+            ? user.caregiver?.clinicId
+            : roleName === ROLE_SECRETARY
+              ? user.secretary?.clinicId
+              : undefined,
     };
   }
 
@@ -263,8 +363,13 @@ export class AuthService {
     if (!expectedRole) return;
 
     if (!getEffectiveRoles(roleName).includes(expectedRole as any)) {
+      const messages: Record<string, string> = {
+        [ROLE_DOCTOR]: 'אין לך הרשאות מטפל',
+        [ROLE_PATIENT]: 'אין לך הרשאות מטופל',
+        [ROLE_SECRETARY]: 'אין לך הרשאות מזכירה',
+      };
       throw new UnauthorizedException(
-        expectedRole === ROLE_DOCTOR ? 'אין לך הרשאות מטפל' : 'אין לך הרשאות מטופל',
+        messages[expectedRole] ?? 'אין לך הרשאות מתאימות',
       );
     }
   }
