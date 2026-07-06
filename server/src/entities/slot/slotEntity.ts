@@ -13,6 +13,7 @@ import { Patient } from '../patient/patientEntity';
 import { Caregiver } from '../caregiver/caregiverEntity';
 import { Visit } from '../visit/visitEntity';
 import { ISlot } from './slotInterface';
+import { SlotStatus } from './slotStatus';
 
 @Entity({ name: 'slots' })
 @Index(['caregiverId', 'slotTime'])
@@ -41,6 +42,23 @@ export class Slot extends BaseEntity implements ISlot {
 
   @Column({ type: 'boolean', name: 'has_referral', default: false })
   hasReferral: boolean;
+
+  @Column({
+    type: 'varchar',
+    length: 20,
+    name: 'status',
+    default: SlotStatus.SCHEDULED,
+  })
+  status: SlotStatus;
+
+  // Audit only: the staff user (e.g. secretary) who booked the slot. This is
+  // never the owner of the appointment — ownership is `patientId`.
+  @Column({ type: 'uuid', name: 'created_by_user_id', nullable: true })
+  createdByUserId?: string;
+
+  // Audit only: the user who cancelled the slot.
+  @Column({ type: 'uuid', name: 'cancelled_by_user_id', nullable: true })
+  cancelledByUserId?: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;

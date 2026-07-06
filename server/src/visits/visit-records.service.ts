@@ -3,9 +3,10 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import * as os from 'os';
-import puppeteer from 'puppeteer';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Visit } from '../entities/visit/visitEntity';
@@ -16,6 +17,8 @@ import { VisitMedicine } from '../entities/visitMedicine/visitMedicineEntity';
 import { Diagnosis } from '../entities/diagnosis/diagnosisEntity';
 import { Medicine } from '../entities/medicine/medicineEntity';
 import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
+import { Patient } from '../entities/patient/patientEntity';
+import { Slot } from '../entities/slot/slotEntity';
 import { RecordingStatus, VisitSummaryType, VisitType } from '../entities/enums';
 import { DiagnosesService } from '../diagnoses/diagnoses.service';
 import { MedicinesService } from '../medicines/medicines.service';
@@ -27,6 +30,7 @@ export interface VisitInput {
   slotId?: string;
   visitDate: string | Date;
   actingClinicId?: string;
+  actingUserId?: string;
   bloodPressure?: string;
   pulse?: string;
   bodyTemp?: string;
@@ -86,11 +90,23 @@ export class VisitRecordsService {
     private readonly medicinesRepo: Repository<Medicine>,
     @InjectRepository(PatientClinic)
     private readonly patientClinics: Repository<PatientClinic>,
+    @InjectRepository(Patient)
+    private readonly patientsRepo: Repository<Patient>,
+    @InjectRepository(Slot)
+    private readonly slots: Repository<Slot>,
     private readonly diagnosesService: DiagnosesService,
     private readonly medicinesService: MedicinesService,
     private readonly dataSource: DataSource,
     private readonly medicalSummaryService: PatientMedicalSummaryService,
   ) {}
+
+  private isSameDay(a: Date, b: Date): boolean {
+    return (
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate()
+    );
+  }
 
   private isVisitInPast(visitDate: Date): boolean {
     const visitDateOnly = new Date(visitDate);
@@ -99,7 +115,7 @@ export class VisitRecordsService {
     const todayDateOnly = new Date();
     todayDateOnly.setHours(0, 0, 0, 0);
 
-    return visitDateOnly <= todayDateOnly;
+    return visitDateOnly < todayDateOnly;
   }
 
   private throwIfPastVisit(visit: Visit, operation: string = 'modify'): void {
@@ -400,6 +416,8 @@ export class VisitRecordsService {
     const visit = await this.findOne(visitId);
     const html = this.buildSummaryPdfHtml(visit);
 
+    // Dynamic import required: puppeteer is ESM-only and cannot be statically required
+    const { default: puppeteer } = await import('puppeteer');
     const browser = await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -477,6 +495,41 @@ export class VisitRecordsService {
       throw new BadRequestException(
         'patientId, caregiverId and visitDate are required',
       );
+    }
+    if (input.actingUserId) {
+      const patient = await this.patientsRepo.findOne({
+        where: { id: input.patientId },
+        select: ['id', 'userId'],
+      });
+      if (patient && patient.userId === input.actingUserId) {
+        throw new BadRequestException(
+          'לא ניתן ליצור ביקור עבור עצמך',
+        );
+      }
+    }
+    if (input.slotId) {
+      const slot = await this.slots.findOne({
+        where: { id: input.slotId },
+        relations: ['visit'],
+      });
+      if (!slot) {
+        throw new NotFoundException('התור לא נמצא');
+      }
+      if (slot.status !== 'scheduled') {
+        throw new BadRequestException('לא ניתן ליצור ביקור עבור תור שבוטל');
+      }
+      if (slot.caregiverId !== input.caregiverId) {
+        throw new ForbiddenException('התור אינו שייך למטפל זה');
+      }
+      if (slot.patientId !== input.patientId) {
+        throw new BadRequestException('התור אינו שייך למטופל זה');
+      }
+      if (slot.visit) {
+        throw new ConflictException('כבר קיים ביקור עבור תור זה');
+      }
+      if (!this.isSameDay(slot.slotTime, new Date())) {
+        throw new BadRequestException('ניתן לפתוח ביקור לתור רק ביום התור');
+      }
     }
     const visit = this.visits.create({
       patientId: input.patientId,

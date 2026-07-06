@@ -37,5 +37,7 @@ export function isRoleViewTampered(): boolean {
 
 export function homeForRole(role: RoleName): string {
   if (role === Role.Admin) return '/admin';
-  return role === Role.Doctor ? '/patients' : '/dashboard';
+  if (role === Role.Doctor) return '/patients';
+  if (role === Role.Secretary) return '/schedule';
+  return '/dashboard';
 }

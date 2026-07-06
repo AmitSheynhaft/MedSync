@@ -1,17 +1,18 @@
 import React from 'react';
 import { TextField, InputAdornment, MenuItem } from '@mui/material';
 import type { RegisterFormState } from '../hooks/useRegisterForm';
-import type { TFieldConfig } from '../types';
+import type { RegisterRole, TFieldConfig } from '../types';
 
 export interface IFormFieldsProps {
   fields: TFieldConfig[];
   form: RegisterFormState;
-  isDoctor: boolean;
+  role: RegisterRole;
 }
 
-export const FormFields: React.FC<IFormFieldsProps> = ({ fields, form, isDoctor }) => {
-  const roleKey = isDoctor ? 'doctor' : 'patient';
-  const visibleFields = fields.filter(f => !f.showFor || f.showFor === roleKey);
+export const FormFields: React.FC<IFormFieldsProps> = ({ fields, form, role }) => {
+  const visibleFields = fields.filter(
+    f => (!f.showFor || f.showFor === role) && !f.hideFor?.includes(role),
+  );
 
   return (
     <>
@@ -22,7 +23,7 @@ export const FormFields: React.FC<IFormFieldsProps> = ({ fields, form, isDoctor 
             key={key}
             required={required}
             type={type}
-            placeholder={typeof placeholder === 'function' ? placeholder(isDoctor) : placeholder}
+            placeholder={typeof placeholder === 'function' ? placeholder(role) : placeholder}
             label={label}
             autoComplete={autoComplete}
             select={select}

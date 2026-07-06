@@ -1,6 +1,7 @@
 import { IPatient } from '../patient/patientInterface';
 import { ICaregiver } from '../caregiver/caregiverInterface';
 import { IVisit } from '../visit/visitInterface';
+import { SlotStatus } from './slotStatus';
 
 export interface ISlot {
   id: string;
@@ -10,6 +11,9 @@ export interface ISlot {
   caregiver?: ICaregiver;
   slotTime: Date;
   hasReferral: boolean;
+  status: SlotStatus;
+  createdByUserId?: string;
+  cancelledByUserId?: string;
   createdAt: Date;
   visit?: IVisit;
 }

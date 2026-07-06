@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../../api/authApi';
 import { loadUserDataSession, saveUserDataSession } from '../../../auth/userDataSessionStore';
+import { resetSessionVerification } from '../../../auth/verifySession';
 import { getMe, updateMe, User } from '../../../api/users';
 import { getCaregiver } from '../../../api/caregivers';
 import { getPatientById, updatePatient } from '../../../api/patients';
@@ -114,6 +115,7 @@ export function useProfile() {
 
   const handleLogout = async () => {
     await logout();
+    resetSessionVerification();
     navigate('/login');
   };
 

@@ -7,10 +7,13 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import PersonIcon from '@mui/icons-material/Person';
 import PeopleIcon from '@mui/icons-material/People';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import EventIcon from '@mui/icons-material/Event';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlineRounded';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { getEffectiveRole } from '../auth/viewAs';
 import { logout } from '../api/authApi';
+import { resetSessionVerification } from '../auth/verifySession';
 import { useCurrentUser } from '../atoms/useCurrentUser';
 import SystemInfoModal from '../components/SystemInfoModal/SystemInfoModal';
 import { consumeWelcomePending } from '../components/SystemInfoModal/welcomeFlag';
@@ -41,6 +44,7 @@ export const AppLayout: React.FC = () => {
   const role = getEffectiveRole();
   const isDoctor = role === 'doctor';
   const isAdmin  = role === 'admin';
+  const isSecretary = role === 'secretary';
   const [showWelcomeSystemInfo, setShowWelcomeSystemInfo] = React.useState(consumeWelcomePending);
 
   return (
@@ -61,14 +65,23 @@ export const AppLayout: React.FC = () => {
             <NavItem to="/admin" title="ניהול מערכת" icon={<AdminPanelSettingsIcon fontSize="small" />} />
           ) : isDoctor ? (
             <>
-              <NavItem to="/patients" title="מטופלים" icon={<PeopleIcon fontSize="small" />} />
-              <NavItem to="/profile"  title="פרופיל"  icon={<PersonIcon fontSize="small" />} />
+              <NavItem to="/patients"     title="מטופלים" icon={<PeopleIcon fontSize="small" />} />
+              <NavItem to="/slots"        title="תורים"    icon={<EventIcon  fontSize="small" />} />
+              <NavItem to="/profile"      title="פרופיל"  icon={<PersonIcon fontSize="small" />} />
+            </>
+          ) : isSecretary ? (
+            <>
+              <NavItem to="/schedule"             title="קביעת תור"    icon={<CalendarMonthIcon fontSize="small" />} />
+              <NavItem to="/clinic-slots"         title="תורי המרפאה"   icon={<EventIcon         fontSize="small" />} />
+              <NavItem to="/secretary-documents"  title="מסמכים"       icon={<DescriptionIcon   fontSize="small" />} />
+              <NavItem to="/profile"              title="פרופיל"       icon={<PersonIcon        fontSize="small" />} />
             </>
           ) : (
             <>
-              <NavItem to="/dashboard" title="בית"      icon={<HomeIcon        fontSize="small" />} />
-              <NavItem to="/documents" title="מסמכים"   icon={<DescriptionIcon fontSize="small" />} />
-              <NavItem to="/profile"   title="פרופיל"   icon={<PersonIcon      fontSize="small" />} />
+              <NavItem to="/dashboard"       title="בית"      icon={<HomeIcon        fontSize="small" />} />
+              <NavItem to="/my-slots"        title="התורים שלי" icon={<EventIcon       fontSize="small" />} />
+              <NavItem to="/documents"       title="מסמכים"   icon={<DescriptionIcon fontSize="small" />} />
+              <NavItem to="/profile"         title="פרופיל"   icon={<PersonIcon      fontSize="small" />} />
             </>
           )}
         </Box>
@@ -81,8 +94,8 @@ export const AppLayout: React.FC = () => {
           </Tooltip>
           <Tooltip title="התנתק" placement="left">
             <IconButton
-              onClick={() => { logout().finally(() => navigate('/login')); }}
-              sx={[logoutButtonSx, { display: { xs: isDoctor ? 'inline-flex' : 'none', md: 'inline-flex' } }] as SxProps<Theme>}
+              onClick={() => { logout().finally(() => { resetSessionVerification(); navigate('/login'); }); }}
+              sx={[logoutButtonSx, { display: { xs: (isDoctor || isSecretary) ? 'inline-flex' : 'none', md: 'inline-flex' } }] as SxProps<Theme>}
             >
               <LogoutIcon fontSize="small" />
             </IconButton>

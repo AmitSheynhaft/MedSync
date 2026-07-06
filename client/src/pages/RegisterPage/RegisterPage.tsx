@@ -4,12 +4,13 @@ import { Box, Typography, Chip, Alert, Stepper, Step, StepLabel } from "@mui/mat
 import { resolveRegisterRole, STEPS } from "./roleConfig";
 import { useRegisterForm } from "./hooks/useRegisterForm";
 import { RegisterForm } from "./components/RegisterForm";
+import type { RegisterRole } from "./types";
 
 export const RegisterPage: React.FC = () => {
   const { role } = useParams<{ role: string }>();
   const config = resolveRegisterRole(role);
-  const isDoctor = role === "doctor";
-  const form = useRegisterForm(isDoctor);
+  const registerRole: RegisterRole = role === "doctor" ? "doctor" : role === "secretary" ? "secretary" : "patient";
+  const form = useRegisterForm(registerRole);
 
   return (
     <Box sx={{ width: "100%", maxWidth: 420, p: { xs: 1, sm: 3 } }}>
@@ -59,7 +60,7 @@ export const RegisterPage: React.FC = () => {
 
       {form.error && <Alert severity="error" sx={{ mb: 2 }}>{form.error}</Alert>}
 
-      <RegisterForm form={form} isDoctor={isDoctor} color={config.color} />
+      <RegisterForm form={form} role={registerRole} color={config.color} />
 
       <Typography sx={{ textAlign: "center", mt: 1.5, fontSize: 14, color: "text.secondary" }}>
         כבר יש לך חשבון?{" "}

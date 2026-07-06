@@ -15,6 +15,16 @@ const VERIFY_TTL_MS = 3000;
 let verifyInFlight: Promise<AuthResult | null> | null = null;
 let lastVerifiedAt = 0;
 
+/**
+ * Clears the cached verification so the next `verifySession` re-fetches from
+ * the server. Must run on logout/account switch so one user's session (and
+ * their `patientId`) is never reused for the next.
+ */
+export function resetSessionVerification(): void {
+  verifyInFlight = null;
+  lastVerifiedAt = 0;
+}
+
 export async function verifySession(options?: {
   force?: boolean;
 }): Promise<AuthResult | null> {

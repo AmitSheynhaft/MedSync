@@ -40,3 +40,15 @@ export interface RegisterDoctorInput {
   birthDate?: string;
   gender?: string;
 }
+
+export interface RegisterSecretaryInput {
+  role?: RoleName;
+  fullName: string;
+  email: string;
+  password: string;
+  idNumber: string;
+  clinicId: string;
+  phone?: string;
+  birthDate?: string;
+  gender?: string;
+}
