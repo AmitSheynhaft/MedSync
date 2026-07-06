@@ -40,7 +40,12 @@ jobs:
           rm -rf /opt/medsync/server/dist
           cp -r server/dist /opt/medsync/server/dist
           cp server/package.json server/package-lock.json /opt/medsync/server/
-          cd /opt/medsync/server && npm ci --omit=dev
+          cd /opt/medsync/server && PUPPETEER_SKIP_DOWNLOAD=true npm ci --omit=dev
+
+      # ── Run DB migrations ────────────────────────────────────────────
+      - name: Run migrations
+        working-directory: server
+        run: npm run migration:run
 
       # ── nginx config (update + reload) ──────────────────────────────
       - name: Update nginx config
@@ -56,3 +61,9 @@ jobs:
           pm2 delete medsync-api 2>/dev/null || true
           pm2 start /opt/medsync/pm2.config.js --update-env
           pm2 save
+
+      # ── Verify server started ────────────────────────────────────────
+      - name: Verify server is up
+        run: |
+          sleep 5
+          curl -f http://localhost:3000 2>/dev/null || (pm2 logs medsync-api --lines 50 --nostream && exit 1)
