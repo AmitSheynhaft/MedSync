@@ -5,7 +5,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import * as os from 'os';
-import puppeteer from 'puppeteer';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Visit } from '../entities/visit/visitEntity';
@@ -400,6 +399,8 @@ export class VisitRecordsService {
     const visit = await this.findOne(visitId);
     const html = this.buildSummaryPdfHtml(visit);
 
+    // Dynamic import required: puppeteer is ESM-only and cannot be statically required
+    const { default: puppeteer } = await import('puppeteer');
     const browser = await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
