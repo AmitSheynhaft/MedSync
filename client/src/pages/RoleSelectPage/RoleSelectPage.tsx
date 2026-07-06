@@ -68,7 +68,7 @@ export const RoleSelectPage: React.FC = () => {
               onClick={() => navigate(`${basePath}/doctor`)}
             />
             <RoleCard
-              title="מזכירות"
+              title="מזכירה"
               description="תיאום תורים בין מטפלים למטופלים והעלאת מסמכים רפואיים."
               icon={<SupportAgentIcon sx={{ fontSize: 28, color: "#fff" }} />}
               iconGradient="linear-gradient(135deg, #1864ab, #339af0)"
@@ -99,7 +99,7 @@ export const RoleSelectPage: React.FC = () => {
             />
           </>
         )}
-        {!isRegister && (
+        {!isRegister && !showStaffOptions && (
           <RoleCard
             title="מנהל מערכת"
             description="ניהול משתמשים, מרפאות והגדרות המערכת."

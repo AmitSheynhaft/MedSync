@@ -39,6 +39,17 @@ const themes = {
       desc: "הצפנה תואמת HIPAA",
     },
   },
+  admin: {
+    gradient: "linear-gradient(135deg, #c92a2a 0%, #e03131 50%, #ff6b6b 100%)",
+    title: "מערכת הבריאות שלך,\nבשליטה מלאה.",
+    subtitle:
+      "נהל משתמשים, מרפאות והרשאות — כל הכלים לניהול יעיל של המערכת הרפואית במקום אחד.",
+    badge: {
+      icon: <SecurityIcon />,
+      title: "גישת מנהל",
+      desc: "שליטה מלאה על המערכת",
+    },
+  },
 };
 
 export const AuthLayout: React.FC = () => {
