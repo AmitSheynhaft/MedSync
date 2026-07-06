@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Box, Typography } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { RoleCard } from "./components/RoleCard";
 
 export const RoleSelectPage: React.FC = () => {
@@ -66,6 +67,17 @@ export const RoleSelectPage: React.FC = () => {
           hoverShadow="0 12px 40px rgba(112,72,232,0.15)"
           onClick={() => navigate(`${basePath}/doctor`)}
         />
+        {!isRegister && (
+          <RoleCard
+            title="מנהל מערכת"
+            description="ניהול משתמשים, מרפאות והגדרות המערכת."
+            icon={<AdminPanelSettingsIcon sx={{ fontSize: 28, color: "#fff" }} />}
+            iconGradient="linear-gradient(135deg, #c92a2a, #ff6b6b)"
+            hoverColor="#e03131"
+            hoverShadow="0 12px 40px rgba(224,49,49,0.15)"
+            onClick={() => navigate(`${basePath}/admin`)}
+          />
+        )}
       </Box>
     </Box>
   );

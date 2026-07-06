@@ -1,6 +1,7 @@
 import React from 'react';
 import PersonIcon from '@mui/icons-material/Person';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 export interface LoginRoleConfig {
   label: string;
@@ -11,7 +12,7 @@ export interface LoginRoleConfig {
   redirect: string;
 }
 
-export const roleConfig: Record<'patient' | 'doctor', LoginRoleConfig> = {
+export const roleConfig: Record<'patient' | 'doctor' | 'admin', LoginRoleConfig> = {
   patient: {
     label: 'מטופל',
     icon: <PersonIcon sx={{ fontSize: 16 }} />,
@@ -27,6 +28,14 @@ export const roleConfig: Record<'patient' | 'doctor', LoginRoleConfig> = {
     heading: 'ברוך הבא',
     subtitle: 'התחבר לחשבונך לניהול מטופלים.',
     redirect: '/patients',
+  },
+  admin: {
+    label: 'מנהל מערכת',
+    icon: <AdminPanelSettingsIcon sx={{ fontSize: 16 }} />,
+    color: '#e03131',
+    heading: 'כניסת מנהל',
+    subtitle: 'התחבר לממשק ניהול המערכת.',
+    redirect: '/admin',
   },
 };
 

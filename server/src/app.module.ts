@@ -21,6 +21,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { PatientMedicalSummaryModule } from './patient-medical-summary/patient-medical-summary.module';
 import { ClinicalAlertsModule } from './clinical-alerts/clinical-alerts.module';
 import { ClinicsModule } from './clinics/clinics.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { ClinicsModule } from './clinics/clinics.module';
     PatientMedicalSummaryModule,
     ClinicalAlertsModule,
     ClinicsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

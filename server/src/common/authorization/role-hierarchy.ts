@@ -1,6 +1,7 @@
-import { ROLE_DOCTOR, ROLE_PATIENT, TRoleName } from '../constants/roles';
+import { ROLE_ADMIN, ROLE_DOCTOR, ROLE_PATIENT, TRoleName } from '../constants/roles';
 
 export const ROLE_HIERARCHY: Record<string, TRoleName[]> = {
+  [ROLE_ADMIN]: [ROLE_ADMIN, ROLE_DOCTOR, ROLE_PATIENT],
   [ROLE_DOCTOR]: [ROLE_DOCTOR, ROLE_PATIENT],
   [ROLE_PATIENT]: [ROLE_PATIENT],
 };
