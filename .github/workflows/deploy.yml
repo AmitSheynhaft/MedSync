@@ -53,5 +53,6 @@ jobs:
       - name: Restart API with PM2
         run: |
           cp pm2.config.js /opt/medsync/pm2.config.js
-          pm2 startOrRestart /opt/medsync/pm2.config.js --update-env
+          pm2 delete medsync-api 2>/dev/null || true
+          pm2 start /opt/medsync/pm2.config.js --update-env
           pm2 save
