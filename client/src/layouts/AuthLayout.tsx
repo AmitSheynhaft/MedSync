@@ -50,6 +50,17 @@ const themes = {
       desc: "שליטה מלאה על המערכת",
     },
   },
+  secretary: {
+    gradient: "linear-gradient(135deg, #1864ab 0%, #1971c2 50%, #339af0 100%)",
+    title: "תיאום חכם,\nטיפול רציף.",
+    subtitle:
+      "נהלי תורים, תאמי בין מטפלים למטופלים והעלאי מסמכים רפואיים — הכל במקום אחד.",
+    badge: {
+      icon: <SecurityIcon />,
+      title: "מאובטח ופרטי",
+      desc: "הצפנה תואמת HIPAA",
+    },
+  },
 };
 
 export const AuthLayout: React.FC = () => {
