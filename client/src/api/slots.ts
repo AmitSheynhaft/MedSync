@@ -17,14 +17,24 @@ export interface SlotTherapist {
   specialization: string;
 }
 
+/** Actor/audit metadata for a slot. Never denotes ownership. */
+export interface SlotAudit {
+  createdByUserId?: string;
+  cancelledByUserId?: string;
+}
+
 export interface Slot {
   id: string;
   date: string;
   time: string;
   slotTime: string;
   status: SlotStatus;
+  /** The appointment owner. */
   patient: SlotPatient;
+  /** The assigned therapist. */
   therapist: SlotTherapist;
+  /** Actor/audit metadata — distinct from owner (`patient`). */
+  audit: SlotAudit;
 }
 
 export interface SlotTimeOption {

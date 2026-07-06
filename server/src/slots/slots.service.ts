@@ -162,6 +162,8 @@ export class SlotsService {
             slotTime,
             hasReferral: !!input.hasReferral,
             status: SlotStatus.SCHEDULED,
+            // Audit only — the secretary is the actor, not the owner.
+            createdByUserId: secretaryUserId,
           }),
         );
       } catch (err) {
@@ -347,6 +349,7 @@ export class SlotsService {
     }
     if (slot.status === SlotStatus.CANCELLED) return;
     slot.status = SlotStatus.CANCELLED;
+    slot.cancelledByUserId = secretaryUserId;
     await this.repo.save(slot);
   }
 
@@ -364,6 +367,7 @@ export class SlotsService {
       throw new BadRequestException('לא ניתן לבטל תור שכבר עבר');
     }
     slot.status = SlotStatus.CANCELLED;
+    slot.cancelledByUserId = patientUserId;
     await this.repo.save(slot);
   }
 
@@ -448,6 +452,10 @@ export class SlotsService {
         caregiverId: slot.caregiverId,
         fullName: slot.caregiver?.user?.fullName ?? '',
         specialization: slot.caregiver?.specialization ?? '',
+      },
+      audit: {
+        createdByUserId: slot.createdByUserId,
+        cancelledByUserId: slot.cancelledByUserId,
       },
     };
   }

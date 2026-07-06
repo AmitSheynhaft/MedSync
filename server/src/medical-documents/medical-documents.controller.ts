@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -29,11 +30,14 @@ export class MedicalDocumentsController {
 
   @Get()
   async findAll(@User() user: IUser, @Query('patientId') patientId?: string) {
-    if (patientId) {
-      // Enforce clinic-scoped access so a secretary/doctor from another clinic
-      // (or a patient requesting someone else's records) cannot list them.
-      await this.patientsService.assertCanAccessPatient(patientId, user);
+    // A patientId is mandatory: without it the query would return documents
+    // across all patients. Ownership is always verified against the acting
+    // user's clinic/self scope so a secretary cannot read another patient's
+    // records, and a patient only ever sees their own.
+    if (!patientId) {
+      throw new BadRequestException('patientId is required');
     }
+    await this.patientsService.assertCanAccessPatient(patientId, user);
     return this.service.findAll(patientId);
   }
 
