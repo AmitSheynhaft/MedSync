@@ -506,6 +506,9 @@ export class VisitRecordsService {
       if (!slot) {
         throw new NotFoundException('התור לא נמצא');
       }
+      if (slot.status !== 'scheduled') {
+        throw new BadRequestException('לא ניתן ליצור ביקור עבור תור שבוטל');
+      }
       if (slot.caregiverId !== input.caregiverId) {
         throw new ForbiddenException('התור אינו שייך למטפל זה');
       }
