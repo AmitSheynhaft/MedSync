@@ -90,6 +90,24 @@ export class VisitRecordsService {
     private readonly medicalSummaryService: PatientMedicalSummaryService,
   ) {}
 
+  private isVisitInPast(visitDate: Date): boolean {
+    const visitDateOnly = new Date(visitDate);
+    visitDateOnly.setHours(0, 0, 0, 0);
+
+    const todayDateOnly = new Date();
+    todayDateOnly.setHours(0, 0, 0, 0);
+
+    return visitDateOnly <= todayDateOnly;
+  }
+
+  private throwIfPastVisit(visit: Visit, operation: string = 'modify'): void {
+    if (this.isVisitInPast(visit.visitDate)) {
+      throw new BadRequestException(
+        'לא ניתן לערוך ביקור שהתרחש בעבר',
+      );
+    }
+  }
+
   findAll(patientId?: string, caregiverId?: string, actingClinicId?: string): Promise<Visit[]> {
     const qb = this.visits
       .createQueryBuilder('visit')
@@ -184,6 +202,10 @@ export class VisitRecordsService {
   async update(id: string, input: Partial<VisitInput>): Promise<Visit> {
     const visit = await this.visits.findOne({ where: { id } });
     if (!visit) throw new NotFoundException(`Visit ${id} not found`);
+    
+    // Prevent editing past visits
+    this.throwIfPastVisit(visit, 'update');
+    
     if (input.visitDate !== undefined)
       visit.visitDate = new Date(input.visitDate);
     if (input.bloodPressure !== undefined) visit.bloodPressure = input.bloodPressure;
@@ -204,6 +226,12 @@ export class VisitRecordsService {
   }
 
   async remove(id: string): Promise<void> {
+    const visit = await this.visits.findOne({ where: { id } });
+    if (!visit) throw new NotFoundException(`Visit ${id} not found`);
+    
+    // Prevent deleting past visits
+    this.throwIfPastVisit(visit, 'delete');
+    
     const result = await this.visits.delete(id);
     if (!result.affected) throw new NotFoundException(`Visit ${id} not found`);
   }
@@ -213,7 +241,11 @@ export class VisitRecordsService {
     visitId: string,
     input: VisitRecordingInput,
   ): Promise<VisitRecording> {
-    await this.findOne(visitId);
+    const visit = await this.findOne(visitId);
+    
+    // Prevent editing past visits
+    this.throwIfPastVisit(visit);
+    
     let rec = await this.recordings.findOne({ where: { visitId } });
     if (!rec) {
       rec = this.recordings.create({
@@ -236,7 +268,11 @@ export class VisitRecordsService {
     visitId: string,
     input: VisitSummaryInput,
   ): Promise<VisitSummary> {
-    await this.findOne(visitId);
+    const visit = await this.findOne(visitId);
+    
+    // Prevent editing past visits
+    this.throwIfPastVisit(visit);
+    
     let summary = await this.summaries.findOne({ where: { visitId } });
     if (!summary) {
       summary = this.summaries.create({
@@ -251,7 +287,6 @@ export class VisitRecordsService {
     const saved = await this.summaries.save(summary);
 
     // Fire-and-forget: regenerate patient medical summary
-    const visit = await this.visits.findOne({ where: { id: visitId } });
     if (visit?.patientId) {
       this.medicalSummaryService
         .generateAndSave(visit.patientId)
@@ -268,7 +303,11 @@ export class VisitRecordsService {
     visitId: string,
     input: VisitDiagnosisInput,
   ): Promise<VisitDiagnosis> {
-    await this.findOne(visitId);
+    const visit = await this.findOne(visitId);
+    
+    // Prevent editing past visits
+    this.throwIfPastVisit(visit);
+    
     let diagnosisId = input.diagnosisId;
     if (!diagnosisId) {
       if (!input.diagnosisCode) {
@@ -306,7 +345,11 @@ export class VisitRecordsService {
     visitId: string,
     input: VisitMedicineInput,
   ): Promise<VisitMedicine> {
-    await this.findOne(visitId);
+    const visit = await this.findOne(visitId);
+    
+    // Prevent editing past visits
+    this.throwIfPastVisit(visit);
+    
     let medicineId = input.medicineId;
     if (!medicineId) {
       if (!input.medicineName) {
