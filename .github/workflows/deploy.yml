@@ -45,7 +45,9 @@ jobs:
       # ── Run DB migrations ────────────────────────────────────────────
       - name: Run migrations
         working-directory: server
-        run: npm run migration:run
+        run: |
+          cp /opt/medsync/server/.env .env
+          npm run migration:run
 
       # ── nginx config (update + reload) ──────────────────────────────
       - name: Update nginx config
