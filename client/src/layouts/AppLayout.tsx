@@ -12,6 +12,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutlineRounded';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { getEffectiveRole } from '../auth/viewAs';
 import { logout } from '../api/authApi';
+import { resetSessionVerification } from '../auth/verifySession';
 import { useCurrentUser } from '../atoms/useCurrentUser';
 import SystemInfoModal from '../components/SystemInfoModal/SystemInfoModal';
 import { consumeWelcomePending } from '../components/SystemInfoModal/welcomeFlag';
@@ -89,7 +90,7 @@ export const AppLayout: React.FC = () => {
           </Tooltip>
           <Tooltip title="התנתק" placement="left">
             <IconButton
-              onClick={() => { logout().finally(() => navigate('/login')); }}
+              onClick={() => { logout().finally(() => { resetSessionVerification(); navigate('/login'); }); }}
               sx={[logoutButtonSx, { display: { xs: (isDoctor || isSecretary) ? 'inline-flex' : 'none', md: 'inline-flex' } }] as SxProps<Theme>}
             >
               <LogoutIcon fontSize="small" />

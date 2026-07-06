@@ -12,6 +12,8 @@ export interface ISlot {
   slotTime: Date;
   hasReferral: boolean;
   status: SlotStatus;
+  createdByUserId?: string;
+  cancelledByUserId?: string;
   createdAt: Date;
   visit?: IVisit;
 }
