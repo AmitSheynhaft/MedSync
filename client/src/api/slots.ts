@@ -126,3 +126,7 @@ export function getSecretaryPastSlots(): Promise<Slot[]> {
 export function deleteSlotAsSecretary(id: string): Promise<void> {
   return apiDelete<void>(`/api/slots/secretary/${id}`);
 }
+
+export function cancelSlotAsPatient(id: string): Promise<void> {
+  return apiDelete<void>(`/api/slots/patient/${id}`);
+}

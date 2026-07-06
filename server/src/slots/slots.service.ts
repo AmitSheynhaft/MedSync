@@ -9,6 +9,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   Between,
   DataSource,
+  ILike,
+  LessThan,
+  MoreThanOrEqual,
+  Not,
   QueryFailedError,
   Repository,
 } from 'typeorm';
@@ -182,13 +186,9 @@ export class SlotsService {
     const [caregiver, secretary, patientMembership] = await Promise.all([
       this.caregivers.findOne({ where: { userId, clinicId } }),
       this.secretaries.findOne({ where: { userId, clinicId } }),
-      this.dataSource
-        .getRepository(PatientClinic)
-        .createQueryBuilder('pc')
-        .innerJoin('pc.patient', 'patient')
-        .where('patient.userId = :userId', { userId })
-        .andWhere('pc.clinicId = :clinicId', { clinicId })
-        .getOne(),
+      this.dataSource.getRepository(PatientClinic).findOne({
+        where: { clinicId, patient: { userId } },
+      }),
     ]);
     if (!caregiver && !secretary && !patientMembership) {
       throw new ForbiddenException('המשתמש אינו שייך למרפאה שלך');
@@ -231,23 +231,22 @@ export class SlotsService {
     const clinicId = await this.getSecretaryClinicId(secretaryUserId);
     const { pageNumber, take, skip } = resolvePaging(page, limit);
 
-    const qb = this.caregivers
-      .createQueryBuilder('caregiver')
-      .leftJoinAndSelect('caregiver.user', 'user')
-      .where('caregiver.clinicId = :clinicId', { clinicId })
-      .orderBy('user.fullName', 'ASC')
-      .skip(skip)
-      .take(take);
-
     const term = search?.trim();
-    if (term) {
-      qb.andWhere(
-        '(user.fullName ILIKE :term OR caregiver.specialization ILIKE :term)',
-        { term: `%${term}%` },
-      );
-    }
+    const like = term ? ILike(`%${term}%`) : undefined;
+    const where = like
+      ? [
+          { clinicId, user: { fullName: like } },
+          { clinicId, specialization: like },
+        ]
+      : { clinicId };
 
-    const [caregivers, total] = await qb.getManyAndCount();
+    const [caregivers, total] = await this.caregivers.findAndCount({
+      where,
+      relations: ['user'],
+      order: { user: { fullName: 'ASC' } },
+      skip,
+      take,
+    });
     const items = caregivers.map((c) => ({
       caregiverId: c.id,
       fullName: c.user?.fullName ?? '',
@@ -265,40 +264,35 @@ export class SlotsService {
     const clinicId = await this.getSecretaryClinicId(secretaryUserId);
     const { pageNumber, take, skip } = resolvePaging(page, limit);
 
-    const qb = this.users
-      .createQueryBuilder('user')
-      .leftJoinAndSelect('user.role', 'role')
-      .leftJoinAndSelect('user.patient', 'patient')
-      .leftJoin('user.caregiver', 'caregiver')
-      .leftJoin('user.secretary', 'secretary')
-      .leftJoin('patient.patientClinics', 'patientClinic', 'patientClinic.clinicId = :clinicId', { clinicId })
-      .where('role.name IN (:...roles)', {
-        roles: [ROLE_PATIENT, ROLE_DOCTOR, ROLE_SECRETARY],
-      })
-      .andWhere('user.id != :secretaryUserId', { secretaryUserId })
-      .andWhere(
-        '((role.name = :patientRole AND patientClinic.clinicId = :clinicId)' +
-          ' OR (role.name = :doctorRole AND caregiver.clinicId = :clinicId)' +
-          ' OR (role.name = :secretaryRole AND secretary.clinicId = :clinicId))',
-        {
-          clinicId,
-          patientRole: ROLE_PATIENT,
-          doctorRole: ROLE_DOCTOR,
-          secretaryRole: ROLE_SECRETARY,
-        },
-      )
-      .orderBy('user.fullName', 'ASC')
-      .skip(skip)
-      .take(take);
+    // A user is bookable when they belong to the clinic through the relation
+    // matching their role. Each entry in the array is OR-ed together.
+    const clinicBranches = [
+      { role: { name: ROLE_PATIENT }, patient: { patientClinics: { clinicId } } },
+      { role: { name: ROLE_DOCTOR }, caregiver: { clinicId } },
+      { role: { name: ROLE_SECRETARY }, secretary: { clinicId } },
+    ];
 
     const term = search?.trim();
-    if (term) {
-      qb.andWhere('(user.fullName ILIKE :term OR user.email ILIKE :term)', {
-        term: `%${term}%`,
-      });
-    }
+    const like = term ? ILike(`%${term}%`) : undefined;
+    const searchBranches = like
+      ? [{ fullName: like }, { email: like }]
+      : [{}];
 
-    const [users, total] = await qb.getManyAndCount();
+    const where = clinicBranches.flatMap((branch) =>
+      searchBranches.map((searchBranch) => ({
+        ...branch,
+        ...searchBranch,
+        id: Not(secretaryUserId),
+      })),
+    );
+
+    const [users, total] = await this.users.findAndCount({
+      where,
+      relations: ['role', 'patient'],
+      order: { fullName: 'ASC' },
+      skip,
+      take,
+    });
     const items = users.map((user) => ({
       userId: user.id,
       fullName: user.fullName,
@@ -311,40 +305,33 @@ export class SlotsService {
 
   async listSecretaryUpcoming(secretaryUserId: string): Promise<SlotDto[]> {
     const clinicId = await this.getSecretaryClinicId(secretaryUserId);
-    const slots = await this.repo
-      .createQueryBuilder('slot')
-      .leftJoinAndSelect('slot.patient', 'patient')
-      .leftJoinAndSelect('patient.user', 'patientUser')
-      .leftJoinAndSelect('slot.caregiver', 'caregiver')
-      .leftJoinAndSelect('caregiver.user', 'caregiverUser')
-      .where('caregiver.clinicId = :clinicId', { clinicId })
-      .andWhere('slot.status = :status', { status: SlotStatus.SCHEDULED })
-      .andWhere('slot.slotTime >= :now', { now: new Date() })
-      .orderBy('slot.slotTime', 'ASC')
-      .getMany();
+    const slots = await this.repo.find({
+      where: {
+        caregiver: { clinicId },
+        status: SlotStatus.SCHEDULED,
+        slotTime: MoreThanOrEqual(new Date()),
+      },
+      relations: SLOT_DETAIL_RELATIONS,
+      order: { slotTime: 'ASC' },
+    });
     return slots.map((slot) => this.toDto(slot));
   }
 
   async listSecretaryPast(secretaryUserId: string): Promise<SlotDto[]> {
     const clinicId = await this.getSecretaryClinicId(secretaryUserId);
     const now = new Date();
-    const slots = await this.repo
-      .createQueryBuilder('slot')
-      .leftJoinAndSelect('slot.patient', 'patient')
-      .leftJoinAndSelect('patient.user', 'patientUser')
-      .leftJoinAndSelect('slot.caregiver', 'caregiver')
-      .leftJoinAndSelect('caregiver.user', 'caregiverUser')
-      .where('caregiver.clinicId = :clinicId', { clinicId })
-      .andWhere(
-        '(slot.status = :cancelled OR (slot.status = :scheduled AND slot.slotTime < :now))',
+    const slots = await this.repo.find({
+      where: [
+        { caregiver: { clinicId }, status: SlotStatus.CANCELLED },
         {
-          cancelled: SlotStatus.CANCELLED,
-          scheduled: SlotStatus.SCHEDULED,
-          now,
+          caregiver: { clinicId },
+          status: SlotStatus.SCHEDULED,
+          slotTime: LessThan(now),
         },
-      )
-      .orderBy('slot.slotTime', 'DESC')
-      .getMany();
+      ],
+      relations: SLOT_DETAIL_RELATIONS,
+      order: { slotTime: 'DESC' },
+    });
     return slots.map((slot) => this.toDto(slot));
   }
 
@@ -359,6 +346,23 @@ export class SlotsService {
       throw new ForbiddenException('התור אינו שייך למרפאה שלך');
     }
     if (slot.status === SlotStatus.CANCELLED) return;
+    slot.status = SlotStatus.CANCELLED;
+    await this.repo.save(slot);
+  }
+
+  async removeAsPatient(id: string, patientUserId: string): Promise<void> {
+    const slot = await this.repo.findOne({
+      where: { id },
+      relations: ['patient'],
+    });
+    if (!slot) throw new NotFoundException(`Slot ${id} not found`);
+    if (slot.patient?.userId !== patientUserId) {
+      throw new ForbiddenException('התור אינו שייך לך');
+    }
+    if (slot.status === SlotStatus.CANCELLED) return;
+    if (slot.slotTime.getTime() < Date.now()) {
+      throw new BadRequestException('לא ניתן לבטל תור שכבר עבר');
+    }
     slot.status = SlotStatus.CANCELLED;
     await this.repo.save(slot);
   }
@@ -378,10 +382,13 @@ export class SlotsService {
         slotTime: Between(start, end),
         status: SlotStatus.SCHEDULED,
       },
-      relations: SLOT_DETAIL_RELATIONS,
+      relations: [...SLOT_DETAIL_RELATIONS, 'visit'],
       order: { slotTime: 'ASC' },
     });
-    return slots.map((slot) => this.toDto(slot));
+    // Hide slots that already have a visit so a doctor can't open a second one.
+    return slots
+      .filter((slot) => !slot.visit)
+      .map((slot) => this.toDto(slot));
   }
 
   async getPatientUpcoming(userId: string): Promise<SlotDto[]> {
@@ -406,28 +413,18 @@ export class SlotsService {
     if (!patient) return [];
 
     const now = new Date();
-    const qb = this.repo
-      .createQueryBuilder('slot')
-      .leftJoinAndSelect('slot.patient', 'patient')
-      .leftJoinAndSelect('patient.user', 'patientUser')
-      .leftJoinAndSelect('slot.caregiver', 'caregiver')
-      .leftJoinAndSelect('caregiver.user', 'caregiverUser')
-      .where('slot.patientId = :patientId', { patientId: patient.id });
+    const scopeWhere =
+      scope === 'upcoming'
+        ? { status: SlotStatus.SCHEDULED, slotTime: MoreThanOrEqual(now) }
+        : scope === 'past'
+        ? { status: SlotStatus.SCHEDULED, slotTime: LessThan(now) }
+        : { status: SlotStatus.CANCELLED };
 
-    if (scope === 'upcoming') {
-      qb.andWhere('slot.status = :status', { status: SlotStatus.SCHEDULED })
-        .andWhere('slot.slotTime >= :now', { now })
-        .orderBy('slot.slotTime', 'ASC');
-    } else if (scope === 'past') {
-      qb.andWhere('slot.status = :status', { status: SlotStatus.SCHEDULED })
-        .andWhere('slot.slotTime < :now', { now })
-        .orderBy('slot.slotTime', 'DESC');
-    } else {
-      qb.andWhere('slot.status = :status', { status: SlotStatus.CANCELLED })
-        .orderBy('slot.slotTime', 'DESC');
-    }
-
-    const slots = await qb.getMany();
+    const slots = await this.repo.find({
+      where: { patientId: patient.id, ...scopeWhere },
+      relations: SLOT_DETAIL_RELATIONS,
+      order: { slotTime: scope === 'upcoming' ? 'ASC' : 'DESC' },
+    });
     return slots.map((slot) => this.toDto(slot));
   }
 

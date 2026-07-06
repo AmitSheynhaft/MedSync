@@ -104,4 +104,13 @@ export class SlotsController {
   ) {
     return this.service.removeAsSecretary(id, user.id);
   }
+
+  @Roles(ROLE_PATIENT)
+  @Delete('patient/:id')
+  removeAsPatient(
+    @User() user: IUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.service.removeAsPatient(id, user.id);
+  }
 }

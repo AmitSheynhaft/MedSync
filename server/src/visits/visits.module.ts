@@ -16,6 +16,7 @@ import { Diagnosis } from '../entities/diagnosis/diagnosisEntity';
 import { Medicine } from '../entities/medicine/medicineEntity';
 import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
 import { Patient } from '../entities/patient/patientEntity';
+import { Slot } from '../entities/slot/slotEntity';
 import { DiagnosesModule } from '../diagnoses/diagnoses.module';
 import { MedicinesModule } from '../medicines/medicines.module';
 import { PatientMedicalSummaryModule } from '../patient-medical-summary/patient-medical-summary.module';
@@ -33,6 +34,7 @@ import { PatientMedicalSummaryModule } from '../patient-medical-summary/patient-
       Medicine,
       PatientClinic,
       Patient,
+      Slot,
     ]),
     DiagnosesModule,
     MedicinesModule,

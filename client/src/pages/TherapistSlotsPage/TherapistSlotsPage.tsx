@@ -45,7 +45,7 @@ export const TherapistSlotsPage: React.FC = () => {
                 <PatientSlotCard
                   key={slot.id}
                   slot={slot}
-                  onClick={() => navigate(`/patients/${slot.patient.patientId}`)}
+                  onClick={() => navigate(`/patients/${slot.patient.patientId}?slotId=${slot.id}`)}
                 />
               ))}
             </Stack>

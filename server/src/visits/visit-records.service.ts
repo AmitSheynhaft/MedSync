@@ -3,6 +3,8 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import * as os from 'os';
 import puppeteer from 'puppeteer';
@@ -17,6 +19,7 @@ import { Diagnosis } from '../entities/diagnosis/diagnosisEntity';
 import { Medicine } from '../entities/medicine/medicineEntity';
 import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
 import { Patient } from '../entities/patient/patientEntity';
+import { Slot } from '../entities/slot/slotEntity';
 import { RecordingStatus, VisitSummaryType, VisitType } from '../entities/enums';
 import { DiagnosesService } from '../diagnoses/diagnoses.service';
 import { MedicinesService } from '../medicines/medicines.service';
@@ -90,6 +93,8 @@ export class VisitRecordsService {
     private readonly patientClinics: Repository<PatientClinic>,
     @InjectRepository(Patient)
     private readonly patientsRepo: Repository<Patient>,
+    @InjectRepository(Slot)
+    private readonly slots: Repository<Slot>,
     private readonly diagnosesService: DiagnosesService,
     private readonly medicinesService: MedicinesService,
     private readonly dataSource: DataSource,
@@ -103,7 +108,7 @@ export class VisitRecordsService {
     const todayDateOnly = new Date();
     todayDateOnly.setHours(0, 0, 0, 0);
 
-    return visitDateOnly <= todayDateOnly;
+    return visitDateOnly < todayDateOnly;
   }
 
   private throwIfPastVisit(visit: Visit, operation: string = 'modify'): void {
@@ -491,6 +496,24 @@ export class VisitRecordsService {
         throw new BadRequestException(
           'לא ניתן ליצור ביקור עבור עצמך',
         );
+      }
+    }
+    if (input.slotId) {
+      const slot = await this.slots.findOne({
+        where: { id: input.slotId },
+        relations: ['visit'],
+      });
+      if (!slot) {
+        throw new NotFoundException('התור לא נמצא');
+      }
+      if (slot.caregiverId !== input.caregiverId) {
+        throw new ForbiddenException('התור אינו שייך למטפל זה');
+      }
+      if (slot.patientId !== input.patientId) {
+        throw new BadRequestException('התור אינו שייך למטופל זה');
+      }
+      if (slot.visit) {
+        throw new ConflictException('כבר קיים ביקור עבור תור זה');
       }
     }
     const visit = this.visits.create({
