@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerDoctor, registerPatient, registerSecretary } from '../../../api/authApi';
+import { registerDoctor, registerPatient, registerSecretary, registerAdmin } from '../../../api/authApi';
 import { getClinics, type Clinic } from '../../../api/clinics';
 import { saveUserDataSession } from '../../../auth/userDataSessionStore';
 import { markWelcomePending } from '../../../components/SystemInfoModal/welcomeFlag';
@@ -13,6 +13,7 @@ export function useRegisterForm(role: RegisterRole) {
   const isDoctor = role === 'doctor';
   const isSecretary = role === 'secretary';
   const isPatient = role === 'patient';
+  const isAdmin = role === 'admin';
 
   const [step, setStep] = useState(0);
   const [agreed, setAgreed] = useState(false);
@@ -64,7 +65,7 @@ export function useRegisterForm(role: RegisterRole) {
       setError('תעודת זהות היא שדה חובה');
       return;
     }
-    if (!phone.trim()) {
+    if (!isAdmin && !phone.trim()) {
       setError('טלפון הוא שדה חובה');
       return;
     }
@@ -76,13 +77,15 @@ export function useRegisterForm(role: RegisterRole) {
       setError('כתובת היא שדה חובה');
       return;
     }
-    if (!clinicId) {
+    if (!isAdmin && !clinicId) {
       setError('יש לבחור מרפאה');
       return;
     }
     setSubmitting(true);
     try {
-      const result = isSecretary
+      const result = isAdmin
+        ? await registerAdmin({ role: 'admin', fullName, email, password, phone: phone || undefined })
+        : isSecretary
         ? await registerSecretary({ role: 'secretary', fullName, email, password, idNumber: idOrLicense.trim(), clinicId, phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined })
         : isDoctor
         ? await registerDoctor({ role: 'doctor', fullName, email, password, licenseNumber: idOrLicense || 'TBD', specialization: specialization || 'General', phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined, clinicId: clinicId || undefined })

@@ -2,6 +2,7 @@ import React from 'react';
 import PersonIcon from '@mui/icons-material/Person';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 export interface RegisterRoleConfig {
   label: string;
@@ -11,7 +12,7 @@ export interface RegisterRoleConfig {
   subtitle: string;
 }
 
-export const roleConfig: Record<'patient' | 'doctor' | 'secretary', RegisterRoleConfig> = {
+export const roleConfig: Record<'patient' | 'doctor' | 'secretary' | 'admin', RegisterRoleConfig> = {
   patient: {
     label: 'מטופל',
     icon: <PersonIcon sx={{ fontSize: 16 }} />,
@@ -32,6 +33,13 @@ export const roleConfig: Record<'patient' | 'doctor' | 'secretary', RegisterRole
     color: '#1971c2',
     heading: 'יצירת חשבון מזכירות',
     subtitle: 'תאם תורים בין מטפלים למטופלים ונהל מסמכים.',
+  },
+  admin: {
+    label: 'מנהל מערכת',
+    icon: <AdminPanelSettingsIcon sx={{ fontSize: 16 }} />,
+    color: '#e03131',
+    heading: 'יצירת חשבון מנהל',
+    subtitle: 'נהל משתמשים, מרפאות והגדרות המערכת.',
   },
 };
 

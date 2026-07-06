@@ -7,6 +7,7 @@ import {
   RegisterDoctorInput,
   RegisterPatientInput,
   RegisterSecretaryInput,
+  RegisterAdminInput,
 } from './auth.service';
 import { Public } from '../common/decorators/public.decorator';
 import { User } from '../common/decorators/user.decorator';
@@ -55,6 +56,15 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.issueSession(res, await this.service.registerSecretary(body));
+  }
+
+  @Public()
+  @Post('register/admin')
+  async registerAdmin(
+    @Body() body: RegisterAdminInput,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.issueSession(res, await this.service.registerAdmin(body));
   }
 
   @Public()

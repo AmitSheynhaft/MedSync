@@ -9,7 +9,7 @@ import type { RegisterRole } from "./types";
 export const RegisterPage: React.FC = () => {
   const { role } = useParams<{ role: string }>();
   const config = resolveRegisterRole(role);
-  const registerRole: RegisterRole = role === "doctor" ? "doctor" : role === "secretary" ? "secretary" : "patient";
+  const registerRole: RegisterRole = role === "doctor" ? "doctor" : role === "secretary" ? "secretary" : role === "admin" ? "admin" : "patient";
   const form = useRegisterForm(registerRole);
 
   return (

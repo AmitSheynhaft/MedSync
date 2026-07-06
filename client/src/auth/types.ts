@@ -52,3 +52,11 @@ export interface RegisterSecretaryInput {
   birthDate?: string;
   gender?: string;
 }
+
+export interface RegisterAdminInput {
+  role?: RoleName;
+  fullName: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
