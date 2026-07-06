@@ -68,4 +68,4 @@ jobs:
       - name: Verify server is up
         run: |
           sleep 5
-          curl -f http://localhost:3000 2>/dev/null || (pm2 logs medsync-api --lines 50 --nostream && exit 1)
+          curl -f http://localhost:3000/api/clinics 2>/dev/null || (pm2 logs medsync-api --lines 50 --nostream && exit 1)
