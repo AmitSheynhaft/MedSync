@@ -43,7 +43,7 @@ export const RequireRole: React.FC<IRequireRoleProps> = ({ allow }) => {
   };
 
   if (isRoleTampered || isRoleViewTampered()) {
-    return <RoleMismatchDialog open onConfirm={handleConfirmRelogin} />;
+    return <RoleMismatchDialog open onConfirm={handleConfirmRelogin} mode="tamper" />;
   }
 
   if (!hasVerifiedOnce) return null;
@@ -55,7 +55,13 @@ export const RequireRole: React.FC<IRequireRoleProps> = ({ allow }) => {
   const effectiveRole = getEffectiveRole() ?? currentUser.role;
 
   if (allow && !allow.includes(effectiveRole)) {
-    return <Navigate to={homeForRole(effectiveRole)} replace />;
+    return (
+      <RoleMismatchDialog
+        open
+        mode="route"
+        onConfirm={() => navigate(homeForRole(effectiveRole), { replace: true })}
+      />
+    );
   }
 
   return <Outlet />;

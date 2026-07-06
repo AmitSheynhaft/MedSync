@@ -12,8 +12,12 @@ export * from './patient/patientEntity';
 export * from './caregiver/caregiverInterface';
 export * from './caregiver/caregiverEntity';
 
+export * from './secretary/secretaryInterface';
+export * from './secretary/secretaryEntity';
+
 export * from './slot/slotInterface';
 export * from './slot/slotEntity';
+export * from './slot/slotStatus';
 
 export * from './medicalDocument/medicalDocumentInterface';
 export * from './medicalDocument/medicalDocumentEntity';

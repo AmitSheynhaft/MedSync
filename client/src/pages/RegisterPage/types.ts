@@ -1,5 +1,7 @@
 import type { RegisterFormState } from './hooks/useRegisterForm';
 
+export type RegisterRole = 'doctor' | 'patient' | 'secretary';
+
 export type TFieldOption = {
   value: string;
   label: string;
@@ -7,7 +9,7 @@ export type TFieldOption = {
 
 export type TFieldConfig = {
   key: string;
-  placeholder?: string | ((isDoctor: boolean) => string);
+  placeholder?: string | ((role: RegisterRole) => string);
   label?: string;
   type?: string;
   autoComplete?: string;
@@ -16,7 +18,8 @@ export type TFieldConfig = {
   select?: boolean;
   options?: TFieldOption[] | ((form: RegisterFormState) => TFieldOption[]);
   inputLabelShrink?: boolean;
-  showFor?: 'doctor' | 'patient';
+  showFor?: RegisterRole;
+  hideFor?: RegisterRole[];
   getValue: (form: RegisterFormState) => string;
   onChange: (form: RegisterFormState, value: string) => void;
 };

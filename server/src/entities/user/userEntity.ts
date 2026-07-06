@@ -12,6 +12,7 @@ import {
 import { Role } from '../role/roleEntity';
 import { Patient } from '../patient/patientEntity';
 import { Caregiver } from '../caregiver/caregiverEntity';
+import { Secretary } from '../secretary/secretaryEntity';
 import { IUser } from './userInterface';
 
 @Entity({ name: 'users' })
@@ -55,4 +56,7 @@ export class User extends BaseEntity implements IUser {
 
   @OneToOne(() => Caregiver, (caregiver) => caregiver.user)
   caregiver?: Caregiver;
+
+  @OneToOne(() => Secretary, (secretary) => secretary.user)
+  secretary?: Secretary;
 }

@@ -1,4 +1,4 @@
-import { ROLE_DOCTOR, ROLE_PATIENT } from '../common/constants/roles';
+import { ROLE_DOCTOR } from '../common/constants/roles';
 
 export interface SessionInfo {
   email: string;
@@ -22,7 +22,9 @@ export function buildSessionInfo(user: SessionUser, role: string): SessionInfo {
     email: user.email,
     fullName: user.fullName,
     role,
-    patientId: role === ROLE_PATIENT ? user.patient?.id : undefined,
+    // Expose the patient id whenever the user has a patient profile so that a
+    // doctor/secretary acting as a patient keeps patient context after refresh.
+    patientId: user.patient?.id,
     caregiverId: role === ROLE_DOCTOR ? user.caregiver?.id : undefined,
     clinicId: role === ROLE_DOCTOR ? user.caregiver?.clinicId : undefined,
   };

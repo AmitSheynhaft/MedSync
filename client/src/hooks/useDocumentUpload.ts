@@ -1,5 +1,5 @@
 import { useState, useRef, ChangeEvent } from 'react';
-import { uploadDocument, getDocumentSummary } from '../api/documents';
+import { uploadDocumentFor, getDocumentSummary } from '../api/documents';
 import { getMedicalDocument } from '../api/medical-documents';
 
 type UploadStatus = 'idle' | 'uploading' | 'processing' | 'done' | 'error';
@@ -9,13 +9,14 @@ const MAX_POLLS = 60; // ~2 minutes
 
 const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 
-export function useDocumentUpload(patientId?: string) {
+export function useDocumentUpload(patientId?: string, patientUserId?: string) {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [summary, setSummary] = useState('');
   const [uploadedId, setUploadedId] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isUploadingRef = useRef(false);
 
   const selectFile = (e: ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -30,13 +31,18 @@ export function useDocumentUpload(patientId?: string) {
 
   const upload = async () => {
     if (!file) return;
+    // Guard against re-entrancy (fast double-clicks): the button's disabled
+    // state is driven by React state which updates a render later, leaving a
+    // window where a second click could fire a duplicate request.
+    if (isUploadingRef.current) return;
+    isUploadingRef.current = true;
     setStatus('uploading');
     setSummary('');
     setUploadedId(null);
     setUploadedFileName(null);
     try {
       // 1. Upload — server responds immediately with a PROCESSING document.
-      const { id, filename } = await uploadDocument(file, patientId);
+      const { id, filename } = await uploadDocumentFor(file, { patientId, patientUserId });
       setUploadedId(id);
       setUploadedFileName(filename);
       setStatus('processing');
@@ -64,6 +70,8 @@ export function useDocumentUpload(patientId?: string) {
     } catch {
       setSummary('Failed to process document. Please try again.');
       setStatus('error');
+    } finally {
+      isUploadingRef.current = false;
     }
   };
 
@@ -73,6 +81,7 @@ export function useDocumentUpload(patientId?: string) {
     setSummary('');
     setUploadedId(null);
     setUploadedFileName(null);
+    isUploadingRef.current = false;
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 

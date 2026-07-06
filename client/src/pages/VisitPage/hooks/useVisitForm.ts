@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAudioRecorder } from '../../../hooks/useAudioRecorder';
 import { getEffectiveRole } from '../../../auth/viewAs';
 import { Role } from '../../../constants/roles';
@@ -23,7 +23,7 @@ function isDateInPast(dateString: string | null): boolean {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    return visitDate <= today;
+    return visitDate < today;
   } catch {
     return false;
   }
@@ -32,6 +32,8 @@ function isDateInPast(dateString: string | null): boolean {
 export function useVisitForm() {
   const navigate = useNavigate();
   const { id: patientId, visitId } = useParams<{ id: string; visitId: string }>();
+  const [searchParams] = useSearchParams();
+  const slotId = searchParams.get('slotId') ?? undefined;
   const { status, isStarting, transcript, summary, timer, start, stop } = useAudioRecorder();
 
   const [subjective, setSubjective] = useState('');
@@ -45,6 +47,9 @@ export function useVisitForm() {
   const [toast, setToast] = useState<ToastState>(null);
 
   const [isLoadingVisit, setIsLoadingVisit] = useState(false);
+  // Tracks the visit created in this session so a second save updates it
+  // instead of creating a duplicate (the page no longer navigates away on save).
+  const [createdVisitId, setCreatedVisitId] = useState<string | null>(null);
   const isSavingRef = useRef(false);
   const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null);
 
@@ -225,11 +230,14 @@ export function useVisitForm() {
     isSavingRef.current = true;
     setSaving(true);
     try {
-      const targetId = visitId ?? (await createVisit({
+      const existingId = visitId ?? createdVisitId;
+      const targetId = existingId ?? (await createVisit({
         patientId,
+        slotId,
         visitDate: new Date().toISOString(),
         ...vitalsAndMeta,
       })).id;
+      if (!existingId) setCreatedVisitId(targetId);
 
       if (summaryText) {
         await upsertVisitSummary(targetId, {
@@ -238,7 +246,7 @@ export function useVisitForm() {
         });
       }
 
-      if (visitId) {
+      if (existingId) {
         await updateVisit(targetId, vitalsAndMeta);
       }
 
@@ -253,7 +261,7 @@ export function useVisitForm() {
       }
 
       setToast({ severity: 'success', message: 'ביקור נשמר.' });
-      window.setTimeout(() => navigate(`/patients/${patientId}`), 700);
+      window.setTimeout(() => navigate('/patients'), 700);
     } catch (err: any) {
       setToast({ severity: 'error', message: err?.message || 'שמירת ביקור נכשלה.' });
     } finally {

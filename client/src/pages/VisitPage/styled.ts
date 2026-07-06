@@ -16,11 +16,14 @@ export const FormColumn = styled(Box)({
   display: 'flex',
   flexDirection: 'column',
   flex: 1,
-  overflowY: 'visible',
+  // A flex child needs `min-height: 0` for its own overflow to kick in;
+  // otherwise the default `min-height: auto` causes the column to grow past
+  // the parent's clip region and the last section (save button) is hidden.
+  minHeight: 0,
+  overflowY: 'auto',
   padding: 14,
   gap: 12,
   '@media (min-width:900px)': {
-    overflowY: 'auto',
     padding: 20,
     gap: 14,
   },

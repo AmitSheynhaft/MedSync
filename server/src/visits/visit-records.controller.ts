@@ -104,7 +104,12 @@ export class VisitRecordsController {
       throw new ForbiddenException('No caregiver profile for this user');
     }
     const actingClinicId = user?.caregiver?.clinicId;
-    return this.service.create({ ...body, caregiverId, actingClinicId });
+    return this.service.create({
+      ...body,
+      caregiverId,
+      actingClinicId,
+      actingUserId: user.id,
+    });
   }
 
   @Roles(ROLE_DOCTOR)

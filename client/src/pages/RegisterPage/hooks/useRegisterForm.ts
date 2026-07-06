@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerDoctor, registerPatient } from '../../../api/authApi';
+import { registerDoctor, registerPatient, registerSecretary } from '../../../api/authApi';
 import { getClinics, type Clinic } from '../../../api/clinics';
 import { saveUserDataSession } from '../../../auth/userDataSessionStore';
 import { markWelcomePending } from '../../../components/SystemInfoModal/welcomeFlag';
+import { homeForRole } from '../../../auth/viewAs';
+import type { RegisterRole } from '../types';
 
-export function useRegisterForm(isDoctor: boolean) {
+export function useRegisterForm(role: RegisterRole) {
   const navigate = useNavigate();
+
+  const isDoctor = role === 'doctor';
+  const isSecretary = role === 'secretary';
+  const isPatient = role === 'patient';
 
   const [step, setStep] = useState(0);
   const [agreed, setAgreed] = useState(false);
@@ -54,15 +60,19 @@ export function useRegisterForm(isDoctor: boolean) {
       setError('התמחות היא שדה חובה');
       return;
     }
+    if (isSecretary && !idOrLicense.trim()) {
+      setError('תעודת זהות היא שדה חובה');
+      return;
+    }
     if (!phone.trim()) {
       setError('טלפון הוא שדה חובה');
       return;
     }
-    if (!isDoctor && !hmo.trim()) {
+    if (isPatient && !hmo.trim()) {
       setError('קופת חולים היא שדה חובה');
       return;
     }
-    if (!isDoctor && !address.trim()) {
+    if (isPatient && !address.trim()) {
       setError('כתובת היא שדה חובה');
       return;
     }
@@ -72,12 +82,14 @@ export function useRegisterForm(isDoctor: boolean) {
     }
     setSubmitting(true);
     try {
-      const result = isDoctor
+      const result = isSecretary
+        ? await registerSecretary({ role: 'secretary', fullName, email, password, idNumber: idOrLicense.trim(), clinicId, phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined })
+        : isDoctor
         ? await registerDoctor({ role: 'doctor', fullName, email, password, licenseNumber: idOrLicense || 'TBD', specialization: specialization || 'General', phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined, clinicId: clinicId || undefined })
         : await registerPatient({ role: 'patient', fullName, email, password, idNumber: idOrLicense || undefined, address: address || '', hmo: hmo || undefined, phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined, clinicId: clinicId || undefined });
       saveUserDataSession(result);
       markWelcomePending();
-      navigate(result.role === 'patient' ? '/dashboard' : '/patients');
+      navigate(homeForRole(result.role));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'הרשמה נכשלה');
     } finally {

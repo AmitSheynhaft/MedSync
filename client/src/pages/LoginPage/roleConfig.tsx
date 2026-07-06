@@ -1,6 +1,7 @@
 import React from 'react';
 import PersonIcon from '@mui/icons-material/Person';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 
 export interface LoginRoleConfig {
   label: string;
@@ -11,7 +12,7 @@ export interface LoginRoleConfig {
   redirect: string;
 }
 
-export const roleConfig: Record<'patient' | 'doctor', LoginRoleConfig> = {
+export const roleConfig: Record<'patient' | 'doctor' | 'secretary', LoginRoleConfig> = {
   patient: {
     label: 'מטופל',
     icon: <PersonIcon sx={{ fontSize: 16 }} />,
@@ -21,12 +22,20 @@ export const roleConfig: Record<'patient' | 'doctor', LoginRoleConfig> = {
     redirect: '/dashboard',
   },
   doctor: {
-    label: 'רופא',
+    label: 'מטפל',
     icon: <MedicalServicesIcon sx={{ fontSize: 16 }} />,
     color: '#7048e8',
     heading: 'ברוך הבא',
     subtitle: 'התחבר לחשבונך לניהול מטופלים.',
     redirect: '/patients',
+  },
+  secretary: {
+    label: 'מזכירות',
+    icon: <SupportAgentIcon sx={{ fontSize: 16 }} />,
+    color: '#1971c2',
+    heading: 'ברוך הבא',
+    subtitle: 'התחבר לחשבונך לתיאום תורים וניהול מסמכים.',
+    redirect: '/schedule',
   },
 };
 

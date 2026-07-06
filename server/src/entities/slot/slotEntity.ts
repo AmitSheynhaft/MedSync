@@ -13,6 +13,7 @@ import { Patient } from '../patient/patientEntity';
 import { Caregiver } from '../caregiver/caregiverEntity';
 import { Visit } from '../visit/visitEntity';
 import { ISlot } from './slotInterface';
+import { SlotStatus } from './slotStatus';
 
 @Entity({ name: 'slots' })
 @Index(['caregiverId', 'slotTime'])
@@ -41,6 +42,14 @@ export class Slot extends BaseEntity implements ISlot {
 
   @Column({ type: 'boolean', name: 'has_referral', default: false })
   hasReferral: boolean;
+
+  @Column({
+    type: 'varchar',
+    length: 20,
+    name: 'status',
+    default: SlotStatus.SCHEDULED,
+  })
+  status: SlotStatus;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;

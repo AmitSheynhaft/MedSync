@@ -93,7 +93,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     <Dialog
       open={open}
       onClose={onClose}
-      slotProps={{ paper: { sx: { borderRadius: 4, p: 1, width: 420 } } }}
+      slotProps={{ paper: { sx: { borderRadius: 4, p: 1, width: '100%', maxWidth: 420, m: 2 } } }}
     >
       <DialogContent
         dir="rtl"

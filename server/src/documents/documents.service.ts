@@ -129,19 +129,20 @@ export class DocumentsService {
 
   async getFileData(
     id: string,
-  ): Promise<{ buffer: Buffer; mimeType: string; fileName: string } | null> {
+  ): Promise<{ buffer: Buffer; mimeType: string; fileName: string; patientId: string | null } | null> {
     const doc = await this.medicalDocuments.findOne({ where: { id } });
     if (!doc || !doc.fileData) return null;
     return {
       buffer: doc.fileData,
       mimeType: doc.fileFormat || 'application/octet-stream',
       fileName: doc.fileName,
+      patientId: doc.patientId ?? null,
     };
   }
 
   async getSummary(
     id: string,
-  ): Promise<{ summaryText: string; fileName: string } | null> {
+  ): Promise<{ summaryText: string; fileName: string; patientId: string | null } | null> {
     const doc = await this.medicalDocuments.findOne({
       where: { id },
       relations: ['summary'],
@@ -150,6 +151,7 @@ export class DocumentsService {
     return {
       summaryText: doc.summary?.summaryText ?? '',
       fileName: doc.fileName,
+      patientId: doc.patientId ?? null,
     };
   }
 }

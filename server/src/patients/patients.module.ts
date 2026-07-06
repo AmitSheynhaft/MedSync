@@ -8,13 +8,14 @@ import { Visit } from '../entities/visit/visitEntity';
 import { MedicalDocument } from '../entities/medicalDocument/medicalDocumentEntity';
 import { PatientMedicalSummary } from '../entities/patientMedicalSummary/patientMedicalSummaryEntity';
 import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
+import { Secretary } from '../entities/secretary/secretaryEntity';
 import { RolesModule } from '../roles/roles.module';
 import { PatientMedicalSummaryModule } from '../patient-medical-summary/patient-medical-summary.module';
 import { ClinicalAlertsModule } from '../clinical-alerts/clinical-alerts.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Patient, User, Visit, MedicalDocument, PatientMedicalSummary, PatientClinic]),
+    TypeOrmModule.forFeature([Patient, User, Visit, MedicalDocument, PatientMedicalSummary, PatientClinic, Secretary]),
     RolesModule,
     PatientMedicalSummaryModule,
     ClinicalAlertsModule,
