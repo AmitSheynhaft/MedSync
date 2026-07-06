@@ -100,6 +100,14 @@ export class VisitRecordsService {
     private readonly medicalSummaryService: PatientMedicalSummaryService,
   ) {}
 
+  private isSameDay(a: Date, b: Date): boolean {
+    return (
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate()
+    );
+  }
+
   private isVisitInPast(visitDate: Date): boolean {
     const visitDateOnly = new Date(visitDate);
     visitDateOnly.setHours(0, 0, 0, 0);
@@ -518,6 +526,9 @@ export class VisitRecordsService {
       }
       if (slot.visit) {
         throw new ConflictException('כבר קיים ביקור עבור תור זה');
+      }
+      if (!this.isSameDay(slot.slotTime, new Date())) {
+        throw new BadRequestException('ניתן לפתוח ביקור לתור רק ביום התור');
       }
     }
     const visit = this.visits.create({

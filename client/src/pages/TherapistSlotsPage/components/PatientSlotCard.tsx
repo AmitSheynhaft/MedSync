@@ -5,12 +5,14 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import type { Slot } from '../../../api/slots';
 import { getGenderLabel } from '../../../utils/format';
 
-interface IPatientAppointmentCardProps {
+interface IPatientSlotCardProps {
   slot: Slot;
   onClick: () => void;
+  /** When false the slot can't be opened (only same-day slots are openable). */
+  openable?: boolean;
 }
 
-export const PatientSlotCard: React.FC<IPatientAppointmentCardProps> = ({ slot, onClick }) => {
+export const PatientSlotCard: React.FC<IPatientSlotCardProps> = ({ slot, onClick, openable = true }) => {
   const { patient, time } = slot;
   const details = [
     patient.age !== undefined ? `גיל ${patient.age}` : null,
@@ -21,15 +23,17 @@ export const PatientSlotCard: React.FC<IPatientAppointmentCardProps> = ({ slot, 
   return (
     <Box
       role="button"
-      onClick={onClick}
+      aria-disabled={!openable}
+      onClick={() => openable && onClick()}
       sx={{
         bgcolor: '#fff',
         borderRadius: 3,
         border: '1px solid #e9ecef',
         p: 2,
-        cursor: 'pointer',
+        opacity: openable ? 1 : 0.6,
+        cursor: openable ? 'pointer' : 'not-allowed',
         transition: 'border-color 0.15s, box-shadow 0.15s',
-        '&:hover': { borderColor: '#c6ceda', boxShadow: '0 2px 10px rgba(59,91,219,0.08)' },
+        '&:hover': openable ? { borderColor: '#c6ceda', boxShadow: '0 2px 10px rgba(59,91,219,0.08)' } : {},
       }}
     >
       <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
@@ -46,7 +50,7 @@ export const PatientSlotCard: React.FC<IPatientAppointmentCardProps> = ({ slot, 
           <Typography noWrap sx={{ fontWeight: 700, color: '#1a1a2e' }}>{patient.fullName}</Typography>
           {details && <Typography noWrap sx={{ fontSize: 13, color: '#868e96' }}>{details}</Typography>}
         </Box>
-        <ChevronLeftIcon sx={{ color: '#adb5bd' }} />
+        {openable && <ChevronLeftIcon sx={{ color: '#adb5bd' }} />}
       </Stack>
     </Box>
   );

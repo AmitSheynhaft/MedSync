@@ -16,6 +16,9 @@ export const TherapistSlotsPage: React.FC = () => {
     [date],
   );
 
+  // A visit can only be opened for a slot on its own day.
+  const isToday = date === todayISO();
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
       <PageHeader title="יומן התורים" subtitle="בחר תור לצפייה בתיק המטופל" />
@@ -31,6 +34,7 @@ export const TherapistSlotsPage: React.FC = () => {
 
           <Typography sx={{ fontSize: 13, color: '#868e96', mb: 1.5 }}>
             {formatSlotDate(date)}
+            {!isToday && ' · ניתן לפתוח ביקור רק בתורים של היום'}
           </Typography>
 
           {status === 'loading' ? (
@@ -45,6 +49,7 @@ export const TherapistSlotsPage: React.FC = () => {
                 <PatientSlotCard
                   key={slot.id}
                   slot={slot}
+                  openable={isToday}
                   onClick={() => navigate(`/patients/${slot.patient.patientId}?slotId=${slot.id}`)}
                 />
               ))}
