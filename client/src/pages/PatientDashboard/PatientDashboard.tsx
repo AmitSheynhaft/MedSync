@@ -108,7 +108,13 @@ export const PatientDashboard: React.FC = () => {
           </Grid>
         </Grid>
 
-        <VisitsList visits={visits} patientId={patientId} />
+        <VisitsList
+          visits={visits}
+          patientId={patientId}
+          onDownloadError={(message) =>
+            setToast({ severity: "error", message })
+          }
+        />
       </Box>
 
       <UploadModal

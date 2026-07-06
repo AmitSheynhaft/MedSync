@@ -1,12 +1,15 @@
 import React from "react";
-import { Avatar, Box, Paper, Stack, Typography } from "@mui/material";
+import { Avatar, Box, Button, Paper, Stack, Typography } from "@mui/material";
 import PhoneIcon from "@mui/icons-material/Phone";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import { useNavigate } from "react-router-dom";
 import { Encounter } from "../../../api/patients";
+import { downloadVisitSummaryPdf } from "../../../api/visits";
 
 interface VisitsListProps {
   visits: Encounter[];
   patientId: string | undefined;
+  onDownloadError?: (message: string) => void;
 }
 
 function ChevronLeft() {
@@ -30,11 +33,40 @@ function ChevronLeft() {
 function VisitRow({
   visit,
   patientId,
+  onDownloadError,
 }: {
   visit: Encounter;
   patientId: string | undefined;
+  onDownloadError?: (message: string) => void;
 }) {
   const navigate = useNavigate();
+  const [isDownloading, setIsDownloading] = React.useState(false);
+
+  const handleDownloadPdf = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setIsDownloading(true);
+    try {
+      const blob = await downloadVisitSummaryPdf(visit.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `medsync-visit-summary-${visit.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      const fallback = "הורדת הסיכום נכשלה. נסה שוב בעוד רגע.";
+      if (error instanceof Error && error.message) {
+        onDownloadError?.(error.message);
+      } else {
+        onDownloadError?.(fallback);
+      }
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <Stack
       direction="row"
@@ -64,23 +96,28 @@ function VisitRow({
         <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
           {visit.date} • {visit.type}
         </Typography>
-        {visit.note && (
-          <Typography
-            sx={{
-              fontSize: 12,
-              color: "#495057",
-              mt: 0.5,
-              fontStyle: "italic",
-              overflow: "hidden",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-            }}
-          >
-            "{visit.note}"
-          </Typography>
-        )}
       </Box>
+
+      <Button
+        variant="outlined"
+        size="small"
+        startIcon={<PictureAsPdfIcon sx={{ fontSize: 16 }} />}
+        onClick={handleDownloadPdf}
+        disabled={isDownloading}
+        sx={{
+          minWidth: 0,
+          borderRadius: 999,
+          px: 1.5,
+          fontSize: 12,
+          fontWeight: 700,
+          textTransform: "none",
+          borderColor: "#ced4da",
+          color: "#495057",
+          "&:hover": { borderColor: "#adb5bd", bgcolor: "#f8f9fa" },
+        }}
+      >
+        {isDownloading ? "מוריד..." : "הורדת סיכום ביקור"}
+      </Button>
 
       <Box sx={{ color: '#adb5bd', flexShrink: 0, display: 'flex' }}>
         <ChevronLeft />
@@ -92,6 +129,7 @@ function VisitRow({
 export const VisitsList: React.FC<VisitsListProps> = ({
   visits,
   patientId,
+  onDownloadError,
 }) => {
   return (
     <Paper
@@ -108,7 +146,12 @@ export const VisitsList: React.FC<VisitsListProps> = ({
       ) : (
         <Stack spacing={1.5}>
           {visits.map((visit) => (
-            <VisitRow key={visit.id} visit={visit} patientId={patientId} />
+            <VisitRow
+              key={visit.id}
+              visit={visit}
+              patientId={patientId}
+              onDownloadError={onDownloadError}
+            />
           ))}
         </Stack>
       )}

@@ -12,6 +12,23 @@ import { getMedicines, Medicine } from '../../../api/medicines';
 import { ToastState, DiagnosisItem, MedicineItem, PatientInfo } from '../constants';
 import { parseSummaryText, buildSummaryText } from '../utils';
 
+
+function isDateInPast(dateString: string | null): boolean {
+  if (!dateString) return false;
+  
+  try {
+    const visitDate = new Date(dateString);
+    visitDate.setHours(0, 0, 0, 0);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return visitDate <= today;
+  } catch {
+    return false;
+  }
+}
+
 export function useVisitForm() {
   const navigate = useNavigate();
   const { id: patientId, visitId } = useParams<{ id: string; visitId: string }>();
@@ -21,8 +38,9 @@ export function useVisitForm() {
   const [diagnosis, setDiagnosis] = useState('');
   const [plan, setPlan] = useState('');
   const [saving, setSaving] = useState(false);
-  // Patients may only ever view a visit; recording and saving stay doctor-only.
-  const [isReadOnly] = useState(() => getEffectiveRole() !== Role.Doctor);
+  // Determine if the form should be read-only based on role and visit date
+  const [visitDateObj, setVisitDateObj] = useState<Date | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(() => getEffectiveRole() !== Role.Doctor);
   const [visitDate, setVisitDate] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
 
@@ -89,7 +107,9 @@ export function useVisitForm() {
     setIsLoadingVisit(true);
     getVisit(visitId).then(visitData => {
       if (!active) return;
-      setVisitDate(visitData.visitDate ? new Date(visitData.visitDate).toLocaleDateString() : null);
+      const visitDateObj = visitData.visitDate ? new Date(visitData.visitDate) : null;
+      setVisitDateObj(visitDateObj);
+      setVisitDate(visitDateObj ? visitDateObj.toLocaleDateString() : null);
 
       const { subjective: patientComplaints, diagnosis: diagnosisText, recommendations } = parseSummaryText(visitData.summary?.summaryText ?? '');
       setSubjective(patientComplaints);
@@ -139,6 +159,13 @@ export function useVisitForm() {
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visitId]);
+
+  useEffect(() => {
+    const userIsDoctor = getEffectiveRole() === Role.Doctor;
+    const visitIsPast = visitDateObj && isDateInPast(visitDateObj.toISOString());
+    
+    setIsReadOnly(!userIsDoctor || !!visitIsPast);
+  }, [visitDateObj]);
 
   const handleRecord = () => {
     if (isStarting) return;

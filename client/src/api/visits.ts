@@ -5,6 +5,7 @@ import {
   apiPost,
   apiPut,
   apiRequest,
+  apiBlob,
 } from './client';
 
 export type RecordingStatus =
@@ -156,3 +157,6 @@ export const addVisitMedicine = (id: string, input: VisitMedicineInput) =>
   apiPost(`/api/visits-records/${id}/medicines`, input);
 export const removeVisitMedicine = (id: string, medicineId: string) =>
   apiDelete<void>(`/api/visits-records/${id}/medicines/${medicineId}`);
+
+export const downloadVisitSummaryPdf = (id: string) =>
+  apiBlob(`/api/visits-records/${id}/summary-pdf`);

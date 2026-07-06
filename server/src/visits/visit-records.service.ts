@@ -4,6 +4,8 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import * as os from 'os';
+import puppeteer from 'puppeteer';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Visit } from '../entities/visit/visitEntity';
@@ -93,6 +95,338 @@ export class VisitRecordsService {
     private readonly dataSource: DataSource,
     private readonly medicalSummaryService: PatientMedicalSummaryService,
   ) {}
+
+  private isVisitInPast(visitDate: Date): boolean {
+    const visitDateOnly = new Date(visitDate);
+    visitDateOnly.setHours(0, 0, 0, 0);
+
+    const todayDateOnly = new Date();
+    todayDateOnly.setHours(0, 0, 0, 0);
+
+    return visitDateOnly <= todayDateOnly;
+  }
+
+  private throwIfPastVisit(visit: Visit, operation: string = 'modify'): void {
+    if (this.isVisitInPast(visit.visitDate)) {
+      throw new BadRequestException(
+        'לא ניתן לערוך ביקור שהתרחש בעבר',
+      );
+    }
+  }
+
+  private sanitizeHtml(value?: string | null): string {
+    if (!value) return '';
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  private extractSummarySections(summaryText?: string) {
+    const normalized = (summaryText ?? '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .trim();
+
+    if (!normalized) {
+      return {
+        complaints: '',
+        findings: '',
+        diagnosis: '',
+        recommendations: '',
+      };
+    }
+
+    const extractSection = (labels: string[]): string => {
+      for (const label of labels) {
+        const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const pattern = new RegExp(
+          `${escapedLabel}:\\n([\\s\\S]*?)(?=\\n\\n[^\\n]+:\\n|$)`,
+          'i',
+        );
+        const match = pattern.exec(normalized);
+        if (match?.[1]?.trim()) {
+          return match[1].trim();
+        }
+      }
+      return '';
+    };
+
+    const complaints = extractSection([
+      'Patient Complaints',
+      'תלונת המטופל',
+      'תלונות המטופל',
+    ]);
+    const diagnosis = extractSection(['Diagnosis', 'אבחנה']);
+    const recommendations = extractSection([
+      "Doctor's Recommendations",
+      'המלצות הרופא',
+      'המלצות',
+    ]);
+
+    return {
+      complaints,
+      findings: '',
+      diagnosis,
+      recommendations,
+    };
+  }
+
+  private toHebrewDate(value?: Date | string | null): string {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return new Intl.DateTimeFormat('he-IL', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(date);
+  }
+
+  private getPreferredFontStack(): string {
+    const platform = os.platform();
+    if (platform === 'win32') {
+      return '"Segoe UI", Arial, sans-serif';
+    }
+    if (platform === 'darwin') {
+      return '"Arial Hebrew", "Arial", sans-serif';
+    }
+    return '"Noto Sans Hebrew", "DejaVu Sans", Arial, sans-serif';
+  }
+
+  private buildSummaryPdfHtml(visit: Visit): string {
+    const summarySections = this.extractSummarySections(visit.summary?.summaryText);
+    const patientName = visit.patient?.user?.fullName ?? 'לא צוין';
+    const patientIdNumber = visit.patient?.idNumber ?? '-';
+    const doctorName = visit.caregiver?.user?.fullName ?? 'לא צוין';
+    const doctorSpecialty = visit.caregiver?.specialization ?? 'כללי';
+    const visitDate = this.toHebrewDate(visit.visitDate);
+    const followUpDate = this.toHebrewDate(visit.followUpDate ?? null);
+
+    const vitalsParts = [
+      visit.bloodPressure ? `לחץ דם: ${visit.bloodPressure}` : null,
+      visit.pulse ? `דופק: ${visit.pulse}` : null,
+      visit.bodyTemp ? `חום: ${visit.bodyTemp}` : null,
+      visit.oxygenSat ? `סטורציה: ${visit.oxygenSat}` : null,
+      visit.weight ? `משקל: ${visit.weight}` : null,
+      visit.height ? `גובה: ${visit.height}` : null,
+    ].filter(Boolean) as string[];
+
+    const diagnoses = (visit.diagnoses ?? [])
+      .map((d) => d.diagnosis?.description || d.diagnosis?.code)
+      .filter(Boolean)
+      .join(' | ');
+
+    const medicines = (visit.medicines ?? [])
+      .map((m) => {
+        const medicineName = m.medicine?.name ?? 'תרופה';
+        const details = [m.dosage, m.frequency, m.duration]
+          .filter(Boolean)
+          .join(' · ');
+        return details ? `${medicineName} (${details})` : medicineName;
+      })
+      .filter(Boolean)
+      .join(' | ');
+
+    const findingsText = [
+      summarySections.findings,
+      visit.chiefComplaint ? `תלונה ראשית: ${visit.chiefComplaint}` : '',
+      vitalsParts.length ? `מדדים: ${vitalsParts.join(' | ')}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const diagnosisText = [summarySections.diagnosis, diagnoses]
+      .filter(Boolean)
+      .join('\n');
+
+    const recommendationsText = [
+      summarySections.recommendations,
+      medicines ? `טיפול תרופתי: ${medicines}` : '',
+      visit.referralNotes ? `הפניות/הערות: ${visit.referralNotes}` : '',
+      followUpDate !== '-' ? `תאריך מעקב: ${followUpDate}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const sectionHtml = (title: string, content: string) => `
+      <section class="section">
+        <h3>${this.sanitizeHtml(title)}</h3>
+        <p>${this.sanitizeHtml(content || 'לא תועד מידע בסעיף זה.').replace(/\n/g, '<br/>')}</p>
+      </section>
+    `;
+
+    return `<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>סיכום ביקור - MedSync</title>
+    <style>
+      :root {
+        --brand: #1b4965;
+        --accent: #5fa8d3;
+        --border: #d9e2ec;
+        --text: #102a43;
+        --muted: #486581;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: ${this.getPreferredFontStack()};
+        color: var(--text);
+        background: #ffffff;
+        direction: rtl;
+      }
+      .sheet {
+        padding: 28px 34px;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 2px solid var(--brand);
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+      }
+      .logo {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: 0.4px;
+        color: var(--brand);
+      }
+      .subtitle {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .doc-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--brand);
+      }
+      .top-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .meta {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px 14px;
+        background: #f8fbff;
+      }
+      .meta h4 {
+        margin: 0 0 8px 0;
+        font-size: 13px;
+        color: var(--brand);
+      }
+      .meta-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      .meta-row .label {
+        color: var(--muted);
+      }
+      .section {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
+      }
+      .section h3 {
+        margin: 0 0 8px 0;
+        font-size: 15px;
+        color: var(--brand);
+      }
+      .section p {
+        margin: 0;
+        font-size: 13px;
+        white-space: normal;
+        line-height: 1.7;
+      }
+      .footer {
+        margin-top: 20px;
+        border-top: 1px dashed var(--border);
+        padding-top: 8px;
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sheet">
+      <header class="header">
+        <div>
+          <div class="logo">MedSync</div>
+          <div class="subtitle">מערכת תיעוד וסיכומי ביקור רפואיים</div>
+        </div>
+        <div class="doc-title">סיכום ביקור רפואי</div>
+      </header>
+
+      <section class="top-grid">
+        <article class="meta">
+          <h4>פרטי מטופל</h4>
+          <div class="meta-row"><span class="label">שם מלא</span><strong>${this.sanitizeHtml(patientName)}</strong></div>
+          <div class="meta-row"><span class="label">תעודת זהות</span><strong>${this.sanitizeHtml(patientIdNumber)}</strong></div>
+        </article>
+
+        <article class="meta">
+          <h4>פרטי ביקור ורופא</h4>
+          <div class="meta-row"><span class="label">שם רופא</span><strong>${this.sanitizeHtml(doctorName)}</strong></div>
+          <div class="meta-row"><span class="label">התמחות</span><strong>${this.sanitizeHtml(doctorSpecialty)}</strong></div>
+          <div class="meta-row"><span class="label">תאריך ביקור</span><strong>${this.sanitizeHtml(visitDate)}</strong></div>
+        </article>
+      </section>
+
+      ${sectionHtml('תלונת המטופל', summarySections.complaints || visit.chiefComplaint || '')}
+      ${sectionHtml('ממצאים', findingsText)}
+      ${sectionHtml('אבחנה', diagnosisText)}
+      ${sectionHtml('המלצות וטיפול', recommendationsText)}
+
+      <footer class="footer">
+        מסמך זה הופק אוטומטית על ידי MedSync • לשימוש רפואי פנימי
+      </footer>
+    </div>
+  </body>
+</html>`;
+  }
+
+  async generateSummaryPdf(visitId: string): Promise<Buffer> {
+    const visit = await this.findOne(visitId);
+    const html = this.buildSummaryPdfHtml(visit);
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'load' });
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '10mm',
+          bottom: '10mm',
+          left: '8mm',
+          right: '8mm',
+        },
+      });
+      return Buffer.from(pdfBuffer);
+    } finally {
+      await browser.close();
+    }
+  }
 
   findAll(patientId?: string, caregiverId?: string, actingClinicId?: string): Promise<Visit[]> {
     const qb = this.visits
@@ -199,6 +533,10 @@ export class VisitRecordsService {
   async update(id: string, input: Partial<VisitInput>): Promise<Visit> {
     const visit = await this.visits.findOne({ where: { id } });
     if (!visit) throw new NotFoundException(`Visit ${id} not found`);
+    
+    // Prevent editing past visits
+    this.throwIfPastVisit(visit, 'update');
+    
     if (input.visitDate !== undefined)
       visit.visitDate = new Date(input.visitDate);
     if (input.bloodPressure !== undefined) visit.bloodPressure = input.bloodPressure;
@@ -219,6 +557,12 @@ export class VisitRecordsService {
   }
 
   async remove(id: string): Promise<void> {
+    const visit = await this.visits.findOne({ where: { id } });
+    if (!visit) throw new NotFoundException(`Visit ${id} not found`);
+    
+    // Prevent deleting past visits
+    this.throwIfPastVisit(visit, 'delete');
+    
     const result = await this.visits.delete(id);
     if (!result.affected) throw new NotFoundException(`Visit ${id} not found`);
   }
@@ -228,7 +572,11 @@ export class VisitRecordsService {
     visitId: string,
     input: VisitRecordingInput,
   ): Promise<VisitRecording> {
-    await this.findOne(visitId);
+    const visit = await this.findOne(visitId);
+    
+    // Prevent editing past visits
+    this.throwIfPastVisit(visit);
+    
     let rec = await this.recordings.findOne({ where: { visitId } });
     if (!rec) {
       rec = this.recordings.create({
@@ -251,7 +599,11 @@ export class VisitRecordsService {
     visitId: string,
     input: VisitSummaryInput,
   ): Promise<VisitSummary> {
-    await this.findOne(visitId);
+    const visit = await this.findOne(visitId);
+    
+    // Prevent editing past visits
+    this.throwIfPastVisit(visit);
+    
     let summary = await this.summaries.findOne({ where: { visitId } });
     if (!summary) {
       summary = this.summaries.create({
@@ -266,7 +618,6 @@ export class VisitRecordsService {
     const saved = await this.summaries.save(summary);
 
     // Fire-and-forget: regenerate patient medical summary
-    const visit = await this.visits.findOne({ where: { id: visitId } });
     if (visit?.patientId) {
       this.medicalSummaryService
         .generateAndSave(visit.patientId)
@@ -283,7 +634,11 @@ export class VisitRecordsService {
     visitId: string,
     input: VisitDiagnosisInput,
   ): Promise<VisitDiagnosis> {
-    await this.findOne(visitId);
+    const visit = await this.findOne(visitId);
+    
+    // Prevent editing past visits
+    this.throwIfPastVisit(visit);
+    
     let diagnosisId = input.diagnosisId;
     if (!diagnosisId) {
       if (!input.diagnosisCode) {
@@ -321,7 +676,11 @@ export class VisitRecordsService {
     visitId: string,
     input: VisitMedicineInput,
   ): Promise<VisitMedicine> {
-    await this.findOne(visitId);
+    const visit = await this.findOne(visitId);
+    
+    // Prevent editing past visits
+    this.throwIfPastVisit(visit);
+    
     let medicineId = input.medicineId;
     if (!medicineId) {
       if (!input.medicineName) {

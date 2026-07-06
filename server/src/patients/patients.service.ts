@@ -116,7 +116,6 @@ export class PatientsService {
         : 'Caregiver',
       specialty: v.caregiver?.specialization ?? 'General',
       type: v.summary ? 'Documented' : 'Visit',
-      note: v.summary?.summaryText,
     }));
 
     const documents: PatientDocument[] = docs.map((d) => ({
