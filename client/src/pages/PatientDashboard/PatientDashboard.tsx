@@ -6,7 +6,7 @@ import { AISummaryCard } from "./components/AISummaryCard";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { DocumentsList } from "./components/DocumentsList";
 import { UploadBanner } from "./components/UploadBanner";
-import { UploadModal } from "./components/UploadModal";
+import { UploadModal, isSupportedUploadFile } from "./components/UploadModal";
 import { VisitsList } from "./components/VisitsList";
 import { usePatientDashboard } from "./hooks/usePatientDashboard";
 
@@ -49,6 +49,11 @@ export const PatientDashboard: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!isSupportedUploadFile(file)) {
+      e.target.value = "";
+      window.alert("סוג קובץ לא נתמך. יש להעלות PDF, PNG, JPG או WebP עד 10MB.");
+      return;
+    }
     closeModal();
     uploadFile(file, documentType ?? undefined);
     e.target.value = "";

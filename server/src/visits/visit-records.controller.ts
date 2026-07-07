@@ -33,6 +33,19 @@ import { ROLE_DOCTOR, ROLE_PATIENT } from '../common/constants/roles';
 export class VisitRecordsController {
   constructor(private readonly service: VisitRecordsService) {}
 
+  /** Throws ForbiddenException if the visit belongs to a different clinic. */
+  private async assertClinicAccess(visitId: string, user: IUser): Promise<void> {
+    const visit = await this.service.findOne(visitId);
+    const actingClinicId = user?.caregiver?.clinicId;
+    if (
+      actingClinicId &&
+      visit.caregiver?.clinicId &&
+      visit.caregiver.clinicId !== actingClinicId
+    ) {
+      throw new ForbiddenException('Access denied');
+    }
+  }
+
   @Get()
   findAll(
     @User() user: IUser,
@@ -114,73 +127,91 @@ export class VisitRecordsController {
 
   @Roles(ROLE_DOCTOR)
   @Patch(':id')
-  update(
+  async update(
+    @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: Partial<VisitInput>,
   ) {
+    await this.assertClinicAccess(id, user);
     return this.service.update(id, body);
   }
 
   @Roles(ROLE_DOCTOR)
   @Delete(':id')
   @HttpCode(204)
-  remove(@Param('id', new ParseUUIDPipe()) id: string) {
+  async remove(
+    @User() user: IUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    await this.assertClinicAccess(id, user);
     return this.service.remove(id);
   }
 
   @Roles(ROLE_DOCTOR)
   @Put(':id/recording')
-  upsertRecording(
+  async upsertRecording(
+    @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: VisitRecordingInput,
   ) {
+    await this.assertClinicAccess(id, user);
     return this.service.upsertRecording(id, body);
   }
 
   @Roles(ROLE_DOCTOR)
   @Put(':id/summary')
-  upsertSummary(
+  async upsertSummary(
+    @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: VisitSummaryInput,
   ) {
+    await this.assertClinicAccess(id, user);
     return this.service.upsertSummary(id, body);
   }
 
   @Roles(ROLE_DOCTOR)
   @Post(':id/diagnoses')
-  addDiagnosis(
+  async addDiagnosis(
+    @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: VisitDiagnosisInput,
   ) {
+    await this.assertClinicAccess(id, user);
     return this.service.addDiagnosis(id, body);
   }
 
   @Roles(ROLE_DOCTOR)
   @Delete(':id/diagnoses/:diagnosisId')
   @HttpCode(204)
-  removeDiagnosis(
+  async removeDiagnosis(
+    @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Param('diagnosisId', new ParseUUIDPipe()) diagnosisId: string,
   ) {
+    await this.assertClinicAccess(id, user);
     return this.service.removeDiagnosis(id, diagnosisId);
   }
 
   @Roles(ROLE_DOCTOR)
   @Post(':id/medicines')
-  addMedicine(
+  async addMedicine(
+    @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: VisitMedicineInput,
   ) {
+    await this.assertClinicAccess(id, user);
     return this.service.addMedicine(id, body);
   }
 
   @Roles(ROLE_DOCTOR)
   @Delete(':id/medicines/:medicineId')
   @HttpCode(204)
-  removeMedicine(
+  async removeMedicine(
+    @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Param('medicineId', new ParseUUIDPipe()) medicineId: string,
   ) {
+    await this.assertClinicAccess(id, user);
     return this.service.removeMedicine(id, medicineId);
   }
 }

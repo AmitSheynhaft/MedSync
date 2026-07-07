@@ -175,10 +175,14 @@ export function useVisitForm() {
   }, [visitId]);
 
   useEffect(() => {
-    const userIsDoctor = getEffectiveRole() === Role.Doctor;
-    const visitIsPast = visitDateObj && isDateInPast(visitDateObj.toISOString());
-    
-    setIsReadOnly(!userIsDoctor || !!visitIsPast);
+    const compute = () => {
+      const userIsDoctor = getEffectiveRole() === Role.Doctor;
+      const visitIsPast = visitDateObj && isDateInPast(visitDateObj.toISOString());
+      setIsReadOnly(!userIsDoctor || !!visitIsPast);
+    };
+    compute();
+    window.addEventListener('medsync:viewAsChange', compute);
+    return () => window.removeEventListener('medsync:viewAsChange', compute);
   }, [visitDateObj]);
 
   const handleRecord = () => {

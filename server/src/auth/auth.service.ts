@@ -2,9 +2,10 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { User } from '../entities/user/userEntity';
 import { Patient } from '../entities/patient/patientEntity';
 import { Caregiver } from '../entities/caregiver/caregiverEntity';
@@ -186,6 +187,11 @@ export class AuthService {
         refreshToken: this.issueRefreshToken(savedUser.id),
         patientId: savedPatient.id,
       };
+    }).catch((err) => {
+      if (err instanceof QueryFailedError && (err as any).code === '23505') {
+        throw new ConflictException('כתובת האימייל או מספר הזהות כבר קיימים במערכת');
+      }
+      throw err;
     });
   }
 
@@ -242,6 +248,11 @@ export class AuthService {
         caregiverId: savedCaregiver.id,
         clinicId: savedCaregiver.clinicId,
       };
+    }).catch((err) => {
+      if (err instanceof QueryFailedError && (err as any).code === '23505') {
+        throw new ConflictException('כתובת האימייל כבר קיימת במערכת');
+      }
+      throw err;
     });
   }
 
@@ -299,6 +310,11 @@ export class AuthService {
         secretaryId: savedSecretary.id,
         clinicId: savedSecretary.clinicId,
       };
+    }).catch((err) => {
+      if (err instanceof QueryFailedError && (err as any).code === '23505') {
+        throw new ConflictException('כתובת האימייל או תעודת הזהות כבר קיימים במערכת');
+      }
+      throw err;
     });
   }
 
@@ -319,16 +335,22 @@ export class AuthService {
       password: hashPassword(input.password),
       phone: input.phone,
     });
-    const savedUser = await this.users.save(user);
-
-    return {
-      userId: savedUser.id,
-      email: savedUser.email,
-      fullName: savedUser.fullName,
-      role: role.name,
-      accessToken: this.issueAccessToken(savedUser.id),
-      refreshToken: this.issueRefreshToken(savedUser.id),
-    };
+    try {
+      const savedUser = await this.users.save(user);
+      return {
+        userId: savedUser.id,
+        email: savedUser.email,
+        fullName: savedUser.fullName,
+        role: role.name,
+        accessToken: this.issueAccessToken(savedUser.id),
+        refreshToken: this.issueRefreshToken(savedUser.id),
+      };
+    } catch (err) {
+      if (err instanceof QueryFailedError && (err as any).code === '23505') {
+        throw new ConflictException('כתובת האימייל כבר קיימת במערכת');
+      }
+      throw err;
+    }
   }
 
   async login(input: LoginInput): Promise<AuthResult> {

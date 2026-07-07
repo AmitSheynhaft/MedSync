@@ -108,7 +108,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         <Tooltip title="Close">
           <IconButton
             onClick={onClose}
-            sx={{ position: "absolute", top: 12, left: 12 }}
+            sx={{ position: "absolute", top: 12, right: 12 }}
           >
             <CloseIcon fontSize="small" />
           </IconButton>

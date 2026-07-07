@@ -6,6 +6,7 @@ import type { RoleName } from './types';
 
 export function setViewAs(role: RoleName): void {
   localStorage.setItem(VIEW_AS_KEY, role);
+  window.dispatchEvent(new Event('medsync:viewAsChange'));
 }
 
 export function getViewAs(): RoleName | null {
@@ -14,6 +15,7 @@ export function getViewAs(): RoleName | null {
 
 export function clearViewAs(): void {
   localStorage.removeItem(VIEW_AS_KEY);
+  window.dispatchEvent(new Event('medsync:viewAsChange'));
 }
 
 export function getEffectiveRole(): RoleName | null {
