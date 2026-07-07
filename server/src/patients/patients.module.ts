@@ -17,7 +17,7 @@ import { ClinicalAlertsModule } from '../clinical-alerts/clinical-alerts.module'
   imports: [
     TypeOrmModule.forFeature([Patient, User, Visit, MedicalDocument, PatientMedicalSummary, PatientClinic, Secretary]),
     RolesModule,
-    PatientMedicalSummaryModule,
+    forwardRef(() => PatientMedicalSummaryModule),
     forwardRef(() => ClinicalAlertsModule),
   ],
   controllers: [PatientsController],
