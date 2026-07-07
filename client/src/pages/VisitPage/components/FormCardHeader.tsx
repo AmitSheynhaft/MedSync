@@ -38,18 +38,20 @@ export const FormCardHeader: React.FC<IFormCardHeaderProps> = ({
     >
       רשומת ביקור
     </Typography>
-    <Chip
-      label="טיוטה"
-      size="small"
-      sx={{
-        fontSize: 11,
-        fontWeight: 600,
-        color: "#e8590c",
-        background: "#fff3e6",
-        border: "none",
-        height: 22,
-      }}
-    />
+    {!isReadOnly && (
+      <Chip
+        label="טיוטה"
+        size="small"
+        sx={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: "#e8590c",
+          background: "#fff3e6",
+          border: "none",
+          height: 22,
+        }}
+      />
+    )}
     {isProcessing && (
       <Chip
         icon={
