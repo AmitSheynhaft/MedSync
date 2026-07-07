@@ -5,7 +5,11 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
-import { ROLE_DOCTOR, ROLE_SECRETARY } from '../common/constants/roles';
+import {
+  ROLE_DOCTOR,
+  ROLE_PATIENT,
+  ROLE_SECRETARY,
+} from '../common/constants/roles';
 import { calcAge as calcAgeYears } from '../common/age.util';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
@@ -28,7 +32,10 @@ import {
   UpdatePatientInput,
 } from './patient.types';
 
-function splitName(fullName: string | undefined): { first: string; last: string } {
+function splitName(fullName: string | undefined): {
+  first: string;
+  last: string;
+} {
   if (!fullName) return { first: '', last: '' };
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return { first: parts[0], last: '' };
@@ -157,6 +164,8 @@ export class PatientsService {
     const qb = this.patients
       .createQueryBuilder('patient')
       .leftJoinAndSelect('patient.user', 'user')
+      .leftJoin('user.role', 'role')
+      .andWhere('role.name = :patientRole', { patientRole: ROLE_PATIENT })
       .orderBy('patient.createdAt', 'DESC');
 
     if (clinicId) {
@@ -173,10 +182,9 @@ export class PatientsService {
     }
 
     if (trimmed) {
-      qb.andWhere(
-        '(user.fullName ILIKE :q OR user.email ILIKE :q)',
-        { q: `%${trimmed}%` },
-      );
+      qb.andWhere('(user.fullName ILIKE :q OR user.email ILIKE :q)', {
+        q: `%${trimmed}%`,
+      });
     }
 
     const list = await qb.getMany();
@@ -199,27 +207,37 @@ export class PatientsService {
     return !!membership;
   }
 
-  private async assertCanAccess(patientId: string, actingUser?: any): Promise<void> {
+  private async assertCanAccess(
+    patientId: string,
+    actingUser?: any,
+  ): Promise<void> {
     if (!actingUser) return;
     if (actingUser.role?.name === ROLE_DOCTOR) {
       const clinicId = this.getActingClinicId(actingUser);
-      if (clinicId && (await this.isPatientInClinic(patientId, clinicId))) return;
+      if (clinicId && (await this.isPatientInClinic(patientId, clinicId)))
+        return;
       throw new ForbiddenException(
         'You are not allowed to access this patient record',
       );
     }
     if (actingUser.role?.name === ROLE_SECRETARY) {
       const clinicId = await this.getSecretaryClinicId(actingUser.id);
-      if (clinicId && (await this.isPatientInClinic(patientId, clinicId))) return;
+      if (clinicId && (await this.isPatientInClinic(patientId, clinicId)))
+        return;
       throw new ForbiddenException(
         'You are not allowed to access this patient record',
       );
     }
     if (actingUser.patient?.id === patientId) return;
-    throw new ForbiddenException('You are not allowed to access this patient record');
+    throw new ForbiddenException(
+      'You are not allowed to access this patient record',
+    );
   }
 
-  async assertCanAccessPatient(patientId: string, actingUser?: any): Promise<void> {
+  async assertCanAccessPatient(
+    patientId: string,
+    actingUser?: any,
+  ): Promise<void> {
     await this.assertCanAccess(patientId, actingUser);
   }
 
@@ -243,7 +261,9 @@ export class PatientsService {
 
   async create(input: CreatePatientInput, actingUser?: any): Promise<Patient> {
     if (!input?.email || !input?.password || !input?.fullName) {
-      throw new BadRequestException('fullName, email and password are required');
+      throw new BadRequestException(
+        'fullName, email and password are required',
+      );
     }
     const email = input.email.toLowerCase();
     const existing = await this.users.findOne({ where: { email } });
@@ -271,7 +291,9 @@ export class PatientsService {
         address: input.address ?? '',
         notes: input.notes,
       });
-      const savedPatient = await manager.getRepository(PatientEntity).save(patient);
+      const savedPatient = await manager
+        .getRepository(PatientEntity)
+        .save(patient);
 
       const clinicId = this.getActingClinicId(actingUser);
       if (clinicId) {
@@ -307,7 +329,11 @@ export class PatientsService {
     return patientRepo.save(patientRepo.create({ userId, address: '' }));
   }
 
-  async update(id: string, input: UpdatePatientInput, actingUser?: any): Promise<Patient> {
+  async update(
+    id: string,
+    input: UpdatePatientInput,
+    actingUser?: any,
+  ): Promise<Patient> {
     await this.assertCanAccess(id, actingUser);
     const patient = await this.patients.findOne({
       where: { id },
