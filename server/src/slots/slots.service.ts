@@ -225,21 +225,22 @@ export class SlotsService {
   }
 
   async listTherapists(
-    _secretaryUserId: string,
+    secretaryUserId: string,
     search?: string,
     page?: number,
     limit?: number,
   ): Promise<PaginatedDto<TherapistOptionDto>> {
+    const clinicId = await this.getSecretaryClinicId(secretaryUserId);
     const { pageNumber, take, skip } = resolvePaging(page, limit);
 
     const term = search?.trim();
     const like = term ? ILike(`%${term}%`) : undefined;
     const where = like
       ? [
-          { user: { fullName: like } },
-          { specialization: like },
+          { clinicId, user: { fullName: like } },
+          { clinicId, specialization: like },
         ]
-      : {};
+      : { clinicId };
 
     const [caregivers, total] = await this.caregivers.findAndCount({
       where,
@@ -262,6 +263,7 @@ export class SlotsService {
     page?: number,
     limit?: number,
   ): Promise<PaginatedDto<BookablePatientDto>> {
+    const clinicId = await this.getSecretaryClinicId(secretaryUserId);
     const { pageNumber, take, skip } = resolvePaging(page, limit);
 
     const term = search?.trim();
@@ -274,11 +276,12 @@ export class SlotsService {
       ...searchBranch,
       id: Not(secretaryUserId),
       role: { name: ROLE_PATIENT },
+      patient: { patientClinics: { clinicId } },
     }));
 
     const [users, total] = await this.users.findAndCount({
       where,
-      relations: ['role', 'patient'],
+      relations: ['role', 'patient', 'patient.patientClinics'],
       order: { fullName: 'ASC' },
       skip,
       take,
