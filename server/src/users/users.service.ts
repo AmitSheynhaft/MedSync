@@ -6,9 +6,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { randomUUID } from 'crypto';
 import { User } from '../entities/user/userEntity';
+import { Patient } from '../entities/patient/patientEntity';
+import { Caregiver } from '../entities/caregiver/caregiverEntity';
+import { Secretary } from '../entities/secretary/secretaryEntity';
 import { hashPassword, isHashedPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
+import { ROLE_DOCTOR, ROLE_PATIENT, ROLE_SECRETARY } from '../common/constants/roles';
 
 export interface CreateUserInput {
   roleId?: string;
@@ -19,6 +24,7 @@ export interface CreateUserInput {
   phone?: string;
   birthDate?: string | Date;
   gender?: string;
+  clinicId?: string;
 }
 
 export interface UpdateUserInput {
@@ -36,7 +42,10 @@ export type SafeUser = Omit<User, 'password'>;
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User) private readonly repo: Repository<User>,
+    @InjectRepository(User)      private readonly repo:        Repository<User>,
+    @InjectRepository(Patient)   private readonly patients:    Repository<Patient>,
+    @InjectRepository(Caregiver) private readonly caregivers:  Repository<Caregiver>,
+    @InjectRepository(Secretary) private readonly secretaries: Repository<Secretary>,
     private readonly roles: RolesService,
   ) {}
 
@@ -110,7 +119,27 @@ export class UsersService {
       birthDate: input.birthDate ? new Date(input.birthDate) : null,
       gender: input.gender,
     });
-    return this.repo.save(user);
+    const saved = await this.repo.save(user);
+
+    // Auto-create the role-specific profile so role-gated features work immediately.
+    const roleName = (await this.roles.findOne(roleId)).name;
+    if (roleName === ROLE_PATIENT) {
+      await this.patients.save(this.patients.create({ userId: saved.id }));
+    } else if (roleName === ROLE_SECRETARY) {
+      await this.secretaries.save(this.secretaries.create({
+        userId: saved.id,
+        idNumber: randomUUID(),
+        clinicId: input.clinicId ?? null,
+      }));
+    } else if (roleName === ROLE_DOCTOR) {
+      await this.caregivers.save(this.caregivers.create({
+        userId: saved.id,
+        clinicId: input.clinicId ?? null,
+        specialization: null,
+      }));
+    }
+
+    return saved;
   }
 
   private async resolveRoleId(input: CreateUserInput): Promise<string> {

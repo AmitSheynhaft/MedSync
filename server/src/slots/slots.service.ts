@@ -266,31 +266,22 @@ export class SlotsService {
     const clinicId = await this.getSecretaryClinicId(secretaryUserId);
     const { pageNumber, take, skip } = resolvePaging(page, limit);
 
-    // A user is bookable when they belong to the clinic through the relation
-    // matching their role. Each entry in the array is OR-ed together.
-    const clinicBranches = [
-      { role: { name: ROLE_PATIENT }, patient: { patientClinics: { clinicId } } },
-      { role: { name: ROLE_DOCTOR }, caregiver: { clinicId } },
-      { role: { name: ROLE_SECRETARY }, secretary: { clinicId } },
-    ];
-
     const term = search?.trim();
     const like = term ? ILike(`%${term}%`) : undefined;
     const searchBranches = like
       ? [{ fullName: like }, { email: like }]
       : [{}];
 
-    const where = clinicBranches.flatMap((branch) =>
-      searchBranches.map((searchBranch) => ({
-        ...branch,
-        ...searchBranch,
-        id: Not(secretaryUserId),
-      })),
-    );
+    const where = searchBranches.map((searchBranch) => ({
+      ...searchBranch,
+      id: Not(secretaryUserId),
+      role: { name: ROLE_PATIENT },
+      patient: { patientClinics: { clinicId } },
+    }));
 
     const [users, total] = await this.users.findAndCount({
       where,
-      relations: ['role', 'patient'],
+      relations: ['role', 'patient', 'patient.patientClinics'],
       order: { fullName: 'ASC' },
       skip,
       take,

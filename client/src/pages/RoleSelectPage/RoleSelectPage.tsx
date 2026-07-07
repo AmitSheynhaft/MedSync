@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Box, Typography, Link } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 import { RoleCard } from "./components/RoleCard";
@@ -67,7 +68,7 @@ export const RoleSelectPage: React.FC = () => {
               onClick={() => navigate(`${basePath}/doctor`)}
             />
             <RoleCard
-              title="מזכירות"
+              title="מזכירה"
               description="תיאום תורים בין מטפלים למטופלים והעלאת מסמכים רפואיים."
               icon={<SupportAgentIcon sx={{ fontSize: 28, color: "#fff" }} />}
               iconGradient="linear-gradient(135deg, #1864ab, #339af0)"
@@ -97,6 +98,17 @@ export const RoleSelectPage: React.FC = () => {
               onClick={() => setShowStaffOptions(true)}
             />
           </>
+        )}
+        {!isRegister && !showStaffOptions && (
+          <RoleCard
+            title="מנהל מערכת"
+            description="ניהול משתמשים, מרפאות והגדרות המערכת."
+            icon={<AdminPanelSettingsIcon sx={{ fontSize: 28, color: "#fff" }} />}
+            iconGradient="linear-gradient(135deg, #c92a2a, #ff6b6b)"
+            hoverColor="#e03131"
+            hoverShadow="0 12px 40px rgba(224,49,49,0.15)"
+            onClick={() => navigate(`${basePath}/admin`)}
+          />
         )}
       </Box>
 

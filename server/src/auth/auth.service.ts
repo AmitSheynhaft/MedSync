@@ -14,7 +14,7 @@ import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
 import { hashPassword, verifyPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
 import { TokenService, TokenPair } from './token.service';
-import { ROLE_DOCTOR, ROLE_PATIENT, ROLE_SECRETARY, ALL_ROLES } from '../common/constants/roles';
+import { ROLE_DOCTOR, ROLE_PATIENT, ROLE_SECRETARY, ROLE_ADMIN, ALL_ROLES } from '../common/constants/roles';
 import { getEffectiveRoles } from '../common/authorization/role-hierarchy';
 
 export interface RegisterPatientInput {
@@ -56,6 +56,14 @@ export interface RegisterSecretaryInput {
   phone?: string;
   birthDate?: string;
   gender?: string;
+}
+
+export interface RegisterAdminInput {
+  role?: string;
+  fullName: string;
+  email: string;
+  password: string;
+  phone?: string;
 }
 
 export interface LoginInput {
@@ -292,6 +300,35 @@ export class AuthService {
         clinicId: savedSecretary.clinicId,
       };
     });
+  }
+
+  async registerAdmin(input: RegisterAdminInput): Promise<AuthResult> {
+    if (!input?.email || !input?.password || !input?.fullName) {
+      throw new BadRequestException('fullName, email and password are required');
+    }
+    const email = input.email.toLowerCase();
+    const existing = await this.users.findOne({ where: { email } });
+    if (existing) throw new BadRequestException('Email already in use');
+
+    const role = await this.roles.getOrCreate(ROLE_ADMIN, 'Admin role');
+
+    const user = this.users.create({
+      roleId: role.id,
+      fullName: input.fullName,
+      email,
+      password: hashPassword(input.password),
+      phone: input.phone,
+    });
+    const savedUser = await this.users.save(user);
+
+    return {
+      userId: savedUser.id,
+      email: savedUser.email,
+      fullName: savedUser.fullName,
+      role: role.name,
+      accessToken: this.issueAccessToken(savedUser.id),
+      refreshToken: this.issueRefreshToken(savedUser.id),
+    };
   }
 
   async login(input: LoginInput): Promise<AuthResult> {

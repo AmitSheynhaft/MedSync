@@ -14,6 +14,7 @@ const RoleSelectPage       = lazy(() => import("./pages/RoleSelectPage/RoleSelec
 const PatientsListPage     = lazy(() => import("./pages/PatientsListPage/PatientsListPage"));
 const PatientDashboardPage = lazy(() => import("./pages/PatientDashboardPage/PatientDashboardPage"));
 const ProfilePage          = lazy(() => import("./pages/ProfilePage/ProfilePage"));
+const AdminPage            = lazy(() => import("./pages/AdminPage/AdminPage"));
 const SecretarySchedulePage = lazy(() => import("./pages/SecretarySchedulePage/SecretarySchedulePage"));
 const SecretaryDocumentsPage = lazy(() => import("./pages/SecretaryDocumentsPage/SecretaryDocumentsPage"));
 const SecretarySlotsPage = lazy(() => import("./pages/SecretarySlotsPage/SecretarySlotsPage"));
@@ -62,6 +63,9 @@ export const routes: RouteConfig[] = [
 
   // App layout — any authenticated user
   { path: "/profile", element: <ProfilePage />, layout: "app" },
+
+  // App layout — admin only
+  { path: "/admin", element: <AdminPage />, layout: "app", allowRoles: [Role.Admin] },
 
   // Catch-all redirect
   { path: "/", element: <Navigate to="/login" replace /> },

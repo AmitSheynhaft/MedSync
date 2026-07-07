@@ -2,6 +2,7 @@ import { Role } from '../constants/roles';
 import type { RoleName } from './types';
 
 const ROLE_HIERARCHY: Record<string, RoleName[]> = {
+  [Role.Admin]: [Role.Admin, Role.Doctor, Role.Patient],
   [Role.Doctor]: [Role.Doctor, Role.Patient],
   [Role.Patient]: [Role.Patient],
   // A secretary may also act as a patient (the server only allows the patient

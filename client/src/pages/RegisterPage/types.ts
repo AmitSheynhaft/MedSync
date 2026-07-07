@@ -1,6 +1,6 @@
 import type { RegisterFormState } from './hooks/useRegisterForm';
 
-export type RegisterRole = 'doctor' | 'patient' | 'secretary';
+export type RegisterRole = 'doctor' | 'patient' | 'secretary' | 'admin';
 
 export type TFieldOption = {
   value: string;

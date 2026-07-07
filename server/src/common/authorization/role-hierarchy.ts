@@ -1,11 +1,14 @@
+
 import {
   ROLE_DOCTOR,
   ROLE_PATIENT,
   ROLE_SECRETARY,
   TRoleName,
+  ROLE_ADMIN
 } from '../constants/roles';
 
 export const ROLE_HIERARCHY: Record<string, TRoleName[]> = {
+  [ROLE_ADMIN]: [ROLE_ADMIN, ROLE_DOCTOR, ROLE_PATIENT],
   [ROLE_DOCTOR]: [ROLE_DOCTOR, ROLE_PATIENT],
   [ROLE_PATIENT]: [ROLE_PATIENT],
   // A secretary may also act as a patient when she has a patient profile in a

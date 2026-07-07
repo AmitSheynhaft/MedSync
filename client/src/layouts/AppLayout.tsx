@@ -6,6 +6,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PersonIcon from '@mui/icons-material/Person';
 import PeopleIcon from '@mui/icons-material/People';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import EventIcon from '@mui/icons-material/Event';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlineRounded';
@@ -42,6 +43,7 @@ export const AppLayout: React.FC = () => {
   useCurrentUser();
   const role = getEffectiveRole();
   const isDoctor = role === 'doctor';
+  const isAdmin  = role === 'admin';
   const isSecretary = role === 'secretary';
   const [showWelcomeSystemInfo, setShowWelcomeSystemInfo] = React.useState(consumeWelcomePending);
 
@@ -59,7 +61,9 @@ export const AppLayout: React.FC = () => {
         </Box>
 
         <Box sx={navGroupSx}>
-          {isDoctor ? (
+          {isAdmin ? (
+            <NavItem to="/admin" title="ניהול מערכת" icon={<AdminPanelSettingsIcon fontSize="small" />} />
+          ) : isDoctor ? (
             <>
               <NavItem to="/patients"     title="מטופלים" icon={<PeopleIcon fontSize="small" />} />
               <NavItem to="/slots"        title="תורים"    icon={<EventIcon  fontSize="small" />} />

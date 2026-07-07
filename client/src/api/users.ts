@@ -20,6 +20,7 @@ export interface CreateUserInput {
   phone?: string;
   birthDate?: string;
   gender?: string;
+  clinicId?: string;
 }
 
 export interface UpdateUserInput extends Partial<CreateUserInput> {}
