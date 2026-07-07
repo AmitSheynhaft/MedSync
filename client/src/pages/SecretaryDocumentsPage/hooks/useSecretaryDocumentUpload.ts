@@ -68,6 +68,10 @@ export function useSecretaryDocumentUpload(patient: BookablePatient | null) {
 
   const confirmUpload = () => {
     if (!selectedFile) return;
+    if (!documentType) {
+      setFileError('יש לבחור סוג מסמך');
+      return;
+    }
     const file = selectedFile;
     closeUploadModal();
     uploadFile(file);

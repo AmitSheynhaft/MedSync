@@ -88,7 +88,7 @@ function DocRow({ doc }: { doc: DashboardDoc }) {
         <Tooltip title="הורדה">
           <IconButton
             size="small"
-            onClick={() => downloadDocument(doc.id, doc.name)}
+            onClick={() => downloadDocument(doc.id, doc.name).catch(() => window.alert('הורדת המסמך נכשלה'))}
           >
             <DownloadIcon />
           </IconButton>

@@ -64,6 +64,9 @@ export function useVisitForm() {
   const [visitType, setVisitType] = useState('');
   const [followUpDate, setFollowUpDate] = useState('');
   const [referralNotes, setReferralNotes] = useState('');
+  // Tracks codes/keys of items already persisted to avoid re-POSTing on subsequent saves
+  const persistedDiagnosisCodesRef = useRef<Set<string>>(new Set());
+  const persistedMedicineKeysRef = useRef<Set<string>>(new Set());
   // Diagnoses list
   const [diagnosesList, setDiagnosesList] = useState<DiagnosisItem[]>([]);
   const [diagnosisSearch, setDiagnosisSearch] = useState('');
@@ -141,19 +144,25 @@ export function useVisitForm() {
       setReferralNotes(visitData.referralNotes ?? '');
 
       if (visitData.diagnoses && visitData.diagnoses.length > 0) {
-        setDiagnosesList(visitData.diagnoses.map((diagEntry: any) => ({
+        const loadedDiagnoses = visitData.diagnoses.map((diagEntry: any) => ({
           code: diagEntry.diagnosis?.code ?? '',
           description: diagEntry.diagnosis?.description ?? '',
-        })));
+        }));
+        setDiagnosesList(loadedDiagnoses);
+        persistedDiagnosisCodesRef.current = new Set(loadedDiagnoses.map(d => d.code));
       }
       if (visitData.medicines && visitData.medicines.length > 0) {
-        setMedicinesList(visitData.medicines.map((medEntry: any) => ({
+        const loadedMedicines = visitData.medicines.map((medEntry: any) => ({
           name: medEntry.medicine?.name ?? '',
           dosage: medEntry.dosage ?? '',
           frequency: medEntry.frequency ?? '',
           duration: medEntry.duration ?? '',
           instructions: medEntry.instructions,
-        })));
+        }));
+        setMedicinesList(loadedMedicines);
+        persistedMedicineKeysRef.current = new Set(
+          loadedMedicines.map(m => `${m.name}|${m.dosage}|${m.frequency}|${m.duration}`),
+        );
       }
     }).catch((err: any) => {
       if (!active) return;
@@ -251,13 +260,18 @@ export function useVisitForm() {
       }
 
       for (const item of diagnosesList) {
+        if (persistedDiagnosisCodesRef.current.has(item.code)) continue;
         await addVisitDiagnosis(targetId, { diagnosisCode: item.code, diagnosisDescription: item.description });
+        persistedDiagnosisCodesRef.current.add(item.code);
       }
       for (const item of medicinesList) {
+        const key = `${item.name}|${item.dosage}|${item.frequency}|${item.duration}`;
+        if (persistedMedicineKeysRef.current.has(key)) continue;
         await addVisitMedicine(targetId, {
           medicineName: item.name, dosage: item.dosage, frequency: item.frequency,
           duration: item.duration, instructions: item.instructions,
         });
+        persistedMedicineKeysRef.current.add(key);
       }
 
       setToast({ severity: 'success', message: 'ביקור נשמר.' });

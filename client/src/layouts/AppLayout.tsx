@@ -14,6 +14,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { getEffectiveRole } from '../auth/viewAs';
 import { logout } from '../api/authApi';
 import { resetSessionVerification } from '../auth/verifySession';
+import { Role } from '../constants/roles';
 import { useCurrentUser } from '../atoms/useCurrentUser';
 import SystemInfoModal from '../components/SystemInfoModal/SystemInfoModal';
 import { consumeWelcomePending } from '../components/SystemInfoModal/welcomeFlag';
@@ -42,9 +43,9 @@ export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
   useCurrentUser();
   const role = getEffectiveRole();
-  const isDoctor = role === 'doctor';
-  const isAdmin  = role === 'admin';
-  const isSecretary = role === 'secretary';
+  const isDoctor = role === Role.Doctor;
+  const isAdmin  = role === Role.Admin;
+  const isSecretary = role === Role.Secretary;
   const [showWelcomeSystemInfo, setShowWelcomeSystemInfo] = React.useState(consumeWelcomePending);
 
   return (
@@ -94,7 +95,7 @@ export const AppLayout: React.FC = () => {
           </Tooltip>
           <Tooltip title="התנתק" placement="left">
             <IconButton
-              onClick={() => { logout().finally(() => { resetSessionVerification(); navigate('/login'); }); }}
+              onClick={() => { logout().catch(() => {}).finally(() => { resetSessionVerification(); navigate('/login'); }); }}
               sx={[logoutButtonSx, { display: { xs: (isDoctor || isSecretary) ? 'inline-flex' : 'none', md: 'inline-flex' } }] as SxProps<Theme>}
             >
               <LogoutIcon fontSize="small" />

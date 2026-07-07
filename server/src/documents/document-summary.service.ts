@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -23,19 +23,24 @@ Document text:
 @Injectable()
 export class DocumentSummaryService implements OnModuleInit {
   private model!: GenerativeModel;
+  private readonly logger = new Logger(DocumentSummaryService.name);
 
   constructor(private readonly configService: ConfigService) {}
 
   onModuleInit(): void {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      throw new Error('Missing required environment variable: GEMINI_API_KEY');
+      this.logger.warn('GEMINI_API_KEY is not set — document summarization will be unavailable');
+      return;
     }
     const genAI = new GoogleGenerativeAI(apiKey);
     this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
   async summarize(documentText: string): Promise<string> {
+    if (!this.model) {
+      throw new ServiceUnavailableException('שירות סיכום מסמכים אינו זמין — GEMINI_API_KEY חסר');
+    }
     if (!documentText || documentText.trim().length === 0) {
       return '';
     }

@@ -72,12 +72,14 @@ export class PatientsController {
   @Post(':id/medical-summary/refresh')
   async refreshMedicalSummary(
     @Param('id', new ParseUUIDPipe()) id: string,
+    @User() user: IUser,
   ): Promise<Patient> {
     await this.medicalSummaryService.generateAndSave(id);
-    return this.patientsService.findOne(id);
+    return this.patientsService.findOne(id, user);
   }
 
-  // TODO(auth): admin-only. Currently unprotected — no auth guard infra exists in repo.
+  // Admin-only bulk operation
+  @Roles(ROLE_DOCTOR)
   @Post('medical-summary/regenerate-all')
   regenerateAllMedicalSummaries(): Promise<{
     total: number;

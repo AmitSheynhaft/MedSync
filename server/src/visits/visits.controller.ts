@@ -45,8 +45,7 @@ export class VisitsController {
       if (err instanceof HttpException) {
         throw err;
       }
-      const detail = err instanceof Error ? err.message : String(err);
-      throw new InternalServerErrorException(detail);
+      throw new InternalServerErrorException('Transcription failed');
     }
   }
 
@@ -69,8 +68,7 @@ export class VisitsController {
       if (err instanceof HttpException) {
         throw err;
       }
-      const detail = err instanceof Error ? err.message : String(err);
-      throw new InternalServerErrorException(detail);
+      throw new InternalServerErrorException('Summarization failed');
     }
   }
 }

@@ -49,29 +49,38 @@ export class MedicalDocumentsController {
   }
 
   @Post()
-  create(@Body() body: MedicalDocumentInput) {
+  async create(@User() user: IUser, @Body() body: MedicalDocumentInput) {
+    await this.patientsService.assertCanAccessPatient(body.patientId, user);
     return this.service.create(body);
   }
 
   @Patch(':id')
-  update(
+  async update(
+    @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: Partial<MedicalDocumentInput>,
   ) {
+    const doc = await this.service.findOne(id);
+    await this.patientsService.assertCanAccessPatient(doc.patientId, user);
     return this.service.update(id, body);
   }
 
   @Put(':id/summary')
-  upsertSummary(
+  async upsertSummary(
+    @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: DocumentSummaryInput,
   ) {
+    const doc = await this.service.findOne(id);
+    await this.patientsService.assertCanAccessPatient(doc.patientId, user);
     return this.service.upsertSummary(id, body);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  remove(@Param('id', new ParseUUIDPipe()) id: string) {
+  async remove(@User() user: IUser, @Param('id', new ParseUUIDPipe()) id: string) {
+    const doc = await this.service.findOne(id);
+    await this.patientsService.assertCanAccessPatient(doc.patientId, user);
     return this.service.remove(id);
   }
 }

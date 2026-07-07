@@ -40,7 +40,7 @@ export const DocumentsList: React.FC<DocumentsListProps> = ({ documents, onUploa
               </IconButton>
             </Tooltip>
             <Tooltip title="הורדה">
-              <IconButton size="small" sx={{ color: '#868e96' }} onClick={() => downloadDocument(d.id, d.name)}>
+              <IconButton size="small" sx={{ color: '#868e96' }} onClick={() => downloadDocument(d.id, d.name).catch(() => window.alert('הורדת המסמך נכשלה'))}>
                 <DownloadIcon sx={{ fontSize: 16 }} />
               </IconButton>
             </Tooltip>

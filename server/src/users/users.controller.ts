@@ -31,7 +31,9 @@ export class UsersController {
 
   @Patch('me')
   updateMe(@User() user: IUser, @Body() body: UpdateUserInput) {
-    return this.service.update(user.id, body);
+    // Strip roleId to prevent self-elevation (C1)
+    const { roleId: _stripped, ...safeBody } = body;
+    return this.service.update(user.id, safeBody);
   }
 
   @Roles(ROLE_DOCTOR)

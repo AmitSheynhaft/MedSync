@@ -49,6 +49,10 @@ export const PatientSlotsPage: React.FC = () => {
       await cancelSlotAsPatient(pendingCancel.id);
       setPendingCancel(null);
       setReloadKey(k => k + 1);
+    } catch {
+      setPendingCancel(null);
+      // Show a simple alert since there is no toast context here
+      window.alert('ביטול התור נכשל. אנא נסה שנית.');
     } finally {
       setCancelling(false);
     }

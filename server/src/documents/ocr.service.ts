@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   GenerativeModel,
@@ -16,19 +16,24 @@ Return only the extracted text, nothing else.`;
 @Injectable()
 export class OcrService implements OnModuleInit {
   private model!: GenerativeModel;
+  private readonly logger = new Logger(OcrService.name);
 
   constructor(private readonly configService: ConfigService) {}
 
   onModuleInit(): void {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) {
-      throw new Error('Missing required environment variable: GEMINI_API_KEY');
+      this.logger.warn('GEMINI_API_KEY is not set — OCR will be unavailable');
+      return;
     }
     const genAI = new GoogleGenerativeAI(apiKey);
     this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
   async extractText(buffer: Buffer, mimeType: string): Promise<string> {
+    if (!this.model) {
+      throw new ServiceUnavailableException('שירות OCR אינו זמין — GEMINI_API_KEY חסר');
+    }
     const base64Data = buffer.toString('base64');
 
     const result = await this.model.generateContent([

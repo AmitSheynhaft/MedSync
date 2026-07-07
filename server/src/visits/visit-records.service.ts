@@ -19,6 +19,7 @@ import { Medicine } from '../entities/medicine/medicineEntity';
 import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
 import { Patient } from '../entities/patient/patientEntity';
 import { Slot } from '../entities/slot/slotEntity';
+import { SlotStatus } from '../entities/slot/slotStatus';
 import { RecordingStatus, VisitSummaryType, VisitType } from '../entities/enums';
 import { DiagnosesService } from '../diagnoses/diagnoses.service';
 import { MedicinesService } from '../medicines/medicines.service';
@@ -515,7 +516,7 @@ export class VisitRecordsService {
       if (!slot) {
         throw new NotFoundException('התור לא נמצא');
       }
-      if (slot.status !== 'scheduled') {
+      if (slot.status !== SlotStatus.SCHEDULED) {
         throw new BadRequestException('לא ניתן ליצור ביקור עבור תור שבוטל');
       }
       if (slot.caregiverId !== input.caregiverId) {

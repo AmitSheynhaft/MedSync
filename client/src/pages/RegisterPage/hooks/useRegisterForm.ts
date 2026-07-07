@@ -61,6 +61,10 @@ export function useRegisterForm(role: RegisterRole) {
       setError('התמחות היא שדה חובה');
       return;
     }
+    if (isDoctor && !idOrLicense.trim()) {
+      setError('מספר רישיון הוא שדה חובה');
+      return;
+    }
     if (isSecretary && !idOrLicense.trim()) {
       setError('תעודת זהות היא שדה חובה');
       return;

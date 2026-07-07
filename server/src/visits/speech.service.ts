@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SpeechClient } from '@google-cloud/speech';
 import { spawn } from 'child_process';
@@ -54,14 +54,20 @@ export class SpeechService implements OnModuleInit {
       'GOOGLE_APPLICATION_CREDENTIALS',
     );
     if (!credentials) {
-      throw new Error(
-        'Missing required environment variable: GOOGLE_APPLICATION_CREDENTIALS',
+      this.logger.warn(
+        'GOOGLE_APPLICATION_CREDENTIALS is not set — speech transcription will be unavailable',
       );
+      return;
     }
     this.client = new SpeechClient({ keyFilename: credentials });
   }
 
   async transcribeAudio(audioBuffer: Buffer): Promise<string> {
+    if (!this.client) {
+      throw new ServiceUnavailableException(
+        'שירות התמלול אינו זמין — GOOGLE_APPLICATION_CREDENTIALS חסר',
+      );
+    }
     try {
       this.logger.log(
         `Received ${audioBuffer.length} bytes; transcoding to OGG/Opus 16k mono`,
