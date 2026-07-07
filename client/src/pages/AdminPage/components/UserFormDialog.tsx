@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, TextField, MenuItem, Stack, Typography, InputAdornment, IconButton,
+  Button, TextField, MenuItem, Stack, Typography, InputAdornment, IconButton, Alert,
 } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { User, UpdateUserInput, CreateUserInput } from '../../../api/users';
@@ -10,6 +10,7 @@ interface EditProps {
   mode: 'edit';
   user: User;
   roles: { id: string; name: string }[];
+  clinics: { id: string; name: string }[];
   onClose: () => void;
   onSave: (input: UpdateUserInput) => Promise<void>;
 }
@@ -17,6 +18,7 @@ interface EditProps {
 interface CreateProps {
   mode: 'create';
   roles: { id: string; name: string }[];
+  clinics: { id: string; name: string }[];
   onClose: () => void;
   onSave: (input: CreateUserInput) => Promise<void>;
 }
@@ -46,7 +48,7 @@ const isValidDate = (v: string) => {
 type Errors = Partial<Record<'fullName' | 'email' | 'password' | 'phone' | 'birthDate', string>>;
 
 const UserFormDialog: React.FC<Props> = (props) => {
-  const { open, mode, roles, onClose } = props;
+  const { open, mode, roles, clinics, onClose } = props;
   const isEdit = mode === 'edit';
   const user = isEdit ? (props as EditProps).user : null;
 
@@ -57,8 +59,11 @@ const UserFormDialog: React.FC<Props> = (props) => {
   const [gender,     setGender]     = useState(user?.gender ?? '');
   const [birthDate,  setBirthDate]  = useState(user?.birthDate?.slice(0, 10) ?? '');
   const [roleId,     setRoleId]     = useState('');
+  const [clinicId,   setClinicId]   = useState('');
   const [errors,     setErrors]     = useState<Errors>({});
-  const [saving,     setSaving]     = useState(false);  const birthDateRef = useRef<HTMLInputElement>(null);
+  const [saving,     setSaving]     = useState(false);
+  const [saveError,  setSaveError]  = useState<string | null>(null);
+  const birthDateRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!open) return;
     setFullName(user?.fullName ?? '');
@@ -68,8 +73,10 @@ const UserFormDialog: React.FC<Props> = (props) => {
     setGender(user?.gender ?? '');
     setBirthDate(user?.birthDate?.slice(0, 10) ?? '');
     setErrors({});
+    setSaveError(null);
     const matched = roles.find((r) => r.name === user?.role?.name);
     setRoleId(matched?.id ?? '');
+    setClinicId('');
   }, [open, user, roles]);
 
   const validate = (): Errors => {
@@ -95,6 +102,7 @@ const UserFormDialog: React.FC<Props> = (props) => {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     setSaving(true);
+    setSaveError(null);
     try {
       if (isEdit) {
         await (props as EditProps).onSave({
@@ -114,8 +122,11 @@ const UserFormDialog: React.FC<Props> = (props) => {
           gender:    gender    || undefined,
           birthDate: birthDate || undefined,
           roleId:    roleId    || undefined,
+          clinicId:  clinicId  || undefined,
         });
       }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'שמירה נכשלה');
     } finally {
       setSaving(false);
     }
@@ -130,6 +141,8 @@ const UserFormDialog: React.FC<Props> = (props) => {
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
+
+          {saveError && <Alert severity="error" onClose={() => setSaveError(null)}>{saveError}</Alert>}
 
           <TextField
             {...fieldSx}
@@ -232,6 +245,19 @@ const UserFormDialog: React.FC<Props> = (props) => {
               <MenuItem key={r.id} value={r.id}>{ROLE_LABELS[r.name] ?? r.name}</MenuItem>
             ))}
           </TextField>
+
+          {!isEdit && (() => {
+            const selectedRole = roles.find(r => r.id === roleId)?.name;
+            const needsClinic = selectedRole === 'secretary' || selectedRole === 'doctor';
+            return needsClinic ? (
+              <TextField {...fieldSx} select label="מרפאה" value={clinicId} onChange={(e) => setClinicId(e.target.value)} required>
+                <MenuItem value="">— בחר מרפאה —</MenuItem>
+                {clinics.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                ))}
+              </TextField>
+            ) : null;
+          })()}
 
           {Object.keys(errors).length > 0 && (
             <Typography sx={{ fontSize: 12, color: 'error.main' }}>

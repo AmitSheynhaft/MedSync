@@ -225,22 +225,21 @@ export class SlotsService {
   }
 
   async listTherapists(
-    secretaryUserId: string,
+    _secretaryUserId: string,
     search?: string,
     page?: number,
     limit?: number,
   ): Promise<PaginatedDto<TherapistOptionDto>> {
-    const clinicId = await this.getSecretaryClinicId(secretaryUserId);
     const { pageNumber, take, skip } = resolvePaging(page, limit);
 
     const term = search?.trim();
     const like = term ? ILike(`%${term}%`) : undefined;
     const where = like
       ? [
-          { clinicId, user: { fullName: like } },
-          { clinicId, specialization: like },
+          { user: { fullName: like } },
+          { specialization: like },
         ]
-      : { clinicId };
+      : {};
 
     const [caregivers, total] = await this.caregivers.findAndCount({
       where,
@@ -263,16 +262,7 @@ export class SlotsService {
     page?: number,
     limit?: number,
   ): Promise<PaginatedDto<BookablePatientDto>> {
-    const clinicId = await this.getSecretaryClinicId(secretaryUserId);
     const { pageNumber, take, skip } = resolvePaging(page, limit);
-
-    // A user is bookable when they belong to the clinic through the relation
-    // matching their role. Each entry in the array is OR-ed together.
-    const clinicBranches = [
-      { role: { name: ROLE_PATIENT }, patient: { patientClinics: { clinicId } } },
-      { role: { name: ROLE_DOCTOR }, caregiver: { clinicId } },
-      { role: { name: ROLE_SECRETARY }, secretary: { clinicId } },
-    ];
 
     const term = search?.trim();
     const like = term ? ILike(`%${term}%`) : undefined;
@@ -280,13 +270,11 @@ export class SlotsService {
       ? [{ fullName: like }, { email: like }]
       : [{}];
 
-    const where = clinicBranches.flatMap((branch) =>
-      searchBranches.map((searchBranch) => ({
-        ...branch,
-        ...searchBranch,
-        id: Not(secretaryUserId),
-      })),
-    );
+    const where = searchBranches.map((searchBranch) => ({
+      ...searchBranch,
+      id: Not(secretaryUserId),
+      role: { name: ROLE_PATIENT },
+    }));
 
     const [users, total] = await this.users.findAndCount({
       where,
