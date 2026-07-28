@@ -124,7 +124,7 @@ export class SlotsService {
     await this.assertUserBelongsToClinic(patientUser.id, secretaryClinicId);
 
     const slot = await this.dataSource.transaction(async (manager) => {
-      const patient = await this.patientsService.ensureForUser(
+      const patient = await this.patientsService.ensurePatientProfileForUser(
         patientUser.id,
         manager,
       );
@@ -403,7 +403,7 @@ export class SlotsService {
     scope: 'upcoming' | 'past' | 'cancelled',
   ): Promise<SlotDto[]> {
     const patient = await this.patientsService
-      .ensureForUser(userId)
+      .ensurePatientProfileForUser(userId)
       .catch(() => null);
     if (!patient) return [];
 

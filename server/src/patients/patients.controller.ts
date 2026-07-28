@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -32,50 +33,61 @@ export class PatientsController {
 
   @Roles(ROLE_DOCTOR)
   @Get()
-  findAll(
-    @Query('search') search: string | undefined,
+  getAllPatients(
+    @Query('search') searchQuery: string | undefined,
     @User() user: IUser,
   ): Promise<PatientSummary[]> {
-    return this.patientsService.findAll(search, user);
+    return this.patientsService.getAllPatients(searchQuery, user);
   }
 
   @Get(':id')
-  findOne(
-    @Param('id', new ParseUUIDPipe()) id: string,
+  getPatientById(
+    @Param('id', new ParseUUIDPipe()) patientId: string,
     @User() user: IUser,
   ): Promise<Patient> {
-    return this.patientsService.findOne(id, user);
+    return this.patientsService.getPatientById(patientId, user);
   }
 
   @Roles(ROLE_DOCTOR)
   @Post()
-  create(@Body() body: CreatePatientInput, @User() user: IUser): Promise<Patient> {
-    return this.patientsService.create(body, user);
+  createPatient(
+    @Body() createPatientInput: CreatePatientInput,
+    @User() user: IUser,
+  ): Promise<Patient> {
+    return this.patientsService.createPatient(createPatientInput, user);
   }
 
   @Patch(':id')
-  update(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: UpdatePatientInput,
+  updatePatientById(
+    @Param('id', new ParseUUIDPipe()) patientId: string,
+    @Body() updatePatientInput: UpdatePatientInput,
     @User() user: IUser,
   ): Promise<Patient> {
-    return this.patientsService.update(id, body, user);
+    return this.patientsService.updatePatientById(
+      patientId,
+      updatePatientInput,
+      user,
+    );
   }
 
   @Roles(ROLE_DOCTOR)
   @Delete(':id')
-  @HttpCode(204)
-  remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
-    return this.patientsService.remove(id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deletePatientById(
+    @Param('id', new ParseUUIDPipe()) patientId: string,
+  ): Promise<void> {
+    return this.patientsService.deletePatientById(patientId);
   }
 
   @Post(':id/medical-summary/refresh')
   async refreshMedicalSummary(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id', new ParseUUIDPipe()) patientId: string,
     @User() user: IUser,
   ): Promise<Patient> {
-    await this.medicalSummaryService.generateAndSavePatientMedicalSummary(id);
-    return this.patientsService.findOne(id, user);
+    await this.medicalSummaryService.generateAndSavePatientMedicalSummary(
+      patientId,
+    );
+    return this.patientsService.getPatientById(patientId, user);
   }
 
   // Admin-only bulk operation

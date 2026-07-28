@@ -32,7 +32,7 @@ export class ClinicalAlertsController {
     @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ClinicalAlertDto[]> {
-    await this.patientsService.assertCanAccessPatient(id, user);
+    await this.patientsService.assertUserCanAccessPatient(id, user);
     return this.service.getForPatient(id);
   }
 
@@ -42,7 +42,7 @@ export class ClinicalAlertsController {
     @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<ClinicalAlertDto[]> {
-    await this.patientsService.assertCanAccessPatient(id, user);
+    await this.patientsService.assertUserCanAccessPatient(id, user);
     return this.service.regenerateForPatient(id);
   }
 
@@ -53,7 +53,7 @@ export class ClinicalAlertsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: CreateManualAlertDto,
   ): Promise<ClinicalAlertDto> {
-    await this.patientsService.assertCanAccessPatient(id, user);
+    await this.patientsService.assertUserCanAccessPatient(id, user);
     return this.service.createManualAlert(id, body);
   }
 
@@ -65,7 +65,7 @@ export class ClinicalAlertsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Param('alertId', new ParseUUIDPipe()) alertId: string,
   ): Promise<void> {
-    await this.patientsService.assertCanAccessPatient(id, user);
+    await this.patientsService.assertUserCanAccessPatient(id, user);
     return this.service.deleteManualAlert(id, alertId);
   }
 

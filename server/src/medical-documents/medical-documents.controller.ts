@@ -41,7 +41,7 @@ export class MedicalDocumentsController {
     if (!patientId) {
       throw new BadRequestException('patientId is required');
     }
-    await this.patientsService.assertCanAccessPatient(patientId, user);
+    await this.patientsService.assertUserCanAccessPatient(patientId, user);
     return this.medicalDocumentsService.getMedicalDocuments(patientId);
   }
 
@@ -52,7 +52,7 @@ export class MedicalDocumentsController {
   ) {
     const medicalDocument =
       await this.medicalDocumentsService.getMedicalDocumentById(documentId);
-    await this.patientsService.assertCanAccessPatient(
+    await this.patientsService.assertUserCanAccessPatient(
       medicalDocument.patientId,
       user,
     );
@@ -64,7 +64,7 @@ export class MedicalDocumentsController {
     @User() user: IUser,
     @Body() medicalDocumentInput: MedicalDocumentInput,
   ) {
-    await this.patientsService.assertCanAccessPatient(
+    await this.patientsService.assertUserCanAccessPatient(
       medicalDocumentInput.patientId,
       user,
     );
@@ -79,7 +79,7 @@ export class MedicalDocumentsController {
   ) {
     const medicalDocument =
       await this.medicalDocumentsService.getMedicalDocumentById(documentId);
-    await this.patientsService.assertCanAccessPatient(
+    await this.patientsService.assertUserCanAccessPatient(
       medicalDocument.patientId,
       user,
     );
@@ -97,7 +97,7 @@ export class MedicalDocumentsController {
   ) {
     const medicalDocument =
       await this.medicalDocumentsService.getMedicalDocumentById(documentId);
-    await this.patientsService.assertCanAccessPatient(
+    await this.patientsService.assertUserCanAccessPatient(
       medicalDocument.patientId,
       user,
     );
@@ -115,7 +115,7 @@ export class MedicalDocumentsController {
   ) {
     const medicalDocument =
       await this.medicalDocumentsService.getMedicalDocumentById(documentId);
-    await this.patientsService.assertCanAccessPatient(
+    await this.patientsService.assertUserCanAccessPatient(
       medicalDocument.patientId,
       user,
     );

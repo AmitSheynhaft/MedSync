@@ -47,7 +47,7 @@ export class DocumentsLogicService {
     const parsedDocumentType = this.parseDocumentType(uploadDocumentDto.documentType);
     const targetPatientId = await this.resolveTargetPatientId(user, uploadDocumentDto);
 
-    await this.patientsService.assertCanAccessPatient(targetPatientId, user);
+    await this.patientsService.assertUserCanAccessPatient(targetPatientId, user);
 
     try {
       const originalName = this.decodeUploadedFileName(file.originalname);
@@ -84,7 +84,7 @@ export class DocumentsLogicService {
     const fileData = await this.documentsQueryService.getDocumentFileData(documentId);
     if (!fileData) throw new NotFoundException('File not found');
     if (fileData.patientId) {
-      await this.patientsService.assertCanAccessPatient(fileData.patientId, user);
+      await this.patientsService.assertUserCanAccessPatient(fileData.patientId, user);
     }
     return fileData;
   }
@@ -98,7 +98,7 @@ export class DocumentsLogicService {
     );
     if (!documentSummary) throw new NotFoundException('Document not found');
     if (documentSummary.patientId) {
-      await this.patientsService.assertCanAccessPatient(
+      await this.patientsService.assertUserCanAccessPatient(
         documentSummary.patientId,
         user,
       );
@@ -203,7 +203,9 @@ export class DocumentsLogicService {
     if (patientId) return patientId;
 
     if (patientUserId) {
-      const patient = await this.patientsService.ensureForUser(patientUserId);
+      const patient = await this.patientsService.ensurePatientProfileForUser(
+        patientUserId,
+      );
       return patient.id;
     }
 
