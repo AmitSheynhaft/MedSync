@@ -17,7 +17,7 @@ import {
 import { PatientsService } from '../patients/patients.service';
 import { User } from '../common/decorators/user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { IUser } from '../entities';
+import { IUser } from '../common/types/entity-interfaces';
 import { ROLE_DOCTOR } from '../common/constants/roles';
 
 @Controller('api/patients')

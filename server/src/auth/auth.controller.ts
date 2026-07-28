@@ -18,7 +18,7 @@ import {
   getRefreshTokenFromRequest,
   setAuthCookies,
 } from './auth-cookie.util';
-import { IUser } from '../entities';
+import { IUser } from '../common/types/entity-interfaces';
 
 @Controller('api/auth')
 export class AuthController {

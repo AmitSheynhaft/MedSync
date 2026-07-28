@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { MedicalDocument } from '../entities/medicalDocument/medicalDocumentEntity';
-import { DocumentSummary } from '../entities/documentSummary/documentSummaryEntity';
-import { DocumentType, SummaryStatus } from '../entities/enums';
+import { MedicalDocument } from '../medical-documents/entities/medicalDocumentEntity';
+import { DocumentSummary } from './entities/documentSummaryEntity';
+import { DocumentType, SummaryStatus } from '../common/constants/domain-enums';
 import {
   DocumentFileDataResult,
   DocumentSummaryResult,

@@ -9,67 +9,28 @@ import {
 import * as os from 'os';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { Visit } from '../entities/visit/visitEntity';
-import { VisitRecording } from '../entities/visitRecording/visitRecordingEntity';
-import { VisitSummary } from '../entities/visitSummary/visitSummaryEntity';
-import { VisitDiagnosis } from '../entities/visitDiagnosis/visitDiagnosisEntity';
-import { VisitMedicine } from '../entities/visitMedicine/visitMedicineEntity';
-import { Diagnosis } from '../entities/diagnosis/diagnosisEntity';
-import { Medicine } from '../entities/medicine/medicineEntity';
-import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
-import { Patient } from '../entities/patient/patientEntity';
-import { Slot } from '../entities/slot/slotEntity';
-import { SlotStatus } from '../entities/slot/slotStatus';
-import { RecordingStatus, VisitSummaryType, VisitType } from '../entities/enums';
+import { Visit } from './entities/visitEntity';
+import { VisitRecording } from './entities/visitRecordingEntity';
+import { VisitSummary } from './entities/visitSummaryEntity';
+import { VisitDiagnosis } from './entities/visitDiagnosisEntity';
+import { VisitMedicine } from './entities/visitMedicineEntity';
+import { Diagnosis } from '../diagnoses/entities/diagnosisEntity';
+import { Medicine } from '../medicines/entities/medicineEntity';
+import { PatientClinic } from '../patients/entities/patientClinicEntity';
+import { Patient } from '../patients/entities/patientEntity';
+import { Slot } from '../slots/entities/slotEntity';
+import { SlotStatus } from '../slots/entities/slotStatus';
+import { RecordingStatus, VisitSummaryType, VisitType } from '../common/constants/domain-enums';
 import { DiagnosesService } from '../diagnoses/diagnoses.service';
 import { MedicinesService } from '../medicines/medicines.service';
 import { PatientMedicalSummaryService } from '../patient-medical-summary/patient-medical-summary.service';
-
-export interface VisitInput {
-  patientId: string;
-  caregiverId: string;
-  slotId?: string;
-  visitDate: string | Date;
-  actingClinicId?: string;
-  actingUserId?: string;
-  bloodPressure?: string;
-  pulse?: string;
-  bodyTemp?: string;
-  weight?: string;
-  height?: string;
-  oxygenSat?: string;
-  chiefComplaint?: string;
-  visitType?: string;
-  followUpDate?: string;
-  referralNotes?: string;
-}
-
-export interface VisitRecordingInput {
-  status?: RecordingStatus;
-  audioUrl: string;
-  transcriptText?: string;
-}
-
-export interface VisitSummaryInput {
-  summaryText: string;
-  visitType: VisitSummaryType;
-}
-
-export interface VisitDiagnosisInput {
-  diagnosisId?: string;
-  diagnosisCode?: string;
-  diagnosisDescription?: string;
-  note?: string;
-}
-
-export interface VisitMedicineInput {
-  medicineId?: string;
-  medicineName?: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
-  instructions?: string;
-}
+import {
+  VisitDiagnosisInput,
+  VisitInput,
+  VisitMedicineInput,
+  VisitRecordingInput,
+  VisitSummaryInput,
+} from './types/visit-records.types';
 
 @Injectable()
 export class VisitRecordsService {

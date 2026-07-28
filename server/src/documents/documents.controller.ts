@@ -14,7 +14,7 @@ import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentsLogicService } from './documents-logic.service';
 import { User } from '../common/decorators/user.decorator';
-import { IUser } from '../entities';
+import { IUser } from '../common/types/entity-interfaces';
 import { MAX_DOCUMENT_UPLOAD_BYTES } from './documents.constants';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 

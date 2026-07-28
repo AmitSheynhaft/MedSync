@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '../entities/user/userEntity';
-import { Patient } from '../entities/patient/patientEntity';
-import { Caregiver } from '../entities/caregiver/caregiverEntity';
-import { Secretary } from '../entities/secretary/secretaryEntity';
+import { User } from './entities/userEntity';
+import { Patient } from '../patients/entities/patientEntity';
+import { Caregiver } from '../caregivers/entities/caregiverEntity';
+import { Secretary } from './entities/secretaryEntity';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { RolesModule } from '../roles/roles.module';

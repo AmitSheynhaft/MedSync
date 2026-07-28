@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Role } from '../entities/role/roleEntity';
+import { Role } from './entities/roleEntity';
 
 export interface RoleInput {
   name: string;

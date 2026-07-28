@@ -1,31 +1,8 @@
 import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
-
-export interface VisitSummaryObject {
-  patientComplaints: string;
-  diagnosis: string;
-  doctorsRecommendations: string;
-}
-
-const SUMMARY_PROMPT = `You are a medical scribe transcribing a conversation between a caregiver (doctor) and a patient. The transcript may be in Hebrew or English. Produce the summary content in the same language as the transcript.
-
-Read the transcript carefully and identify:
-- What the patient is complaining about (symptoms, concerns, history they describe)
-- The doctor's diagnosis or clinical impression
-- The doctor's recommendations (treatment, medications, follow-up, lifestyle advice, referrals)
-
-Return ONLY a valid JSON object with exactly these three keys:
-{
-  "patientComplaints": "...",
-  "diagnosis": "...",
-  "doctorsRecommendations": "..."
-}
-
-Use concise clinical language. Quote or paraphrase the speakers faithfully — do not invent facts. If a section has no information in the transcript, use the value "Not documented." for that key. Do not include any text outside the JSON object.
-
-Transcript:
-`;
+import { VISIT_SUMMARY_PROMPT } from './constants/visit-summary.constants';
+import { VisitSummaryObject } from './types/visit-summary.types';
 
 @Injectable()
 export class SummaryService implements OnModuleInit {
@@ -56,7 +33,7 @@ export class SummaryService implements OnModuleInit {
 
     try {
       const result = await this.model.generateContent(
-        `${SUMMARY_PROMPT}${transcript}`,
+        `${VISIT_SUMMARY_PROMPT}${transcript}`,
       );
       const raw = result.response.text().trim();
       // Strip markdown code fences if the model wraps the JSON

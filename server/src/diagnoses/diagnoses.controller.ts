@@ -11,7 +11,8 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { DiagnosesService, DiagnosisInput } from './diagnoses.service';
+import { DiagnosesService } from './diagnoses.service';
+import { DiagnosisInput } from './types/diagnosis.types';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ROLE_DOCTOR } from '../common/constants/roles';
 

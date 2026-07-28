@@ -17,7 +17,7 @@ import {
   ROLE_PATIENT,
   ROLE_SECRETARY,
 } from '../common/constants/roles';
-import { IUser } from '../entities';
+import { IUser } from '../common/types/entity-interfaces';
 
 @Controller('api/slots')
 export class SlotsController {

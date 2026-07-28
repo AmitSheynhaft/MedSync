@@ -1,4 +1,4 @@
-import { SummaryStatus } from '../entities/enums';
+import { SummaryStatus } from '../common/constants/domain-enums';
 
 export interface PendingMedicalDocumentResult {
   id: string;

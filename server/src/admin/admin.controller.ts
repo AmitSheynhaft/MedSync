@@ -13,7 +13,8 @@ import {
 import { Roles } from '../common/decorators/roles.decorator';
 import { ROLE_ADMIN } from '../common/constants/roles';
 import { UsersService, CreateUserInput, UpdateUserInput } from '../users/users.service';
-import { ClinicsService, ClinicInput } from '../clinics/clinics.service';
+import { ClinicsService } from '../clinics/clinics.service';
+import { ClinicInput } from '../clinics/types/clinic.types';
 
 @Roles(ROLE_ADMIN)
 @Controller('api/admin')

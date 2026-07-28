@@ -10,16 +10,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { DataSource, Repository } from 'typeorm';
 import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
-import { PatientClinicalAlert } from '../entities/patientClinicalAlert/patientClinicalAlertEntity';
-import { Patient } from '../entities/patient/patientEntity';
-import { PatientMedicalSummary } from '../entities/patientMedicalSummary/patientMedicalSummaryEntity';
-import { VisitSummary } from '../entities/visitSummary/visitSummaryEntity';
-import { DocumentSummary } from '../entities/documentSummary/documentSummaryEntity';
+import { PatientClinicalAlert } from './entities/patientClinicalAlertEntity';
+import { Patient } from '../patients/entities/patientEntity';
+import { PatientMedicalSummary } from '../patient-medical-summary/entities/patientMedicalSummaryEntity';
+import { VisitSummary } from '../visits/entities/visitSummaryEntity';
+import { DocumentSummary } from '../documents/entities/documentSummaryEntity';
 import {
   ClinicalAlertCategory,
   ClinicalAlertSeverity,
   ClinicalAlertSource,
-} from '../entities/enums';
+} from '../common/constants/domain-enums';
 import {
   BulkRegenerateResult,
   ClinicalAlertDto,

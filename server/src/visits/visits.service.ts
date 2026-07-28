@@ -1,15 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SpeechService } from './speech.service';
-import { SummaryService, VisitSummaryObject } from './summary.service';
-
-export interface TranscribeResult {
-  transcript: string;
-  summary: VisitSummaryObject;
-}
-
-export interface SummarizeResult {
-  summary: VisitSummaryObject;
-}
+import { SummaryService } from './summary.service';
+import { SummarizeResult, TranscribeResult } from './types/visits.types';
 
 @Injectable()
 export class VisitsService {

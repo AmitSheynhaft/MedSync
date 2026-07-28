@@ -4,15 +4,15 @@ import { Repository } from 'typeorm';
 import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
-import { PatientMedicalSummary } from '../entities/patientMedicalSummary/patientMedicalSummaryEntity';
-import { Patient } from '../entities/patient/patientEntity';
-import { VisitSummary } from '../entities/visitSummary/visitSummaryEntity';
-import { DocumentSummary } from '../entities/documentSummary/documentSummaryEntity';
-import { PatientClinicalAlert } from '../entities/patientClinicalAlert/patientClinicalAlertEntity';
+import { PatientMedicalSummary } from './entities/patientMedicalSummaryEntity';
+import { Patient } from '../patients/entities/patientEntity';
+import { VisitSummary } from '../visits/entities/visitSummaryEntity';
+import { DocumentSummary } from '../documents/entities/documentSummaryEntity';
+import { PatientClinicalAlert } from '../clinical-alerts/entities/patientClinicalAlertEntity';
 import {
   ClinicalAlertCategory,
   ClinicalAlertSource,
-} from '../entities/enums';
+} from '../common/constants/domain-enums';
 import { ClinicalAlertsService } from '../clinical-alerts/clinical-alerts.service';
 
 const INITIAL_PROMPT = `אתה מנתח נתונים רפואיים המסייע לרופאים.

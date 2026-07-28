@@ -11,14 +11,14 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   VisitsService,
-  TranscribeResult,
-  SummarizeResult,
 } from './visits.service';
+import { SummarizeResult, TranscribeResult } from './types/visits.types';
+import {
+  MAX_AUDIO_BYTES,
+  MAX_SUMMARY_TEXT_CHARS,
+} from './constants/visits.constants';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ROLE_DOCTOR } from '../common/constants/roles';
-
-export const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
-const MAX_SUMMARY_TEXT_CHARS = 20_000;
 
 @Roles(ROLE_DOCTOR)
 @Controller('api/visits')

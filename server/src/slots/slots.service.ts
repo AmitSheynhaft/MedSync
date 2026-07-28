@@ -16,12 +16,12 @@ import {
   QueryFailedError,
   Repository,
 } from 'typeorm';
-import { Slot } from '../entities/slot/slotEntity';
-import { SlotStatus } from '../entities/slot/slotStatus';
-import { Caregiver } from '../entities/caregiver/caregiverEntity';
-import { Secretary } from '../entities/secretary/secretaryEntity';
-import { User } from '../entities/user/userEntity';
-import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
+import { Slot } from './entities/slotEntity';
+import { SlotStatus } from './entities/slotStatus';
+import { Caregiver } from '../caregivers/entities/caregiverEntity';
+import { Secretary } from '../users/entities/secretaryEntity';
+import { User } from '../users/entities/userEntity';
+import { PatientClinic } from '../patients/entities/patientClinicEntity';
 import {
   ROLE_DOCTOR,
   ROLE_PATIENT,

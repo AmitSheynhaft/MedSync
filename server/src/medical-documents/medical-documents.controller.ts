@@ -20,7 +20,7 @@ import {
 } from './medical-documents.service';
 import { PatientsService } from '../patients/patients.service';
 import { User } from '../common/decorators/user.decorator';
-import { IUser } from '../entities';
+import { IUser } from '../common/types/entity-interfaces';
 
 @Controller('api/medical-documents')
 export class MedicalDocumentsController {

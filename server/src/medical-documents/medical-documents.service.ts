@@ -5,9 +5,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { MedicalDocument } from '../entities/medicalDocument/medicalDocumentEntity';
-import { DocumentSummary } from '../entities/documentSummary/documentSummaryEntity';
-import { DocumentType, SummaryStatus } from '../entities/enums';
+import { MedicalDocument } from './entities/medicalDocumentEntity';
+import { DocumentSummary } from '../documents/entities/documentSummaryEntity';
+import { DocumentType, SummaryStatus } from '../common/constants/domain-enums';
 
 export interface MedicalDocumentInput {
   patientId: string;

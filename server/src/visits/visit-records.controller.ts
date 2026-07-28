@@ -16,17 +16,17 @@ import {
   StreamableFile,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { VisitRecordsService } from './visit-records.service';
 import {
   VisitDiagnosisInput,
   VisitInput,
   VisitMedicineInput,
   VisitRecordingInput,
-  VisitRecordsService,
   VisitSummaryInput,
-} from './visit-records.service';
+} from './types/visit-records.types';
 import { Roles } from '../common/decorators/roles.decorator';
 import { User } from '../common/decorators/user.decorator';
-import { IUser } from '../entities';
+import { IUser } from '../common/types/entity-interfaces';
 import { ROLE_DOCTOR, ROLE_PATIENT } from '../common/constants/roles';
 
 @Controller('api/visits-records')

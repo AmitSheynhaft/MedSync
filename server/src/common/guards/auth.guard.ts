@@ -11,7 +11,7 @@ import { UsersService } from '../../users/users.service';
 import { getAccessTokenFromRequest } from '../../auth/auth-cookie.util';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { ALL_ROLES } from '../constants/roles';
-import { IRole } from '../../entities';
+import { IRole } from '../types/entity-interfaces';
 
 @Injectable()
 export class AuthGuard implements CanActivate {

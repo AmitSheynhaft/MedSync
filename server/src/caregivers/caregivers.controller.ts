@@ -10,7 +10,8 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { CaregiverInput, CaregiversService } from './caregivers.service';
+import { CaregiversService } from './caregivers.service';
+import { CaregiverInput } from './types/caregiver.types';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ROLE_DOCTOR } from '../common/constants/roles';
 

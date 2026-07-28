@@ -5,12 +5,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Clinic } from '../entities/clinic/clinicEntity';
-
-export interface ClinicInput {
-  name: string;
-  address?: string;
-}
+import { Clinic } from './entities/clinicEntity';
+import { ClinicInput } from './types/clinic.types';
 
 @Injectable()
 export class ClinicsService {

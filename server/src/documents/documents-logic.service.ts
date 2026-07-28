@@ -10,11 +10,11 @@ import {
 import { DocumentSummaryService } from './document-summary.service';
 import { DocumentsService } from './documents.service';
 import { OcrService } from './ocr.service';
-import { DocumentType, SummaryStatus } from '../entities/enums';
+import { DocumentType, SummaryStatus } from '../common/constants/domain-enums';
 import { PatientMedicalSummaryService } from '../patient-medical-summary/patient-medical-summary.service';
 import { PatientsService } from '../patients/patients.service';
 import { ROLE_PATIENT } from '../common/constants/roles';
-import { IUser } from '../entities';
+import { IUser } from '../common/types/entity-interfaces';
 import {
   DocumentFileDataResult,
   DocumentSummaryResult,

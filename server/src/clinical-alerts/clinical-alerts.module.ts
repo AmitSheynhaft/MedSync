@@ -2,11 +2,11 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClinicalAlertsController } from './clinical-alerts.controller';
 import { ClinicalAlertsService } from './clinical-alerts.service';
-import { PatientClinicalAlert } from '../entities/patientClinicalAlert/patientClinicalAlertEntity';
-import { Patient } from '../entities/patient/patientEntity';
-import { PatientMedicalSummary } from '../entities/patientMedicalSummary/patientMedicalSummaryEntity';
-import { VisitSummary } from '../entities/visitSummary/visitSummaryEntity';
-import { DocumentSummary } from '../entities/documentSummary/documentSummaryEntity';
+import { PatientClinicalAlert } from './entities/patientClinicalAlertEntity';
+import { Patient } from '../patients/entities/patientEntity';
+import { PatientMedicalSummary } from '../patient-medical-summary/entities/patientMedicalSummaryEntity';
+import { VisitSummary } from '../visits/entities/visitSummaryEntity';
+import { DocumentSummary } from '../documents/entities/documentSummaryEntity';
 import { PatientsModule } from '../patients/patients.module';
 
 @Module({

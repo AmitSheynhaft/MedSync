@@ -7,10 +7,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
-import { User } from '../entities/user/userEntity';
-import { Patient } from '../entities/patient/patientEntity';
-import { Caregiver } from '../entities/caregiver/caregiverEntity';
-import { Secretary } from '../entities/secretary/secretaryEntity';
+import { User } from './entities/userEntity';
+import { Patient } from '../patients/entities/patientEntity';
+import { Caregiver } from '../caregivers/entities/caregiverEntity';
+import { Secretary } from './entities/secretaryEntity';
 import { hashPassword, isHashedPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
 import { ROLE_DOCTOR, ROLE_PATIENT, ROLE_SECRETARY } from '../common/constants/roles';

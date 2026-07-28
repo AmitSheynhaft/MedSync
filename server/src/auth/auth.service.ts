@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, QueryFailedError, Repository } from 'typeorm';
-import { User } from '../entities/user/userEntity';
-import { Patient } from '../entities/patient/patientEntity';
-import { Caregiver } from '../entities/caregiver/caregiverEntity';
-import { Secretary } from '../entities/secretary/secretaryEntity';
-import { Clinic } from '../entities/clinic/clinicEntity';
-import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
+import { User } from '../users/entities/userEntity';
+import { Patient } from '../patients/entities/patientEntity';
+import { Caregiver } from '../caregivers/entities/caregiverEntity';
+import { Secretary } from '../users/entities/secretaryEntity';
+import { Clinic } from '../clinics/entities/clinicEntity';
+import { PatientClinic } from '../patients/entities/patientClinicEntity';
 import { hashPassword, verifyPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
 import { TokenService, TokenPair } from './token.service';

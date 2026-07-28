@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Medicine } from '../entities/medicine/medicineEntity';
+import { Medicine } from './entities/medicineEntity';
 
 export interface MedicineInput {
   name: string;

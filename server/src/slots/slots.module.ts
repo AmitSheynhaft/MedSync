@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Slot } from '../entities/slot/slotEntity';
-import { Caregiver } from '../entities/caregiver/caregiverEntity';
-import { Secretary } from '../entities/secretary/secretaryEntity';
-import { User } from '../entities/user/userEntity';
+import { Slot } from './entities/slotEntity';
+import { Caregiver } from '../caregivers/entities/caregiverEntity';
+import { Secretary } from '../users/entities/secretaryEntity';
+import { User } from '../users/entities/userEntity';
 import { PatientsModule } from '../patients/patients.module';
 import { SlotsController } from './slots.controller';
 import { SlotsService } from './slots.service';

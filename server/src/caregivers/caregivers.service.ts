@@ -6,14 +6,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Caregiver } from '../entities/caregiver/caregiverEntity';
-
-export interface CaregiverInput {
-  userId: string;
-  licenseNumber: string;
-  specialization: string;
-  clinicName?: string;
-}
+import { Caregiver } from './entities/caregiverEntity';
+import { CaregiverInput } from './types/caregiver.types';
 
 @Injectable()
 export class CaregiversService {

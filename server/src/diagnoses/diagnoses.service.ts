@@ -6,12 +6,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Diagnosis } from '../entities/diagnosis/diagnosisEntity';
-
-export interface DiagnosisInput {
-  code: string;
-  description: string;
-}
+import { Diagnosis } from './entities/diagnosisEntity';
+import { DiagnosisInput } from './types/diagnosis.types';
 
 @Injectable()
 export class DiagnosesService {
