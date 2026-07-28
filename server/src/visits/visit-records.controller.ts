@@ -33,6 +33,15 @@ import { ROLE_DOCTOR, ROLE_PATIENT } from '../common/constants/roles';
 export class VisitRecordsController {
   constructor(private readonly visitRecordsService: VisitRecordsService) {}
 
+  private assertPatientCanAccessVisit(visit: { patientId: string }, user: IUser): void {
+    if (
+      user?.role?.name === ROLE_PATIENT &&
+      visit.patientId !== user.patient?.id
+    ) {
+      throw new NotFoundException('Visit not found');
+    }
+  }
+
   /** Throws ForbiddenException if the visit belongs to a different clinic. */
   private async assertClinicAccessForVisit(
     visitId: string,
@@ -78,13 +87,7 @@ export class VisitRecordsController {
     @Param('id', new ParseUUIDPipe()) visitId: string,
   ) {
     const visit = await this.visitRecordsService.getVisitRecordById(visitId);
-    // Patients may only read a visit that belongs to them.
-    if (
-      user?.role?.name === ROLE_PATIENT &&
-      visit.patientId !== user.patient?.id
-    ) {
-      throw new NotFoundException('Visit not found');
-    }
+    this.assertPatientCanAccessVisit(visit, user);
     return visit;
   }
 
@@ -95,12 +98,7 @@ export class VisitRecordsController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const visit = await this.visitRecordsService.getVisitRecordById(visitId);
-    if (
-      user?.role?.name === ROLE_PATIENT &&
-      visit.patientId !== user.patient?.id
-    ) {
-      throw new NotFoundException('Visit not found');
-    }
+    this.assertPatientCanAccessVisit(visit, user);
 
     const dateSuffix = new Date(visit.visitDate)
       .toISOString()

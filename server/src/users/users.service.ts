@@ -55,14 +55,12 @@ export class UsersService {
 
   private mapUserEntityToSafeUser(user: User): SafeUser {
     if (!user) return user;
-    const safeUser: any = { ...user };
-    delete safeUser.password;
+    const { password: _password, roleId: _roleId, role, ...rest } = user;
     // Never expose the role's internal uuid — only its name is meaningful to clients.
-    delete safeUser.roleId;
-    if (safeUser.role) {
-      safeUser.role = { name: safeUser.role.name };
-    }
-    return safeUser;
+    return {
+      ...rest,
+      role: role ? { name: role.name } : role,
+    } as SafeUser;
   }
 
   async getAllUsers(roleName?: string): Promise<SafeUser[]> {

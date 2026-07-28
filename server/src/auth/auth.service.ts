@@ -111,6 +111,14 @@ export class AuthService {
     return this.tokens.issueRefreshToken(userId);
   }
 
+  private isUniqueViolation(error: unknown): boolean {
+    return (
+      error instanceof QueryFailedError &&
+      'code' in error &&
+      (error as { code?: string }).code === '23505'
+    );
+  }
+
   async refresh(refreshToken: string): Promise<TokenPair> {
     if (!refreshToken) {
       throw new UnauthorizedException('Missing refresh token');
@@ -188,7 +196,7 @@ export class AuthService {
         patientId: savedPatient.id,
       };
     }).catch((err) => {
-      if (err instanceof QueryFailedError && (err as any).code === '23505') {
+      if (this.isUniqueViolation(err)) {
         throw new ConflictException('כתובת האימייל או מספר הזהות כבר קיימים במערכת');
       }
       throw err;
@@ -249,7 +257,7 @@ export class AuthService {
         clinicId: savedCaregiver.clinicId,
       };
     }).catch((err) => {
-      if (err instanceof QueryFailedError && (err as any).code === '23505') {
+      if (this.isUniqueViolation(err)) {
         throw new ConflictException('כתובת האימייל כבר קיימת במערכת');
       }
       throw err;
@@ -314,7 +322,7 @@ export class AuthService {
         clinicId: savedSecretary.clinicId,
       };
     }).catch((err) => {
-      if (err instanceof QueryFailedError && (err as any).code === '23505') {
+      if (this.isUniqueViolation(err)) {
         throw new ConflictException('כתובת האימייל או תעודת הזהות כבר קיימים במערכת');
       }
       throw err;
@@ -352,7 +360,7 @@ export class AuthService {
         refreshToken: this.issueRefreshToken(savedUser.id),
       };
     } catch (err) {
-      if (err instanceof QueryFailedError && (err as any).code === '23505') {
+      if (this.isUniqueViolation(err)) {
         throw new ConflictException('כתובת האימייל כבר קיימת במערכת');
       }
       throw err;
@@ -394,7 +402,7 @@ export class AuthService {
     // context rather than secretary context.
     const effectiveRole =
       input.expectedRole &&
-      getEffectiveRoles(roleName).includes(input.expectedRole as any)
+      getEffectiveRoles(roleName).includes(input.expectedRole)
         ? input.expectedRole
         : roleName;
 
@@ -427,7 +435,7 @@ export class AuthService {
   ): void {
     if (!expectedRole) return;
 
-    if (!getEffectiveRoles(roleName).includes(expectedRole as any)) {
+    if (!getEffectiveRoles(roleName).includes(expectedRole)) {
       const messages: Record<string, string> = {
         [ROLE_DOCTOR]: 'אין לך הרשאות מטפל',
         [ROLE_PATIENT]: 'אין לך הרשאות מטופל',

@@ -8,14 +8,12 @@ import {
 } from '@nestjs/common';
 import * as os from 'os';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Visit } from './entities/visitEntity';
 import { VisitRecording } from './entities/visitRecordingEntity';
 import { VisitSummary } from './entities/visitSummaryEntity';
 import { VisitDiagnosis } from './entities/visitDiagnosisEntity';
 import { VisitMedicine } from './entities/visitMedicineEntity';
-import { Diagnosis } from '../diagnoses/entities/diagnosisEntity';
-import { Medicine } from '../medicines/entities/medicineEntity';
 import { PatientClinic } from '../patients/entities/patientClinicEntity';
 import { Patient } from '../patients/entities/patientEntity';
 import { Slot } from '../slots/entities/slotEntity';
@@ -46,10 +44,6 @@ export class VisitRecordsService {
     private readonly visitDiagnoses: Repository<VisitDiagnosis>,
     @InjectRepository(VisitMedicine)
     private readonly visitMedicines: Repository<VisitMedicine>,
-    @InjectRepository(Diagnosis)
-    private readonly diagnosesRepo: Repository<Diagnosis>,
-    @InjectRepository(Medicine)
-    private readonly medicinesRepo: Repository<Medicine>,
     @InjectRepository(PatientClinic)
     private readonly patientClinics: Repository<PatientClinic>,
     @InjectRepository(Patient)
@@ -58,7 +52,6 @@ export class VisitRecordsService {
     private readonly slots: Repository<Slot>,
     private readonly diagnosesService: DiagnosesService,
     private readonly medicinesService: MedicinesService,
-    private readonly dataSource: DataSource,
     private readonly medicalSummaryService: PatientMedicalSummaryService,
   ) {}
 
@@ -80,12 +73,19 @@ export class VisitRecordsService {
     return visitDateOnly < todayDateOnly;
   }
 
-  private throwIfPastVisit(visit: Visit, operation: string = 'modify'): void {
+  private throwIfPastVisit(visit: Visit): void {
     if (this.isVisitInPast(visit.visitDate)) {
       throw new BadRequestException(
         'לא ניתן לערוך ביקור שהתרחש בעבר',
       );
     }
+  }
+
+  private async getEditableVisitById(visitId: string): Promise<Visit> {
+    const visit = await this.visits.findOne({ where: { id: visitId } });
+    if (!visit) throw new NotFoundException(`Visit ${visitId} not found`);
+    this.throwIfPastVisit(visit);
+    return visit;
   }
 
   private sanitizeHtml(value?: string | null): string {
@@ -538,11 +538,7 @@ export class VisitRecordsService {
     visitId: string,
     input: Partial<VisitInput>,
   ): Promise<Visit> {
-    const visit = await this.visits.findOne({ where: { id: visitId } });
-    if (!visit) throw new NotFoundException(`Visit ${visitId} not found`);
-    
-    // Prevent editing past visits
-    this.throwIfPastVisit(visit, 'update');
+    const visit = await this.getEditableVisitById(visitId);
     
     if (input.visitDate !== undefined)
       visit.visitDate = new Date(input.visitDate);
@@ -564,11 +560,7 @@ export class VisitRecordsService {
   }
 
   async deleteVisitRecordById(visitId: string): Promise<void> {
-    const visit = await this.visits.findOne({ where: { id: visitId } });
-    if (!visit) throw new NotFoundException(`Visit ${visitId} not found`);
-    
-    // Prevent deleting past visits
-    this.throwIfPastVisit(visit, 'delete');
+    await this.getEditableVisitById(visitId);
     
     const result = await this.visits.delete(visitId);
     if (!result.affected)
@@ -580,10 +572,7 @@ export class VisitRecordsService {
     visitId: string,
     input: VisitRecordingInput,
   ): Promise<VisitRecording> {
-    const visit = await this.getVisitRecordById(visitId);
-    
-    // Prevent editing past visits
-    this.throwIfPastVisit(visit);
+    await this.getEditableVisitById(visitId);
     
     let rec = await this.recordings.findOne({ where: { visitId } });
     if (!rec) {
@@ -607,10 +596,7 @@ export class VisitRecordsService {
     visitId: string,
     input: VisitSummaryInput,
   ): Promise<VisitSummary> {
-    const visit = await this.getVisitRecordById(visitId);
-    
-    // Prevent editing past visits
-    this.throwIfPastVisit(visit);
+    const visit = await this.getEditableVisitById(visitId);
     
     let summary = await this.summaries.findOne({ where: { visitId } });
     if (!summary) {
@@ -642,10 +628,7 @@ export class VisitRecordsService {
     visitId: string,
     input: VisitDiagnosisInput,
   ): Promise<VisitDiagnosis> {
-    const visit = await this.getVisitRecordById(visitId);
-    
-    // Prevent editing past visits
-    this.throwIfPastVisit(visit);
+    await this.getEditableVisitById(visitId);
     
     let diagnosisId = input.diagnosisId;
     if (!diagnosisId) {
@@ -687,10 +670,7 @@ export class VisitRecordsService {
     visitId: string,
     input: VisitMedicineInput,
   ): Promise<VisitMedicine> {
-    const visit = await this.getVisitRecordById(visitId);
-    
-    // Prevent editing past visits
-    this.throwIfPastVisit(visit);
+    await this.getEditableVisitById(visitId);
     
     let medicineId = input.medicineId;
     if (!medicineId) {

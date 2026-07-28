@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { SignOptions } from 'jsonwebtoken';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/entities/userEntity';
 import { Patient } from '../patients/entities/patientEntity';
@@ -14,6 +15,8 @@ import { TokenService } from './token.service';
 import { RolesModule } from '../roles/roles.module';
 import { requireEnv } from '../common/config/require-env';
 
+type JwtExpiresIn = NonNullable<SignOptions['expiresIn']>;
+
 @Module({
   imports: [
     ConfigModule,
@@ -22,7 +25,7 @@ import { requireEnv } from '../common/config/require-env';
       useFactory: (config: ConfigService) => ({
         secret: requireEnv('JWT_SECRET'),
         signOptions: {
-          expiresIn: (config.get<string>('JWT_EXPIRES_IN') || '15m') as any,
+          expiresIn: (config.get<string>('JWT_EXPIRES_IN') || '15m') as JwtExpiresIn,
         },
       }),
     }),

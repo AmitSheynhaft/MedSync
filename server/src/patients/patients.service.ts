@@ -23,6 +23,7 @@ import { Secretary } from '../users/entities/secretaryEntity';
 import { RolesService } from '../roles/roles.service';
 import { hashPassword } from '../common/password.util';
 import { ClinicalAlertsService } from '../clinical-alerts/clinical-alerts.service';
+import { IUser } from '../common/types/entity-interfaces';
 import {
   CreatePatientInput,
   Encounter,
@@ -90,7 +91,7 @@ export class PatientsService {
       firstName: first,
       lastName: last,
       age: calcAgeYears(patientEntity.user?.birthDate) ?? 0,
-      gender: (patientEntity.user?.gender as any) || '',
+      gender: patientEntity.user?.gender ?? '',
     };
   }
 
@@ -141,7 +142,7 @@ export class PatientsService {
       lastName: last,
       fullName: patientEntity.user?.fullName ?? '',
       age: calcAgeYears(patientEntity.user?.birthDate) ?? 0,
-      gender: (patientEntity.user?.gender as any) || '',
+      gender: patientEntity.user?.gender ?? '',
       dob: formatDob(patientEntity.user?.birthDate),
       email: patientEntity.user?.email ?? '',
       phone: patientEntity.user?.phone ?? '',
@@ -165,7 +166,7 @@ export class PatientsService {
 
   async getAllPatients(
     searchQuery?: string,
-    actingUser?: any,
+    actingUser?: IUser,
   ): Promise<PatientSummary[]> {
     const trimmedSearchQuery = searchQuery?.trim();
     const clinicId = this.getActingClinicId(actingUser);
@@ -202,7 +203,7 @@ export class PatientsService {
     );
   }
 
-  private getActingClinicId(actingUser?: any): string | undefined {
+  private getActingClinicId(actingUser?: IUser): string | undefined {
     if (!actingUser) return undefined;
     if (actingUser.role?.name !== ROLE_DOCTOR) return undefined;
     return actingUser.caregiver?.clinicId ?? undefined;
@@ -220,7 +221,7 @@ export class PatientsService {
 
   private async assertActingUserCanAccessPatient(
     patientId: string,
-    actingUser?: any,
+    actingUser?: IUser,
   ): Promise<void> {
     if (!actingUser) return;
     if (actingUser.role?.name === ROLE_DOCTOR) {
@@ -247,7 +248,7 @@ export class PatientsService {
 
   async assertUserCanAccessPatient(
     patientId: string,
-    actingUser?: any,
+    actingUser?: IUser,
   ): Promise<void> {
     await this.assertActingUserCanAccessPatient(patientId, actingUser);
   }
@@ -260,7 +261,10 @@ export class PatientsService {
     return secretary.clinicId;
   }
 
-  async getPatientById(patientId: string, actingUser?: any): Promise<Patient> {
+  async getPatientById(
+    patientId: string,
+    actingUser?: IUser,
+  ): Promise<Patient> {
     await this.assertActingUserCanAccessPatient(patientId, actingUser);
     const patient = await this.patients.findOne({
       where: { id: patientId },
@@ -272,7 +276,7 @@ export class PatientsService {
 
   async createPatient(
     createPatientInput: CreatePatientInput,
-    actingUser?: any,
+    actingUser?: IUser,
   ): Promise<Patient> {
     if (
       !createPatientInput?.email ||
@@ -357,7 +361,7 @@ export class PatientsService {
   async updatePatientById(
     patientId: string,
     updatePatientInput: UpdatePatientInput,
-    actingUser?: any,
+    actingUser?: IUser,
   ): Promise<Patient> {
     await this.assertActingUserCanAccessPatient(patientId, actingUser);
     const patient = await this.patients.findOne({
