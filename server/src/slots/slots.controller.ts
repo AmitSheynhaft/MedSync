@@ -21,96 +21,109 @@ import { IUser } from '../entities';
 
 @Controller('api/slots')
 export class SlotsController {
-  constructor(private readonly service: SlotsService) {}
+  constructor(private readonly slotsService: SlotsService) {}
 
   @Roles(ROLE_SECRETARY)
   @Get('therapists')
-  listTherapists(
+  getTherapistOptionsForSecretary(
     @User() user: IUser,
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.service.listTherapists(user.id, search, Number(page), Number(limit));
+    return this.slotsService.getTherapistOptionsForSecretary(
+      user.id,
+      search,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Roles(ROLE_SECRETARY)
   @Get('patients')
-  listBookablePatients(
+  getBookablePatientsForSecretary(
     @User() user: IUser,
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.service.listBookablePatients(user.id, search, Number(page), Number(limit));
+    return this.slotsService.getBookablePatientsForSecretary(
+      user.id,
+      search,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Roles(ROLE_SECRETARY)
   @Get('availability')
-  getAvailability(
+  getCaregiverAvailabilityByDate(
     @Query('caregiverId') caregiverId: string,
     @Query('date') date: string,
   ) {
-    return this.service.getAvailability(caregiverId, date);
+    return this.slotsService.getCaregiverAvailabilityByDate(caregiverId, date);
   }
 
   @Roles(ROLE_DOCTOR)
   @Get('caregiver')
-  getCaregiverSlots(@User() user: IUser, @Query('date') date: string) {
-    return this.service.getCaregiverSlotsByDate(user.id, date);
+  getScheduledCaregiverSlotsByDate(
+    @User() user: IUser,
+    @Query('date') date: string,
+  ) {
+    return this.slotsService.getScheduledCaregiverSlotsByDate(user.id, date);
   }
 
   @Roles(ROLE_PATIENT)
   @Get('patient/upcoming')
-  getPatientUpcoming(@User() user: IUser) {
-    return this.service.getPatientUpcoming(user.id);
+  getUpcomingSlotsForPatient(@User() user: IUser) {
+    return this.slotsService.getUpcomingSlotsForPatient(user.id);
   }
 
   @Roles(ROLE_PATIENT)
   @Get('patient/past')
-  getPatientPast(@User() user: IUser) {
-    return this.service.getPatientPast(user.id);
+  getPastSlotsForPatient(@User() user: IUser) {
+    return this.slotsService.getPastSlotsForPatient(user.id);
   }
 
   @Roles(ROLE_PATIENT)
   @Get('patient/cancelled')
-  getPatientCancelled(@User() user: IUser) {
-    return this.service.getPatientCancelled(user.id);
+  getCancelledSlotsForPatient(@User() user: IUser) {
+    return this.slotsService.getCancelledSlotsForPatient(user.id);
   }
 
   @Roles(ROLE_SECRETARY)
   @Get('secretary/upcoming')
-  getSecretaryUpcoming(@User() user: IUser) {
-    return this.service.listSecretaryUpcoming(user.id);
+  getUpcomingSlotsForSecretary(@User() user: IUser) {
+    return this.slotsService.getUpcomingSlotsForSecretary(user.id);
   }
 
   @Roles(ROLE_SECRETARY)
   @Get('secretary/past')
-  getSecretaryPast(@User() user: IUser) {
-    return this.service.listSecretaryPast(user.id);
+  getPastSlotsForSecretary(@User() user: IUser) {
+    return this.slotsService.getPastSlotsForSecretary(user.id);
   }
 
   @Roles(ROLE_SECRETARY)
   @Post('book')
-  book(@User() user: IUser, @Body() body: BookSlotInput) {
-    return this.service.book(body, user.id);
+  bookSlotForSecretary(@User() user: IUser, @Body() bookSlotInput: BookSlotInput) {
+    return this.slotsService.bookSlotForSecretary(bookSlotInput, user.id);
   }
 
   @Roles(ROLE_SECRETARY)
   @Delete('secretary/:id')
-  removeAsSecretary(
+  cancelSlotAsSecretary(
     @User() user: IUser,
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id', new ParseUUIDPipe()) slotId: string,
   ) {
-    return this.service.removeAsSecretary(id, user.id);
+    return this.slotsService.cancelSlotAsSecretary(slotId, user.id);
   }
 
   @Roles(ROLE_PATIENT)
   @Delete('patient/:id')
-  removeAsPatient(
+  cancelSlotAsPatient(
     @User() user: IUser,
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id', new ParseUUIDPipe()) slotId: string,
   ) {
-    return this.service.removeAsPatient(id, user.id);
+    return this.slotsService.cancelSlotAsPatient(slotId, user.id);
   }
 }

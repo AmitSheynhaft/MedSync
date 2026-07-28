@@ -57,18 +57,20 @@ const SLOT_DETAIL_RELATIONS = [
 @Injectable()
 export class SlotsService {
   constructor(
-    @InjectRepository(Slot) private readonly repo: Repository<Slot>,
+    @InjectRepository(Slot) private readonly slotRepository: Repository<Slot>,
     @InjectRepository(Caregiver)
-    private readonly caregivers: Repository<Caregiver>,
+    private readonly caregiverRepository: Repository<Caregiver>,
     @InjectRepository(Secretary)
-    private readonly secretaries: Repository<Secretary>,
-    @InjectRepository(User) private readonly users: Repository<User>,
+    private readonly secretaryRepository: Repository<Secretary>,
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
     private readonly patientsService: PatientsService,
     private readonly dataSource: DataSource,
   ) {}
 
-  private async getSecretaryClinicId(userId: string): Promise<string> {
-    const secretary = await this.secretaries.findOne({ where: { userId } });
+  private async getClinicIdForSecretaryUser(userId: string): Promise<string> {
+    const secretary = await this.secretaryRepository.findOne({
+      where: { userId },
+    });
     if (!secretary) {
       throw new ForbiddenException('No secretary profile for this user');
     }
@@ -78,20 +80,25 @@ export class SlotsService {
     return secretary.clinicId;
   }
 
-  async book(input: BookSlotInput, secretaryUserId: string): Promise<SlotDto> {
+  async bookSlotForSecretary(
+    input: BookSlotInput,
+    secretaryUserId: string,
+  ): Promise<SlotDto> {
     if (!input?.caregiverId || !input?.patientUserId) {
       throw new BadRequestException(
         'caregiverId and patientUserId are required',
       );
     }
 
-    const secretaryClinicId = await this.getSecretaryClinicId(secretaryUserId);
+    const secretaryClinicId = await this.getClinicIdForSecretaryUser(
+      secretaryUserId,
+    );
 
     const slotTime = buildSlotTime(input.date, input.time);
     assertValidSlotTime(slotTime);
     assertSlotNotInPast(slotTime);
 
-    const caregiver = await this.caregivers.findOne({
+    const caregiver = await this.caregiverRepository.findOne({
       where: { id: input.caregiverId },
       relations: ['user'],
     });
@@ -104,7 +111,7 @@ export class SlotsService {
       );
     }
 
-    const patientUser = await this.users.findOne({
+    const patientUser = await this.userRepository.findOne({
       where: { id: input.patientUserId },
     });
     if (!patientUser) {
@@ -121,7 +128,10 @@ export class SlotsService {
       );
     }
 
-    await this.assertUserBelongsToClinic(patientUser.id, secretaryClinicId);
+    await this.assertUserBelongsToSecretaryClinic(
+      patientUser.id,
+      secretaryClinicId,
+    );
 
     const slot = await this.dataSource.transaction(async (manager) => {
       const patient = await this.patientsService.ensurePatientProfileForUser(
@@ -174,20 +184,20 @@ export class SlotsService {
       }
     });
 
-    const created = await this.repo.findOne({
+    const created = await this.slotRepository.findOne({
       where: { id: slot.id },
       relations: SLOT_DETAIL_RELATIONS,
     });
-    return this.toDto(created ?? slot);
+    return this.mapSlotEntityToDto(created ?? slot);
   }
 
-  private async assertUserBelongsToClinic(
+  private async assertUserBelongsToSecretaryClinic(
     userId: string,
     clinicId: string,
   ): Promise<void> {
     const [caregiver, secretary, patientMembership] = await Promise.all([
-      this.caregivers.findOne({ where: { userId, clinicId } }),
-      this.secretaries.findOne({ where: { userId, clinicId } }),
+      this.caregiverRepository.findOne({ where: { userId, clinicId } }),
+      this.secretaryRepository.findOne({ where: { userId, clinicId } }),
       this.dataSource.getRepository(PatientClinic).findOne({
         where: { clinicId, patient: { userId } },
       }),
@@ -197,7 +207,7 @@ export class SlotsService {
     }
   }
 
-  async getAvailability(
+  async getCaregiverAvailabilityByDate(
     caregiverId: string,
     date: string,
   ): Promise<SlotAvailabilityDto> {
@@ -205,7 +215,7 @@ export class SlotsService {
       throw new BadRequestException('caregiverId is required');
     }
     const { start, end } = getDayBounds(date);
-    const booked = await this.repo.find({
+    const booked = await this.slotRepository.find({
       where: {
         caregiverId,
         slotTime: Between(start, end),
@@ -224,13 +234,13 @@ export class SlotsService {
     };
   }
 
-  async listTherapists(
+  async getTherapistOptionsForSecretary(
     secretaryUserId: string,
     search?: string,
     page?: number,
     limit?: number,
   ): Promise<PaginatedDto<TherapistOptionDto>> {
-    const clinicId = await this.getSecretaryClinicId(secretaryUserId);
+    const clinicId = await this.getClinicIdForSecretaryUser(secretaryUserId);
     const { pageNumber, take, skip } = resolvePaging(page, limit);
 
     const term = search?.trim();
@@ -242,7 +252,7 @@ export class SlotsService {
         ]
       : { clinicId };
 
-    const [caregivers, total] = await this.caregivers.findAndCount({
+    const [caregivers, total] = await this.caregiverRepository.findAndCount({
       where,
       relations: ['user'],
       order: { user: { fullName: 'ASC' } },
@@ -257,13 +267,13 @@ export class SlotsService {
     return { items, total, page: pageNumber, hasMore: skip + items.length < total };
   }
 
-  async listBookablePatients(
+  async getBookablePatientsForSecretary(
     secretaryUserId: string,
     search?: string,
     page?: number,
     limit?: number,
   ): Promise<PaginatedDto<BookablePatientDto>> {
-    const clinicId = await this.getSecretaryClinicId(secretaryUserId);
+    const clinicId = await this.getClinicIdForSecretaryUser(secretaryUserId);
     const { pageNumber, take, skip } = resolvePaging(page, limit);
 
     const term = search?.trim();
@@ -279,7 +289,7 @@ export class SlotsService {
       patient: { patientClinics: { clinicId } },
     }));
 
-    const [users, total] = await this.users.findAndCount({
+    const [users, total] = await this.userRepository.findAndCount({
       where,
       relations: ['role', 'patient', 'patient.patientClinics'],
       order: { fullName: 'ASC' },
@@ -296,9 +306,9 @@ export class SlotsService {
     return { items, total, page: pageNumber, hasMore: skip + items.length < total };
   }
 
-  async listSecretaryUpcoming(secretaryUserId: string): Promise<SlotDto[]> {
-    const clinicId = await this.getSecretaryClinicId(secretaryUserId);
-    const slots = await this.repo.find({
+  async getUpcomingSlotsForSecretary(secretaryUserId: string): Promise<SlotDto[]> {
+    const clinicId = await this.getClinicIdForSecretaryUser(secretaryUserId);
+    const slots = await this.slotRepository.find({
       where: {
         caregiver: { clinicId },
         status: SlotStatus.SCHEDULED,
@@ -307,13 +317,13 @@ export class SlotsService {
       relations: SLOT_DETAIL_RELATIONS,
       order: { slotTime: 'ASC' },
     });
-    return slots.map((slot) => this.toDto(slot));
+    return slots.map((slot) => this.mapSlotEntityToDto(slot));
   }
 
-  async listSecretaryPast(secretaryUserId: string): Promise<SlotDto[]> {
-    const clinicId = await this.getSecretaryClinicId(secretaryUserId);
+  async getPastSlotsForSecretary(secretaryUserId: string): Promise<SlotDto[]> {
+    const clinicId = await this.getClinicIdForSecretaryUser(secretaryUserId);
     const now = new Date();
-    const slots = await this.repo.find({
+    const slots = await this.slotRepository.find({
       where: [
         { caregiver: { clinicId }, status: SlotStatus.CANCELLED },
         {
@@ -325,31 +335,34 @@ export class SlotsService {
       relations: SLOT_DETAIL_RELATIONS,
       order: { slotTime: 'DESC' },
     });
-    return slots.map((slot) => this.toDto(slot));
+    return slots.map((slot) => this.mapSlotEntityToDto(slot));
   }
 
-  async removeAsSecretary(id: string, secretaryUserId: string): Promise<void> {
-    const clinicId = await this.getSecretaryClinicId(secretaryUserId);
-    const slot = await this.repo.findOne({
-      where: { id },
+  async cancelSlotAsSecretary(
+    slotId: string,
+    secretaryUserId: string,
+  ): Promise<void> {
+    const clinicId = await this.getClinicIdForSecretaryUser(secretaryUserId);
+    const slot = await this.slotRepository.findOne({
+      where: { id: slotId },
       relations: ['caregiver'],
     });
-    if (!slot) throw new NotFoundException(`Slot ${id} not found`);
+    if (!slot) throw new NotFoundException(`Slot ${slotId} not found`);
     if (slot.caregiver?.clinicId !== clinicId) {
       throw new ForbiddenException('התור אינו שייך למרפאה שלך');
     }
     if (slot.status === SlotStatus.CANCELLED) return;
     slot.status = SlotStatus.CANCELLED;
     slot.cancelledByUserId = secretaryUserId;
-    await this.repo.save(slot);
+    await this.slotRepository.save(slot);
   }
 
-  async removeAsPatient(id: string, patientUserId: string): Promise<void> {
-    const slot = await this.repo.findOne({
-      where: { id },
+  async cancelSlotAsPatient(slotId: string, patientUserId: string): Promise<void> {
+    const slot = await this.slotRepository.findOne({
+      where: { id: slotId },
       relations: ['patient'],
     });
-    if (!slot) throw new NotFoundException(`Slot ${id} not found`);
+    if (!slot) throw new NotFoundException(`Slot ${slotId} not found`);
     if (slot.patient?.userId !== patientUserId) {
       throw new ForbiddenException('התור אינו שייך לך');
     }
@@ -359,19 +372,21 @@ export class SlotsService {
     }
     slot.status = SlotStatus.CANCELLED;
     slot.cancelledByUserId = patientUserId;
-    await this.repo.save(slot);
+    await this.slotRepository.save(slot);
   }
 
-  async getCaregiverSlotsByDate(
+  async getScheduledCaregiverSlotsByDate(
     userId: string,
     date: string,
   ): Promise<SlotDto[]> {
-    const caregiver = await this.caregivers.findOne({ where: { userId } });
+    const caregiver = await this.caregiverRepository.findOne({
+      where: { userId },
+    });
     if (!caregiver) {
       throw new ForbiddenException('No therapist profile for this user');
     }
     const { start, end } = getDayBounds(date);
-    const slots = await this.repo.find({
+    const slots = await this.slotRepository.find({
       where: {
         caregiverId: caregiver.id,
         slotTime: Between(start, end),
@@ -383,22 +398,22 @@ export class SlotsService {
     // Hide slots that already have a visit so a doctor can't open a second one.
     return slots
       .filter((slot) => !slot.visit)
-      .map((slot) => this.toDto(slot));
+      .map((slot) => this.mapSlotEntityToDto(slot));
   }
 
-  async getPatientUpcoming(userId: string): Promise<SlotDto[]> {
-    return this.getPatientSlots(userId, 'upcoming');
+  async getUpcomingSlotsForPatient(userId: string): Promise<SlotDto[]> {
+    return this.getPatientSlotsByScope(userId, 'upcoming');
   }
 
-  async getPatientPast(userId: string): Promise<SlotDto[]> {
-    return this.getPatientSlots(userId, 'past');
+  async getPastSlotsForPatient(userId: string): Promise<SlotDto[]> {
+    return this.getPatientSlotsByScope(userId, 'past');
   }
 
-  async getPatientCancelled(userId: string): Promise<SlotDto[]> {
-    return this.getPatientSlots(userId, 'cancelled');
+  async getCancelledSlotsForPatient(userId: string): Promise<SlotDto[]> {
+    return this.getPatientSlotsByScope(userId, 'cancelled');
   }
 
-  private async getPatientSlots(
+  private async getPatientSlotsByScope(
     userId: string,
     scope: 'upcoming' | 'past' | 'cancelled',
   ): Promise<SlotDto[]> {
@@ -415,15 +430,15 @@ export class SlotsService {
         ? { status: SlotStatus.SCHEDULED, slotTime: LessThan(now) }
         : { status: SlotStatus.CANCELLED };
 
-    const slots = await this.repo.find({
+    const slots = await this.slotRepository.find({
       where: { patientId: patient.id, ...scopeWhere },
       relations: SLOT_DETAIL_RELATIONS,
       order: { slotTime: scope === 'upcoming' ? 'ASC' : 'DESC' },
     });
-    return slots.map((slot) => this.toDto(slot));
+    return slots.map((slot) => this.mapSlotEntityToDto(slot));
   }
 
-  private toDto(slot: Slot): SlotDto {
+  private mapSlotEntityToDto(slot: Slot): SlotDto {
     const slotTime = new Date(slot.slotTime);
     return {
       id: slot.id,
