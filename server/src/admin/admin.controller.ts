@@ -52,25 +52,25 @@ export class AdminController {
   // ── Clinics ────────────────────────────────────────────
   @Get('clinics')
   getAllClinics() {
-    return this.clinics.findAllFull();
+    return this.clinics.getAllClinics();
   }
 
   @Post('clinics')
-  createClinic(@Body() body: ClinicInput) {
-    return this.clinics.create(body);
+  createClinic(@Body() clinicInput: ClinicInput) {
+    return this.clinics.createClinic(clinicInput);
   }
 
   @Patch('clinics/:id')
   updateClinic(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: Partial<ClinicInput>,
+    @Param('id', new ParseUUIDPipe()) clinicId: string,
+    @Body() clinicUpdates: Partial<ClinicInput>,
   ) {
-    return this.clinics.update(id, body);
+    return this.clinics.updateClinicById(clinicId, clinicUpdates);
   }
 
   @Delete('clinics/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  removeClinic(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.clinics.remove(id);
+  removeClinic(@Param('id', new ParseUUIDPipe()) clinicId: string) {
+    return this.clinics.deleteClinicById(clinicId);
   }
 }

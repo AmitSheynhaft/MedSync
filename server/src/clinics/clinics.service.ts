@@ -15,40 +15,47 @@ export interface ClinicInput {
 @Injectable()
 export class ClinicsService {
   constructor(
-    @InjectRepository(Clinic) private readonly clinics: Repository<Clinic>,
+    @InjectRepository(Clinic)
+    private readonly clinicRepository: Repository<Clinic>,
   ) {}
 
-  findAll(): Promise<Pick<Clinic, 'id' | 'name'>[]> {
-    return this.clinics.find({
+  getAllClinicsSummary(): Promise<Pick<Clinic, 'id' | 'name'>[]> {
+    return this.clinicRepository.find({
       select: ['id', 'name'],
       order: { name: 'ASC' },
     });
   }
 
-  findAllFull(): Promise<Clinic[]> {
-    return this.clinics.find({ order: { name: 'ASC' } });
+  getAllClinics(): Promise<Clinic[]> {
+    return this.clinicRepository.find({ order: { name: 'ASC' } });
   }
 
-  async findOne(id: string): Promise<Clinic> {
-    const clinic = await this.clinics.findOne({ where: { id } });
-    if (!clinic) throw new NotFoundException(`Clinic ${id} not found`);
+  async getClinicById(clinicId: string): Promise<Clinic> {
+    const clinic = await this.clinicRepository.findOne({ where: { id: clinicId } });
+    if (!clinic) throw new NotFoundException(`Clinic ${clinicId} not found`);
     return clinic;
   }
 
-  async create(input: ClinicInput): Promise<Clinic> {
-    const existing = await this.clinics.findOne({ where: { name: input.name } });
-    if (existing) throw new ConflictException(`Clinic '${input.name}' already exists`);
-    return this.clinics.save(this.clinics.create(input));
+  async createClinic(clinicInput: ClinicInput): Promise<Clinic> {
+    const existingClinic = await this.clinicRepository.findOne({
+      where: { name: clinicInput.name },
+    });
+    if (existingClinic)
+      throw new ConflictException(`Clinic '${clinicInput.name}' already exists`);
+    return this.clinicRepository.save(this.clinicRepository.create(clinicInput));
   }
 
-  async update(id: string, input: Partial<ClinicInput>): Promise<Clinic> {
-    const clinic = await this.findOne(id);
-    Object.assign(clinic, input);
-    return this.clinics.save(clinic);
+  async updateClinicById(
+    clinicId: string,
+    clinicUpdates: Partial<ClinicInput>,
+  ): Promise<Clinic> {
+    const clinic = await this.getClinicById(clinicId);
+    Object.assign(clinic, clinicUpdates);
+    return this.clinicRepository.save(clinic);
   }
 
-  async remove(id: string): Promise<void> {
-    const result = await this.clinics.delete(id);
-    if (!result.affected) throw new NotFoundException(`Clinic ${id} not found`);
+  async deleteClinicById(clinicId: string): Promise<void> {
+    const result = await this.clinicRepository.delete(clinicId);
+    if (!result.affected) throw new NotFoundException(`Clinic ${clinicId} not found`);
   }
 }

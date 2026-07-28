@@ -8,7 +8,7 @@ export class ClinicsController {
 
   @Public()
   @Get()
-  findAll() {
-    return this.service.findAll();
+  getAllClinicsSummary() {
+    return this.service.getAllClinicsSummary();
   }
 }
