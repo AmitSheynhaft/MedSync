@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Caregiver } from '../entities/caregiver/caregiverEntity';
+import { Caregiver } from './entities/caregiverEntity';
 import { CaregiversController } from './caregivers.controller';
 import { CaregiversService } from './caregivers.service';
 

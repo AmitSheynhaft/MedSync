@@ -2,7 +2,7 @@ import {
   ClinicalAlertCategory,
   ClinicalAlertSeverity,
   ClinicalAlertSource,
-} from '../entities/enums';
+} from '../common/constants/domain-enums';
 
 export interface ClinicalAlertDto {
   id: string;

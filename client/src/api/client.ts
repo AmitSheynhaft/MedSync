@@ -38,11 +38,15 @@ export interface ApiError extends Error {
   body?: unknown;
 }
 
+interface ApiErrorPayload {
+  message?: string | string[];
+}
+
 async function readError(res: Response): Promise<string> {
   try {
-    const data = await res.json();
+    const data: unknown = await res.json();
     if (data && typeof data === 'object') {
-      const message = (data as any).message;
+      const message = (data as ApiErrorPayload).message;
       if (Array.isArray(message)) return message.join(', ');
       if (typeof message === 'string') return message;
     }
@@ -63,7 +67,7 @@ function shouldSkipRefresh(path: string): boolean {
   return NO_REFRESH_PATHS.some((p) => path.startsWith(p));
 }
 
-export async function apiRequest<T = any>(
+export async function apiRequest<T = unknown>(
   path: string,
   options: RequestInit = {},
   allowRefresh = true,
@@ -90,7 +94,7 @@ export async function apiRequest<T = any>(
   return (await res.json()) as T;
 }
 
-export function apiJson<T = any>(
+export function apiJson<T = unknown>(
   path: string,
   method: string,
   body?: unknown,
@@ -126,12 +130,12 @@ export async function apiBlob(
   return res.blob();
 }
 
-export const apiGet = <T = any>(path: string) => apiRequest<T>(path);
-export const apiPost = <T = any>(path: string, body?: unknown) =>
+export const apiGet = <T = unknown>(path: string) => apiRequest<T>(path);
+export const apiPost = <T = unknown>(path: string, body?: unknown) =>
   apiJson<T>(path, 'POST', body);
-export const apiPatch = <T = any>(path: string, body?: unknown) =>
+export const apiPatch = <T = unknown>(path: string, body?: unknown) =>
   apiJson<T>(path, 'PATCH', body);
-export const apiPut = <T = any>(path: string, body?: unknown) =>
+export const apiPut = <T = unknown>(path: string, body?: unknown) =>
   apiJson<T>(path, 'PUT', body);
-export const apiDelete = <T = any>(path: string) =>
+export const apiDelete = <T = unknown>(path: string) =>
   apiRequest<T>(path, { method: 'DELETE' });

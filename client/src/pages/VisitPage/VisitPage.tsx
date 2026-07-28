@@ -4,8 +4,8 @@ import PageHeader from '../../components/PageHeader/PageHeader';
 import Toast from '../../components/Toast/Toast';
 import { PageRoot, FormColumn } from './styled';
 import { useVisitForm } from './hooks/useVisitForm';
-import { PatientInfoBar } from './components/PatientInfoBar';
-import { VisitFormCard } from './components/VisitFormCard';
+import { PatientInfoBar } from './components/PatientInfoBar/PatientInfoBar';
+import { VisitFormCard } from './components/VisitFormCard/VisitFormCard';
 
 const VisitPage: React.FC = () => {
   const form = useVisitForm();

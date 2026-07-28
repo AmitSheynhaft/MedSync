@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   getUsers,
   deleteUser,
@@ -26,8 +26,9 @@ export function useAdminUsers(): AdminUsersState {
   const [roles, setRoles] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const load = useCallback(() => {
+  useEffect(() => {
     let active = true;
     setLoading(true);
     setError(null);
@@ -44,15 +45,17 @@ export function useAdminUsers(): AdminUsersState {
       .finally(() => {
         if (active) setLoading(false);
       });
-    return () => { active = false; };
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [reloadKey]);
 
-  useEffect(() => load(), [load]);
+  const refresh = () => setReloadKey(key => key + 1);
 
   const handleCreate = async (input: CreateUserInput) => {
     try {
       await createUser(input);
-      load();
+      refresh();
     } catch (err) {
       setError('יצירת המשתמש נכשלה');
       throw err;
@@ -62,7 +65,7 @@ export function useAdminUsers(): AdminUsersState {
   const handleUpdate = async (id: string, input: UpdateUserInput) => {
     try {
       await updateUser(id, input);
-      load();
+      refresh();
     } catch (err) {
       setError('עדכון המשתמש נכשל');
       throw err;
@@ -72,12 +75,12 @@ export function useAdminUsers(): AdminUsersState {
   const handleDelete = async (id: string) => {
     try {
       await deleteUser(id);
-      load();
+      refresh();
     } catch (err) {
       setError('מחיקת המשתמש נכשלה');
       throw err;
     }
   };
 
-  return { users, roles, loading, error, refresh: load, handleCreate, handleUpdate, handleDelete };
+  return { users, roles, loading, error, refresh, handleCreate, handleUpdate, handleDelete };
 }

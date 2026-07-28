@@ -1,6 +1,7 @@
 import React, { type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ButtonBase } from '@mui/material';
+import { clickableCardButtonSx } from './ClickableCard.styles';
 
 export interface IClickableCardProps {
   to?: string;
@@ -22,7 +23,7 @@ export const ClickableCard: React.FC<IClickableCardProps> = ({ to, onClick, clas
       className={className}
       onClick={handleClick}
       focusRipple
-      sx={{ display: 'block', width: '100%', textAlign: 'inherit' }}
+      sx={clickableCardButtonSx}
     >
       {children}
     </ButtonBase>

@@ -3,13 +3,13 @@ import { Link, useParams } from "react-router-dom";
 import { Box, Typography, Chip, Alert, Stepper, Step, StepLabel } from "@mui/material";
 import { resolveRegisterRole, STEPS } from "./roleConfig";
 import { useRegisterForm } from "./hooks/useRegisterForm";
-import { RegisterForm } from "./components/RegisterForm";
-import type { RegisterRole } from "./types";
+import { RegisterForm } from "./components/RegisterForm/RegisterForm";
+import { parseRegisterRole } from "./types";
 
 export const RegisterPage: React.FC = () => {
   const { role } = useParams<{ role: string }>();
   const config = resolveRegisterRole(role);
-  const registerRole: RegisterRole = role === "doctor" ? "doctor" : role === "secretary" ? "secretary" : role === "admin" ? "admin" : "patient";
+  const registerRole = parseRegisterRole(role);
   const form = useRegisterForm(registerRole);
 
   return (

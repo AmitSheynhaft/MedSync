@@ -3,9 +3,9 @@ import { Alert, Box, LinearProgress } from '@mui/material';
 import DocumentSummaryModal from '../../components/DocumentSummaryModal/DocumentSummaryModal';
 import { UPLOAD_ACCEPT_ATTR, UploadModal } from '../PatientDashboard/components/UploadModal';
 import { useDocumentsPage } from './hooks/useDocumentsPage';
-import { DocumentsHeader } from './components/DocumentsHeader';
-import { DocumentsToolbar } from './components/DocumentsToolbar';
-import { DocumentsGrid } from './components/DocumentsGrid';
+import { DocumentsHeader } from './components/DocumentsHeader/DocumentsHeader';
+import { DocumentsToolbar } from './components/DocumentsToolbar/DocumentsToolbar';
+import { DocumentsGrid } from './components/DocumentsGrid/DocumentsGrid';
 
 export const DocumentsPage: React.FC = () => {
   const page = useDocumentsPage();

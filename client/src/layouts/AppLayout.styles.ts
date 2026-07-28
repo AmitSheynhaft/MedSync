@@ -5,7 +5,12 @@ export const navItemSx: SxProps<Theme> = {
   height: { xs: 44, md: 40 },
   borderRadius: { xs: '12px', md: '10px' },
   color: '#adb5bd',
-  '&:hover': { background: '#f1f3f5', color: '#495057' },
+  WebkitTapHighlightColor: 'transparent',
+  // Apply hover feedback only on devices that actually support hover.
+  '@media (hover: hover) and (pointer: fine)': {
+    '&:hover': { background: '#f1f3f5', color: '#495057' },
+  },
+  '&:not(.active).Mui-focusVisible': { background: 'transparent', color: '#adb5bd' },
   '&.active': { background: '#eef2ff', color: '#3b5bdb' },
 };
 
@@ -87,5 +92,9 @@ export const logoutButtonSx: SxProps<Theme> = {
   height: { xs: 44, md: 40 },
   borderRadius: { xs: '12px', md: '10px' },
   color: '#adb5bd',
-  '&:hover': { background: '#f1f3f5', color: '#495057' },
+  WebkitTapHighlightColor: 'transparent',
+  '@media (hover: hover) and (pointer: fine)': {
+    '&:hover': { background: '#f1f3f5', color: '#495057' },
+  },
+  '&.Mui-focusVisible': { background: 'transparent', color: '#adb5bd' },
 };

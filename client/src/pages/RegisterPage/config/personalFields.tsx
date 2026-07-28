@@ -1,5 +1,6 @@
 import PhoneIcon from '@mui/icons-material/Phone';
 import type { TFieldConfig } from '../types';
+import { Role } from '../../../constants/roles';
 
 const ICON_SX = { color: '#adb5bd', fontSize: 18 };
 
@@ -9,7 +10,7 @@ export const PERSONAL_FIELDS: TFieldConfig[] = [
     placeholder: 'התמחות',
     autoComplete: 'off',
     required: true,
-    showFor: 'doctor',
+    showFor: Role.Doctor,
     getValue: f => f.specialization,
     onChange: (f, v) => f.setSpecialization(v),
   },
@@ -48,7 +49,7 @@ export const PERSONAL_FIELDS: TFieldConfig[] = [
     placeholder: 'קופת חולים',
     autoComplete: 'off',
     required: true,
-    showFor: 'patient',
+    showFor: Role.Patient,
     getValue: f => f.hmo,
     onChange: (f, v) => f.setHmo(v),
   },
@@ -57,7 +58,7 @@ export const PERSONAL_FIELDS: TFieldConfig[] = [
     placeholder: 'כתובת',
     autoComplete: 'street-address',
     required: true,
-    showFor: 'patient',
+    showFor: Role.Patient,
     getValue: f => f.address,
     onChange: (f, v) => f.setAddress(v),
   },

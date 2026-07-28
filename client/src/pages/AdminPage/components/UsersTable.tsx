@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Table, TableBody, TableCell, TableHead, TableRow, TablePagination,
   IconButton, Chip, Typography, Tooltip, Box,
@@ -14,6 +14,40 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { User, UpdateUserInput, CreateUserInput } from '../../../api/users';
 import { TablePaper } from '../styled';
 import UserFormDialog from './UserFormDialog';
+import { GENDER_LABELS, ROLE_CHIP, ROLE_LABELS } from './adminUser.constants';
+import {
+  usersTableBodyRowSx,
+  usersTableCounterCurrentSx,
+  usersTableCounterSx,
+  usersTableCounterTotalSx,
+  usersTableCreateButtonSx,
+  usersTableDefaultCellSx,
+  usersTableDialogActionsSx,
+  usersTableDialogTextSx,
+  usersTableEditButtonSx,
+  usersTableEmptyTextSx,
+  usersTableHeadCellSx,
+  usersTableHeadRowSx,
+  usersTableNameCellSx,
+  usersTablePaginationSx,
+  usersTableRenderValueEmptySx,
+  usersTableRoleDotSx,
+  usersTableRoleFilterSx,
+  usersTableRoleMenuCheckboxSx,
+  usersTableRoleMenuPaperSx,
+  usersTableRoleMenuPrimaryTextStyle,
+  usersTableRowRoleChipSx,
+  usersTableSearchFieldSx,
+  usersTableSearchIconSx,
+  usersTableSelectedRoleChipSx,
+  usersTableSelectedRolesWrapSx,
+  usersTableSpacerSx,
+  usersTableSx,
+  usersTableToolbarPaperSx,
+  usersTableToolbarStackSx,
+  usersTableScrollableSx,
+  usersTableClearIconSx,
+} from './UsersTable.styles';
 
 interface Props {
   users: User[];
@@ -23,19 +57,6 @@ interface Props {
   onUpdate: (id: string, input: UpdateUserInput) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }
-
-const ROLE_CHIP: Record<string, { bg: string; fg: string }> = {
-  admin:     { bg: '#fff0f0', fg: '#fa5252' },
-  doctor:    { bg: '#f3f0ff', fg: '#7048e8' },
-  secretary: { bg: '#e7f5ff', fg: '#3b5bdb' },
-  patient:   { bg: '#ebfbee', fg: '#40c057' },
-};
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'אדמין', doctor: 'רופא', patient: 'מטופל', secretary: 'מזכירה',
-};
-const GENDER_LABELS: Record<string, string> = {
-  male: 'זכר', female: 'נקבה', MALE: 'זכר', FEMALE: 'נקבה',
-};
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
@@ -48,18 +69,16 @@ const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate
   const [page, setPage]         = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return users.filter((u) => {
-      const matchesSearch =
-        !q ||
-        u.fullName.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        (u.phone ?? '').includes(q);
-      const matchesRole = roleFilter.length === 0 || roleFilter.includes(u.role?.name ?? '');
-      return matchesSearch && matchesRole;
-    });
-  }, [users, search, roleFilter]);
+  const q = search.trim().toLowerCase();
+  const filtered = users.filter((u) => {
+    const matchesSearch =
+      !q ||
+      u.fullName.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      (u.phone ?? '').includes(q);
+    const matchesRole = roleFilter.length === 0 || roleFilter.includes(u.role?.name ?? '');
+    return matchesSearch && matchesRole;
+  });
 
   const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
@@ -68,33 +87,25 @@ const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate
 
   return (
     <>
-      <Paper elevation={0} sx={{ mb: 2, px: 2, py: 1.5, border: '1px solid #e9ecef', borderRadius: 2, bgcolor: '#fff' }}>
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+      <Paper elevation={0} sx={usersTableToolbarPaperSx}>
+        <Stack direction="row" spacing={1.5} sx={usersTableToolbarStackSx}>
           <TextField
             placeholder="חיפוש לפי שם, אימייל או טלפון..."
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             size="small"
-            sx={{
-              width: 320,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2, bgcolor: '#f8f9fa',
-                '& fieldset': { borderColor: '#dee2e6' },
-                '&:hover fieldset': { borderColor: '#adb5bd' },
-                '&.Mui-focused fieldset': { borderColor: '#3b5bdb' },
-              },
-            }}
+            sx={usersTableSearchFieldSx}
             slotProps={{
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#868e96', fontSize: 18 }} />
+                    <SearchIcon sx={usersTableSearchIconSx} />
                   </InputAdornment>
                 ),
                 endAdornment: search ? (
                   <InputAdornment position="end">
                     <IconButton size="small" onClick={() => handleSearchChange('')} edge="end">
-                      <ClearIcon sx={{ fontSize: 16 }} />
+                      <ClearIcon sx={usersTableClearIconSx} />
                     </IconButton>
                   </InputAdornment>
                 ) : null,
@@ -102,33 +113,24 @@ const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate
             }}
           />
 
-          <FormControl size="small" sx={{
-            width: 190,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 2, bgcolor: '#f8f9fa',
-              '& fieldset': { borderColor: roleFilter.length > 0 ? '#3b5bdb' : '#dee2e6' },
-              '&:hover fieldset': { borderColor: '#adb5bd' },
-              '&.Mui-focused fieldset': { borderColor: '#3b5bdb' },
-            },
-            '& .MuiInputLabel-root': { fontSize: 13 },
-          }}>
+          <FormControl size="small" sx={usersTableRoleFilterSx(roleFilter.length > 0)}>
             <InputLabel>תפקיד</InputLabel>
             <Select
               multiple
-              value={roleFilter as any}
+              value={roleFilter}
               onChange={(e) => handleRoleChange(e.target.value as string[])}
               input={<OutlinedInput label="תפקיד" />}
               renderValue={(selected) => {
                 const arr = selected as unknown as string[];
-                if (arr.length === 0) return <Typography sx={{ fontSize: 13, color: '#868e96' }}>הכל</Typography>;
+                if (arr.length === 0) return <Typography sx={usersTableRenderValueEmptySx}>הכל</Typography>;
                 return (
-                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                  <Box sx={usersTableSelectedRolesWrapSx}>
                     {arr.map((s) => (
                       <Chip
                         key={s}
                         label={ROLE_LABELS[s] ?? s}
                         size="small"
-                        sx={{ height: 18, fontSize: 11, fontWeight: 700, '& .MuiChip-label': { px: 0.75 }, bgcolor: ROLE_CHIP[s]?.bg, color: ROLE_CHIP[s]?.fg }}
+                        sx={usersTableSelectedRoleChipSx(ROLE_CHIP[s]?.bg, ROLE_CHIP[s]?.fg)}
                       />
                     ))}
                   </Box>
@@ -137,20 +139,7 @@ const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate
               MenuProps={{
                 slotProps: {
                   paper: {
-                    sx: {
-                      borderRadius: 2,
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-                      mt: 0.5,
-                      '& .MuiMenuItem-root': {
-                        borderRadius: 1,
-                        mx: 0.5,
-                        my: 0.25,
-                        px: 1,
-                        fontSize: 13,
-                        '&.Mui-selected': { bgcolor: '#eef2ff' },
-                        '&.Mui-selected:hover': { bgcolor: '#e0e7ff' },
-                      },
-                    },
+                    sx: usersTableRoleMenuPaperSx,
                   },
                 },
               }}
@@ -160,39 +149,32 @@ const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate
                   <Checkbox
                     size="small"
                     checked={roleFilter.includes(r.name)}
-                    sx={{
-                      p: 0.5, mr: 0.5,
-                      color: '#adb5bd',
-                      '&.Mui-checked': { color: '#3b5bdb' },
-                    }}
+                    sx={usersTableRoleMenuCheckboxSx}
                   />
                   <Box
-                    sx={{
-                      width: 8, height: 8, borderRadius: '50%', mr: 1, flexShrink: 0,
-                      bgcolor: r.name === 'admin' ? '#fa5252' : r.name === 'doctor' ? '#7048e8' : r.name === 'secretary' ? '#3b5bdb' : '#40c057',
-                    }}
+                    sx={usersTableRoleDotSx(r.name)}
                   />
                   <ListItemText
                     primary={ROLE_LABELS[r.name] ?? r.name}
-                    slotProps={{ primary: { style: { fontSize: 13, fontWeight: roleFilter.includes(r.name) ? 600 : 400 } } }}
+                    slotProps={{ primary: { style: usersTableRoleMenuPrimaryTextStyle(roleFilter.includes(r.name)) } }}
                   />
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
-          <Box sx={{ flex: 1 }} />
+          <Box sx={usersTableSpacerSx} />
 
-          <Box sx={{ px: 1.5, py: 0.5, borderRadius: 2, bgcolor: '#f1f3f5', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography sx={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e' }}>{filtered.length}</Typography>
-            <Typography sx={{ fontSize: 13, color: '#868e96' }}>/ {users.length}</Typography>
+          <Box sx={usersTableCounterSx}>
+            <Typography sx={usersTableCounterCurrentSx}>{filtered.length}</Typography>
+            <Typography sx={usersTableCounterTotalSx}>/ {users.length}</Typography>
           </Box>
 
           <Button
             variant="contained" size="small"
             startIcon={<PersonAddIcon />}
             onClick={() => setCreating(true)}
-            sx={{ borderRadius: 2, fontWeight: 600, px: 2, whiteSpace: 'nowrap' }}
+            sx={usersTableCreateButtonSx}
           >
             משתמש חדש
           </Button>
@@ -200,45 +182,45 @@ const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate
       </Paper>
 
       <TablePaper>
-        <Box sx={{ overflowX: 'auto' }}>
-          <Table size="small" sx={{ minWidth: 700 }}>
+        <Box sx={usersTableScrollableSx}>
+          <Table size="small" sx={usersTableSx}>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#f8f9fa' }}>
+              <TableRow sx={usersTableHeadRowSx}>
                 {['שם מלא', 'אימייל', 'תפקיד', 'טלפון', 'תאריך לידה', 'מגדר'].map((h) => (
-                  <TableCell key={h} sx={{ fontWeight: 700, color: '#495057', fontSize: 13 }}>{h}</TableCell>
+                  <TableCell key={h} sx={usersTableHeadCellSx}>{h}</TableCell>
                 ))}
-                <TableCell sx={{ fontWeight: 700, color: '#495057', fontSize: 13 }} align="center">פעולות</TableCell>
+                <TableCell sx={usersTableHeadCellSx} align="center">פעולות</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {paginated.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7}>
-                    <Typography sx={{ textAlign: 'center', color: '#868e96', py: 3, fontSize: 14 }}>
+                    <Typography sx={usersTableEmptyTextSx}>
                       {search || roleFilter.length > 0 ? 'לא נמצאו משתמשים תואמים' : 'אין משתמשים'}
                     </Typography>
                   </TableCell>
                 </TableRow>
               )}
               {paginated.map((user) => (
-                <TableRow key={user.id} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                  <TableCell sx={{ fontWeight: 500 }}>{user.fullName}</TableCell>
-                  <TableCell sx={{ color: '#495057' }}>{user.email}</TableCell>
+                <TableRow key={user.id} hover sx={usersTableBodyRowSx}>
+                  <TableCell sx={usersTableNameCellSx}>{user.fullName}</TableCell>
+                  <TableCell sx={usersTableDefaultCellSx}>{user.email}</TableCell>
                   <TableCell>
                     <Chip
                       label={ROLE_LABELS[user.role?.name ?? ''] ?? (user.role?.name ?? '—')}
                       size="small"
-                      sx={{ fontWeight: 600, fontSize: 11, bgcolor: ROLE_CHIP[user.role?.name ?? '']?.bg, color: ROLE_CHIP[user.role?.name ?? '']?.fg }}
+                      sx={usersTableRowRoleChipSx(ROLE_CHIP[user.role?.name ?? '']?.bg, ROLE_CHIP[user.role?.name ?? '']?.fg)}
                     />
                   </TableCell>
-                  <TableCell sx={{ color: '#495057' }}>{user.phone ?? '—'}</TableCell>
-                  <TableCell sx={{ color: '#495057' }}>
+                  <TableCell sx={usersTableDefaultCellSx}>{user.phone ?? '—'}</TableCell>
+                  <TableCell sx={usersTableDefaultCellSx}>
                     {user.birthDate ? new Date(user.birthDate).toLocaleDateString('he-IL') : '—'}
                   </TableCell>
-                  <TableCell sx={{ color: '#495057' }}>{user.gender ? (GENDER_LABELS[user.gender] ?? user.gender) : '—'}</TableCell>
+                  <TableCell sx={usersTableDefaultCellSx}>{user.gender ? (GENDER_LABELS[user.gender] ?? user.gender) : '—'}</TableCell>
                   <TableCell align="center">
                     <Tooltip title="עריכה">
-                      <IconButton size="small" onClick={() => setEditing(user)} sx={{ color: '#495057' }}>
+                      <IconButton size="small" onClick={() => setEditing(user)} sx={usersTableEditButtonSx}>
                         <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
@@ -263,16 +245,16 @@ const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate
           rowsPerPageOptions={PAGE_SIZE_OPTIONS}
           labelRowsPerPage="שורות לעמוד:"
           labelDisplayedRows={({ from, to, count }) => `${from}–${to} מתוך ${count}`}
-          sx={{ borderTop: '1px solid #f1f3f5' }}
+          sx={usersTablePaginationSx}
         />
       </TablePaper>
 
       <Dialog open={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} maxWidth="xs">
         <DialogTitle>אישור מחיקה</DialogTitle>
         <DialogContent>
-          <Typography sx={{ pt: 1 }}>האם למחוק את המשתמש? פעולה זו אינה ניתנת לשחזור.</Typography>
+          <Typography sx={usersTableDialogTextSx}>האם למחוק את המשתמש? פעולה זו אינה ניתנת לשחזור.</Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={usersTableDialogActionsSx}>
           <Button onClick={() => setConfirmDeleteId(null)}>ביטול</Button>
           <Button
             variant="contained" color="error"

@@ -20,6 +20,39 @@ export type RecordingStatus =
 
 export type VisitSummaryType = 'RECORDING' | 'MANUAL_INPUT';
 
+export interface VisitCaregiver {
+  id: string;
+  userId: string;
+  specialization?: string;
+  user?: {
+    fullName: string;
+    email: string;
+    phone?: string;
+    birthDate?: string;
+    gender?: string;
+  };
+}
+
+export interface VisitDiagnosisEntry {
+  diagnosis?: {
+    id: string;
+    code: string;
+    description: string;
+  };
+  note?: string;
+}
+
+export interface VisitMedicineEntry {
+  medicine?: {
+    id: string;
+    name: string;
+  };
+  dosage?: string;
+  frequency?: string;
+  duration?: string;
+  instructions?: string;
+}
+
 export interface Visit {
   id: string;
   patientId: string;
@@ -64,9 +97,9 @@ export interface Visit {
       gender?: string;
     };
   };
-  caregiver?: any;
-  diagnoses?: any[];
-  medicines?: any[];
+  caregiver?: VisitCaregiver;
+  diagnoses?: VisitDiagnosisEntry[];
+  medicines?: VisitMedicineEntry[];
 }
 
 export interface CreateVisitInput {

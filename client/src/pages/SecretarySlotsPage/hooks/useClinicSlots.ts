@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import {
   deleteSlotAsSecretary,
   getSecretaryPastSlots,
@@ -16,10 +16,10 @@ export function useClinicSlots() {
   const upcoming = useAsyncData<Slot[]>(getSecretaryUpcomingSlots, [reloadKey]);
   const history = useAsyncData<Slot[]>(getSecretaryPastSlots, [reloadKey]);
 
-  const requestCancel = useCallback((slot: Slot) => setPendingCancel(slot), []);
-  const dismissCancel = useCallback(() => setPendingCancel(null), []);
+  const requestCancel = (slot: Slot) => setPendingCancel(slot);
+  const dismissCancel = () => setPendingCancel(null);
 
-  const confirmCancel = useCallback(async () => {
+  const confirmCancel = async () => {
     if (!pendingCancel) return;
     setCancelling(true);
     setError(null);
@@ -32,7 +32,7 @@ export function useClinicSlots() {
     } finally {
       setCancelling(false);
     }
-  }, [pendingCancel]);
+  };
 
   return {
     upcoming,

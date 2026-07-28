@@ -6,69 +6,94 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Caregiver } from '../entities/caregiver/caregiverEntity';
-
-export interface CaregiverInput {
-  userId: string;
-  licenseNumber: string;
-  specialization: string;
-  clinicName?: string;
-}
+import { Caregiver } from './entities/caregiverEntity';
+import { CaregiverInput } from './types/caregiver.types';
 
 @Injectable()
 export class CaregiversService {
   constructor(
-    @InjectRepository(Caregiver) private readonly repo: Repository<Caregiver>,
+    @InjectRepository(Caregiver) private readonly caregiverRepo: Repository<Caregiver>,
   ) {}
 
-  findAll(): Promise<Caregiver[]> {
-    return this.repo.find({
+  getAllCaregivers(): Promise<Caregiver[]> {
+    return this.caregiverRepo.find({
       relations: ['user'],
       order: { createdAt: 'DESC' },
     });
   }
 
-  async findOne(id: string): Promise<Caregiver> {
-    const item = await this.repo.findOne({
-      where: { id },
+  async getCaregiverById(caregiverId: string): Promise<Caregiver> {
+    const caregiver = await this.caregiverRepo.findOne({
+      where: { id: caregiverId },
       relations: ['user'],
     });
-    if (!item) throw new NotFoundException(`Caregiver ${id} not found`);
-    return item;
+    if (!caregiver)
+      throw new NotFoundException(`Caregiver ${caregiverId} not found`);
+    return caregiver;
   }
 
-  async findByUserId(userId: string): Promise<Caregiver | null> {
-    return this.repo.findOne({ where: { userId }, relations: ['user'] });
+  async getCaregiverByUserId(userId: string): Promise<Caregiver> {
+    const caregiver = await this.caregiverRepo.findOne({
+      where: { userId },
+      relations: ['user'],
+    });
+    if (!caregiver)
+      throw new NotFoundException(`Caregiver for user ${userId} not found`);
+    return caregiver;
   }
 
-  async create(input: CaregiverInput): Promise<Caregiver> {
+  async createCaregiver(input: CaregiverInput): Promise<Caregiver> {
     if (!input?.userId || !input?.licenseNumber || !input?.specialization) {
       throw new BadRequestException(
         'userId, licenseNumber and specialization are required',
       );
     }
-    const dupUser = await this.repo.findOne({ where: { userId: input.userId } });
-    if (dupUser) throw new ConflictException('Caregiver already exists for this user');
-    const dupLic = await this.repo.findOne({
+    const existingCaregiverForUser = await this.caregiverRepo.findOne({
+      where: { userId: input.userId },
+    });
+    if (existingCaregiverForUser)
+      throw new ConflictException('Caregiver already exists for this user');
+
+    const existingCaregiverWithLicense = await this.caregiverRepo.findOne({
       where: { licenseNumber: input.licenseNumber },
     });
-    if (dupLic) throw new ConflictException('License number already in use');
+    if (existingCaregiverWithLicense)
+      throw new ConflictException('License number already in use');
 
-    return this.repo.save(this.repo.create(input));
+    return this.caregiverRepo.save(this.caregiverRepo.create(input));
   }
 
-  async update(id: string, input: Partial<CaregiverInput>): Promise<Caregiver> {
-    const caregiver = await this.findOne(id);
-    if (input.licenseNumber !== undefined)
-      caregiver.licenseNumber = input.licenseNumber;
-    if (input.specialization !== undefined)
-      caregiver.specialization = input.specialization;
-    if (input.clinicName !== undefined) caregiver.clinicName = input.clinicName;
-    return this.repo.save(caregiver);
+  async updateCaregiverByUserId(
+    userId: string,
+    caregiverUpdates: Partial<CaregiverInput>,
+  ): Promise<Caregiver> {
+    const caregiver = await this.getCaregiverByUserId(userId);
+    if (caregiverUpdates.licenseNumber !== null && caregiverUpdates.licenseNumber !== undefined)
+      caregiver.licenseNumber = caregiverUpdates.licenseNumber;
+    if (caregiverUpdates.specialization !== null && caregiverUpdates.specialization !== undefined)
+      caregiver.specialization = caregiverUpdates.specialization;
+    if (caregiverUpdates.clinicName !== null && caregiverUpdates.clinicName !== undefined)
+      caregiver.clinicName = caregiverUpdates.clinicName;
+    return this.caregiverRepo.save(caregiver);
   }
 
-  async remove(id: string): Promise<void> {
-    const result = await this.repo.delete(id);
-    if (!result.affected) throw new NotFoundException(`Caregiver ${id} not found`);
+  async updateCaregiverById(
+    caregiverId: string,
+    caregiverUpdates: Partial<CaregiverInput>,
+  ): Promise<Caregiver> {
+    const caregiver = await this.getCaregiverById(caregiverId);
+    if (caregiverUpdates.licenseNumber !== null && caregiverUpdates.licenseNumber !== undefined)
+      caregiver.licenseNumber = caregiverUpdates.licenseNumber;
+    if (caregiverUpdates.specialization !== null && caregiverUpdates.specialization !== undefined)
+      caregiver.specialization = caregiverUpdates.specialization;
+    if (caregiverUpdates.clinicName !== null && caregiverUpdates.clinicName !== undefined)
+      caregiver.clinicName = caregiverUpdates.clinicName;
+    return this.caregiverRepo.save(caregiver);
+  }
+
+  async deleteCaregiverById(caregiverId: string): Promise<void> {
+    const result = await this.caregiverRepo.delete(caregiverId);
+    if (!result.affected)
+      throw new NotFoundException(`Caregiver ${caregiverId} not found`);
   }
 }

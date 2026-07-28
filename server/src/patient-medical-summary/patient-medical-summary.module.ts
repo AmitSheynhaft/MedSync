@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PatientMedicalSummaryService } from './patient-medical-summary.service';
-import { PatientMedicalSummary } from '../entities/patientMedicalSummary/patientMedicalSummaryEntity';
-import { Patient } from '../entities/patient/patientEntity';
-import { VisitSummary } from '../entities/visitSummary/visitSummaryEntity';
-import { DocumentSummary } from '../entities/documentSummary/documentSummaryEntity';
-import { PatientClinicalAlert } from '../entities/patientClinicalAlert/patientClinicalAlertEntity';
+import { PatientMedicalSummary } from './entities/patientMedicalSummaryEntity';
+import { Patient } from '../patients/entities/patientEntity';
+import { VisitSummary } from '../visits/entities/visitSummaryEntity';
+import { DocumentSummary } from '../documents/entities/documentSummaryEntity';
+import { PatientClinicalAlert } from '../clinical-alerts/entities/patientClinicalAlertEntity';
 import { ClinicalAlertsModule } from '../clinical-alerts/clinical-alerts.module';
 
 @Module({

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   getAdminClinics,
   createClinic,
@@ -22,8 +22,9 @@ export function useAdminClinics(): AdminClinicsState {
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const load = useCallback(() => {
+  useEffect(() => {
     let active = true;
     setLoading(true);
     setError(null);
@@ -31,15 +32,17 @@ export function useAdminClinics(): AdminClinicsState {
       .then((data) => { if (active) setClinics(data); })
       .catch(() => { if (active) setError('טעינת המרפאות נכשלה'); })
       .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [reloadKey]);
 
-  useEffect(() => load(), [load]);
+  const refresh = () => setReloadKey(key => key + 1);
 
   const handleCreate = async (input: ClinicInput) => {
     try {
       await createClinic(input);
-      load();
+      refresh();
     } catch (err) {
       setError('יצירת המרפאה נכשלה');
       throw err;
@@ -49,7 +52,7 @@ export function useAdminClinics(): AdminClinicsState {
   const handleUpdate = async (id: string, input: Partial<ClinicInput>) => {
     try {
       await updateClinic(id, input);
-      load();
+      refresh();
     } catch (err) {
       setError('עדכון המרפאה נכשל');
       throw err;
@@ -59,12 +62,12 @@ export function useAdminClinics(): AdminClinicsState {
   const handleDelete = async (id: string) => {
     try {
       await deleteClinic(id);
-      load();
+      refresh();
     } catch (err) {
       setError('מחיקת המרפאה נכשלה');
       throw err;
     }
   };
 
-  return { clinics, loading, error, refresh: load, handleCreate, handleUpdate, handleDelete };
+  return { clinics, loading, error, refresh, handleCreate, handleUpdate, handleDelete };
 }

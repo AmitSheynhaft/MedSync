@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Table, TableBody, TableCell, TableHead, TableRow, TablePagination,
   IconButton, Typography, Tooltip, Box,
@@ -13,6 +13,30 @@ import ClearIcon   from '@mui/icons-material/Clear';
 import { Clinic, ClinicInput } from '../../../api/clinics';
 import { TablePaper } from '../styled';
 import ClinicFormDialog from './ClinicFormDialog';
+import {
+  clinicsBodyRowSx,
+  clinicsCounterCurrentSx,
+  clinicsCounterSx,
+  clinicsCounterTotalSx,
+  clinicsCreateButtonSx,
+  clinicsDefaultCellSx,
+  clinicsDialogActionsSx,
+  clinicsDialogTextSx,
+  clinicsEditButtonSx,
+  clinicsEmptyTextSx,
+  clinicsHeadCellSx,
+  clinicsHeadRowSx,
+  clinicsNameCellSx,
+  clinicsPaginationSx,
+  clinicsSearchFieldSx,
+  clinicsSearchIconSx,
+  clinicsSpacerSx,
+  clinicsTableSx,
+  clinicsTableWrapSx,
+  clinicsToolbarPaperSx,
+  clinicsToolbarStackSx,
+  clinicsClearIconSx,
+} from './ClinicsTable.styles';
 
 interface Props {
   clinics: Clinic[];
@@ -31,13 +55,12 @@ const ClinicsTable: React.FC<Props> = ({ clinics, onCreate, onUpdate, onDelete }
   const [page, setPage]       = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return clinics;
-    return clinics.filter(
-      (c) => c.name.toLowerCase().includes(q) || (c.address ?? '').toLowerCase().includes(q),
-    );
-  }, [clinics, search]);
+  const q = search.trim().toLowerCase();
+  const filtered = !q
+    ? clinics
+    : clinics.filter(
+        (c) => c.name.toLowerCase().includes(q) || (c.address ?? '').toLowerCase().includes(q),
+      );
 
   const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
@@ -45,33 +68,25 @@ const ClinicsTable: React.FC<Props> = ({ clinics, onCreate, onUpdate, onDelete }
 
   return (
     <>
-      <Paper elevation={0} sx={{ mb: 2, px: 2, py: 1.5, border: '1px solid #e9ecef', borderRadius: 2, bgcolor: '#fff' }}>
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+      <Paper elevation={0} sx={clinicsToolbarPaperSx}>
+        <Stack direction="row" spacing={1.5} sx={clinicsToolbarStackSx}>
           <TextField
             placeholder="חיפוש לפי שם או כתובת..."
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             size="small"
-            sx={{
-              width: 320,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2, bgcolor: '#f8f9fa',
-                '& fieldset': { borderColor: '#dee2e6' },
-                '&:hover fieldset': { borderColor: '#adb5bd' },
-                '&.Mui-focused fieldset': { borderColor: '#3b5bdb' },
-              },
-            }}
+            sx={clinicsSearchFieldSx}
             slotProps={{
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#868e96', fontSize: 18 }} />
+                    <SearchIcon sx={clinicsSearchIconSx} />
                   </InputAdornment>
                 ),
                 endAdornment: search ? (
                   <InputAdornment position="end">
                     <IconButton size="small" onClick={() => handleSearchChange('')} edge="end">
-                      <ClearIcon sx={{ fontSize: 16 }} />
+                      <ClearIcon sx={clinicsClearIconSx} />
                     </IconButton>
                   </InputAdornment>
                 ) : null,
@@ -79,18 +94,18 @@ const ClinicsTable: React.FC<Props> = ({ clinics, onCreate, onUpdate, onDelete }
             }}
           />
 
-          <Box sx={{ flex: 1 }} />
+          <Box sx={clinicsSpacerSx} />
 
-          <Box sx={{ px: 1.5, py: 0.5, borderRadius: 2, bgcolor: '#f1f3f5', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography sx={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e' }}>{filtered.length}</Typography>
-            <Typography sx={{ fontSize: 13, color: '#868e96' }}>/ {clinics.length}</Typography>
+          <Box sx={clinicsCounterSx}>
+            <Typography sx={clinicsCounterCurrentSx}>{filtered.length}</Typography>
+            <Typography sx={clinicsCounterTotalSx}>/ {clinics.length}</Typography>
           </Box>
 
           <Button
             variant="contained" size="small"
             startIcon={<AddIcon />}
             onClick={() => setCreating(true)}
-            sx={{ borderRadius: 2, fontWeight: 600, px: 2, whiteSpace: 'nowrap' }}
+            sx={clinicsCreateButtonSx}
           >
             מרפאה חדשה
           </Button>
@@ -98,36 +113,36 @@ const ClinicsTable: React.FC<Props> = ({ clinics, onCreate, onUpdate, onDelete }
       </Paper>
 
       <TablePaper>
-        <Box sx={{ overflowX: 'auto' }}>
-          <Table size="small" sx={{ minWidth: 500 }}>
+        <Box sx={clinicsTableWrapSx}>
+          <Table size="small" sx={clinicsTableSx}>
             <TableHead>
-              <TableRow sx={{ bgcolor: '#f8f9fa' }}>
+              <TableRow sx={clinicsHeadRowSx}>
                 {['שם מרפאה', 'כתובת', 'תאריך יצירה'].map((h) => (
-                  <TableCell key={h} sx={{ fontWeight: 700, color: '#495057', fontSize: 13 }}>{h}</TableCell>
+                  <TableCell key={h} sx={clinicsHeadCellSx}>{h}</TableCell>
                 ))}
-                <TableCell sx={{ fontWeight: 700, color: '#495057', fontSize: 13 }} align="center">פעולות</TableCell>
+                <TableCell sx={clinicsHeadCellSx} align="center">פעולות</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {paginated.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4}>
-                    <Typography sx={{ textAlign: 'center', color: '#868e96', py: 3, fontSize: 14 }}>
+                    <Typography sx={clinicsEmptyTextSx}>
                       {search ? 'לא נמצאו מרפאות תואמות' : 'אין מרפאות'}
                     </Typography>
                   </TableCell>
                 </TableRow>
               )}
               {paginated.map((clinic) => (
-                <TableRow key={clinic.id} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                  <TableCell sx={{ fontWeight: 500 }}>{clinic.name}</TableCell>
-                  <TableCell sx={{ color: '#495057' }}>{clinic.address ?? '—'}</TableCell>
-                  <TableCell sx={{ color: '#495057' }}>
+                <TableRow key={clinic.id} hover sx={clinicsBodyRowSx}>
+                  <TableCell sx={clinicsNameCellSx}>{clinic.name}</TableCell>
+                  <TableCell sx={clinicsDefaultCellSx}>{clinic.address ?? '—'}</TableCell>
+                  <TableCell sx={clinicsDefaultCellSx}>
                     {clinic.createdAt ? new Date(clinic.createdAt).toLocaleDateString('he-IL') : '—'}
                   </TableCell>
                   <TableCell align="center">
                     <Tooltip title="עריכה">
-                      <IconButton size="small" onClick={() => setEditing(clinic)} sx={{ color: '#495057' }}>
+                      <IconButton size="small" onClick={() => setEditing(clinic)} sx={clinicsEditButtonSx}>
                         <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
@@ -152,16 +167,16 @@ const ClinicsTable: React.FC<Props> = ({ clinics, onCreate, onUpdate, onDelete }
           rowsPerPageOptions={PAGE_SIZE_OPTIONS}
           labelRowsPerPage="שורות לעמוד:"
           labelDisplayedRows={({ from, to, count }) => `${from}–${to} מתוך ${count}`}
-          sx={{ borderTop: '1px solid #f1f3f5' }}
+          sx={clinicsPaginationSx}
         />
       </TablePaper>
 
       <Dialog open={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)} maxWidth="xs">
         <DialogTitle>אישור מחיקה</DialogTitle>
         <DialogContent>
-          <Typography sx={{ pt: 1 }}>האם למחוק את המרפאה? פעולה זו אינה ניתנת לשחזור.</Typography>
+          <Typography sx={clinicsDialogTextSx}>האם למחוק את המרפאה? פעולה זו אינה ניתנת לשחזור.</Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={clinicsDialogActionsSx}>
           <Button onClick={() => setConfirmDeleteId(null)}>ביטול</Button>
           <Button
             variant="contained" color="error"

@@ -4,15 +4,15 @@ import { Repository } from 'typeorm';
 import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
-import { PatientMedicalSummary } from '../entities/patientMedicalSummary/patientMedicalSummaryEntity';
-import { Patient } from '../entities/patient/patientEntity';
-import { VisitSummary } from '../entities/visitSummary/visitSummaryEntity';
-import { DocumentSummary } from '../entities/documentSummary/documentSummaryEntity';
-import { PatientClinicalAlert } from '../entities/patientClinicalAlert/patientClinicalAlertEntity';
+import { PatientMedicalSummary } from './entities/patientMedicalSummaryEntity';
+import { Patient } from '../patients/entities/patientEntity';
+import { VisitSummary } from '../visits/entities/visitSummaryEntity';
+import { DocumentSummary } from '../documents/entities/documentSummaryEntity';
+import { PatientClinicalAlert } from '../clinical-alerts/entities/patientClinicalAlertEntity';
 import {
   ClinicalAlertCategory,
   ClinicalAlertSource,
-} from '../entities/enums';
+} from '../common/constants/domain-enums';
 import { ClinicalAlertsService } from '../clinical-alerts/clinical-alerts.service';
 
 const INITIAL_PROMPT = `אתה מנתח נתונים רפואיים המסייע לרופאים.
@@ -94,7 +94,7 @@ export class PatientMedicalSummaryService implements OnModuleInit {
     this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
-  private async loadManualAlertsBlock(patientId: string): Promise<string> {
+  private async buildManualClinicalAlertsBlock(patientId: string): Promise<string> {
     const alerts = await this.clinicalAlertRepo.find({
       where: { patientId, source: ClinicalAlertSource.MANUAL },
       select: ['category', 'severity', 'label'],
@@ -113,17 +113,21 @@ export class PatientMedicalSummaryService implements OnModuleInit {
     return `התראות קליניות שהוגדרו ידנית על ידי הצוות הרפואי (חייב לשקלל בסיכום):\n${lines.join('\n')}`;
   }
 
-  async generateAndSave(patientId: string): Promise<void> {
-    const existing = this.inFlight.get(patientId);
-    if (existing) return existing;
-    const promise = this.doGenerateAndSave(patientId).finally(() => {
+  async generateAndSavePatientMedicalSummary(patientId: string): Promise<void> {
+    const inFlightGeneration = this.inFlight.get(patientId);
+    if (inFlightGeneration) return inFlightGeneration;
+    const generationPromise = this.generateAndSavePatientMedicalSummaryInternal(
+      patientId,
+    ).finally(() => {
       this.inFlight.delete(patientId);
     });
-    this.inFlight.set(patientId, promise);
-    return promise;
+    this.inFlight.set(patientId, generationPromise);
+    return generationPromise;
   }
 
-  private async doGenerateAndSave(patientId: string): Promise<void> {
+  private async generateAndSavePatientMedicalSummaryInternal(
+    patientId: string,
+  ): Promise<void> {
     if (!this.model) {
       this.logger.warn(
         `Skipping medical summary generation for patient ${patientId}: Gemini disabled.`,
@@ -154,7 +158,7 @@ export class PatientMedicalSummaryService implements OnModuleInit {
       }
 
       // Load existing summary (null if first run)
-      const existing = await this.summaryRepo.findOne({
+      const existingPatientMedicalSummary = await this.summaryRepo.findOne({
         where: { patientId },
       });
 
@@ -174,9 +178,10 @@ export class PatientMedicalSummaryService implements OnModuleInit {
 
       let prompt: string;
 
-      const manualAlertsBlock = await this.loadManualAlertsBlock(patientId);
+      const manualAlertsBlock =
+        await this.buildManualClinicalAlertsBlock(patientId);
 
-      if (!existing) {
+      if (!existingPatientMedicalSummary) {
         // Initial generation
         const context = [
           newVisitSummaries.length > 0
@@ -204,7 +209,7 @@ export class PatientMedicalSummaryService implements OnModuleInit {
 
         prompt = [
           UPDATE_PROMPT,
-          `סיכום קיים:\n${existing.summaryText}`,
+          `סיכום קיים:\n${existingPatientMedicalSummary.summaryText}`,
           `\n${newData}`,
         ].join('\n');
       }
@@ -213,10 +218,10 @@ export class PatientMedicalSummaryService implements OnModuleInit {
       const summaryText = result.response.text();
 
       // Upsert patient_medical_summaries
-      if (existing) {
-        existing.summaryText = summaryText;
-        existing.generatedAt = new Date();
-        await this.summaryRepo.save(existing);
+      if (existingPatientMedicalSummary) {
+        existingPatientMedicalSummary.summaryText = summaryText;
+        existingPatientMedicalSummary.generatedAt = new Date();
+        await this.summaryRepo.save(existingPatientMedicalSummary);
       } else {
         await this.summaryRepo.save(
           this.summaryRepo.create({
@@ -258,17 +263,19 @@ export class PatientMedicalSummaryService implements OnModuleInit {
   }
 
   @Cron('0 2 * * *')
-  async generateAllPatientSummaries(): Promise<void> {
+  async generateAllPatientMedicalSummaries(): Promise<void> {
     this.logger.log('Running nightly medical summary generation for all patients');
-    const patients = await this.patientRepo.find({ select: ['id'] });
-    for (const p of patients) {
-      await this.generateAndSave(p.id).catch((e) =>
-        this.logger.error(`Nightly summary failed for patient ${p.id}: ${e}`),
+    const allPatients = await this.patientRepo.find({ select: ['id'] });
+    for (const patient of allPatients) {
+      await this.generateAndSavePatientMedicalSummary(patient.id).catch((error) =>
+        this.logger.error(
+          `Nightly summary failed for patient ${patient.id}: ${error}`,
+        ),
       );
     }
   }
 
-  async forceRegenerate(patientId: string): Promise<void> {
+  async forceRegeneratePatientMedicalSummary(patientId: string): Promise<void> {
     if (!this.model) {
       this.logger.warn(
         `Skipping force regenerate for patient ${patientId}: Gemini disabled.`,
@@ -315,7 +322,7 @@ export class PatientMedicalSummaryService implements OnModuleInit {
     const context = [
       visitSummaries.length > 0 ? `סיכומי ביקורים:\n${visitTexts}` : '',
       docSummaries.length > 0 ? `סיכומי מסמכים:\n${docTexts}` : '',
-      await this.loadManualAlertsBlock(patientId),
+      await this.buildManualClinicalAlertsBlock(patientId),
     ]
       .filter(Boolean)
       .join('\n\n');
@@ -324,11 +331,13 @@ export class PatientMedicalSummaryService implements OnModuleInit {
     const result = await this.model.generateContent(prompt);
     const summaryText = result.response.text();
 
-    const existing = await this.summaryRepo.findOne({ where: { patientId } });
-    if (existing) {
-      existing.summaryText = summaryText;
-      existing.generatedAt = new Date();
-      await this.summaryRepo.save(existing);
+    const existingPatientMedicalSummary = await this.summaryRepo.findOne({
+      where: { patientId },
+    });
+    if (existingPatientMedicalSummary) {
+      existingPatientMedicalSummary.summaryText = summaryText;
+      existingPatientMedicalSummary.generatedAt = new Date();
+      await this.summaryRepo.save(existingPatientMedicalSummary);
     } else {
       await this.summaryRepo.save(
         this.summaryRepo.create({
@@ -365,21 +374,25 @@ export class PatientMedicalSummaryService implements OnModuleInit {
       );
   }
 
-  async forceRegenerateAll(): Promise<{ total: number; succeeded: number; failed: number }> {
-    const patients = await this.patientRepo.find({ select: ['id'] });
+  async forceRegenerateAllPatientMedicalSummaries(): Promise<{
+    total: number;
+    succeeded: number;
+    failed: number;
+  }> {
+    const allPatients = await this.patientRepo.find({ select: ['id'] });
     let succeeded = 0;
     let failed = 0;
-    for (const p of patients) {
+    for (const patient of allPatients) {
       try {
-        await this.forceRegenerate(p.id);
+        await this.forceRegeneratePatientMedicalSummary(patient.id);
         succeeded++;
-      } catch (e) {
+      } catch (error) {
         failed++;
         this.logger.error(
-          `Force regenerate failed for patient ${p.id}: ${e instanceof Error ? e.message : String(e)}`,
+          `Force regenerate failed for patient ${patient.id}: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
-    return { total: patients.length, succeeded, failed };
+    return { total: allPatients.length, succeeded, failed };
   }
 }

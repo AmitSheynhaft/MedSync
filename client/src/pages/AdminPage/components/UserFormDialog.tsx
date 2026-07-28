@@ -5,6 +5,24 @@ import {
 } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { User, UpdateUserInput, CreateUserInput } from '../../../api/users';
+import { ROLE_LABELS } from './adminUser.constants';
+import {
+  GENDER_OPTIONS,
+  isValidDate,
+  isValidEmail,
+  isValidPassword,
+  isValidPhone,
+  UserFormErrors,
+} from './userForm.validation';
+import {
+  userFormCalendarButtonSx,
+  userFormCalendarIconSx,
+  userFormDateInputSx,
+  userFormDialogActionsSx,
+  userFormDialogStackSx,
+  userFormDialogTitleSx,
+  userFormValidationTextSx,
+} from './UserFormDialog.styles';
 
 interface EditProps {
   mode: 'edit';
@@ -24,28 +42,7 @@ interface CreateProps {
 }
 
 type Props = (EditProps | CreateProps) & { open: boolean };
-
-const GENDER_OPTIONS = [
-  { value: 'male',   label: 'זכר' },
-  { value: 'female', label: 'נקבה' },
-];
-
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'אדמין', doctor: 'רופא', patient: 'מטופל', secretary: 'מזכירה',
-};
-
-/* ── Validators ──────────────────────────────────────────── */
-const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
-const isValidPhone = (v: string) => /^0[0-9]{1,2}[-\s]?[0-9]{3}[-\s]?[0-9]{4}$/.test(v.trim());
-const isValidPassword = (v: string) =>
-  v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v);
-const isValidDate = (v: string) => {
-  if (!v) return true;
-  const d = new Date(v);
-  return !isNaN(d.getTime()) && d.getFullYear() >= 1900 && d < new Date();
-};
-
-type Errors = Partial<Record<'fullName' | 'email' | 'password' | 'phone' | 'birthDate', string>>;
+type DateInputElement = HTMLInputElement & { showPicker?: () => void };
 
 const UserFormDialog: React.FC<Props> = (props) => {
   const { open, mode, roles, clinics, onClose } = props;
@@ -60,10 +57,10 @@ const UserFormDialog: React.FC<Props> = (props) => {
   const [birthDate,  setBirthDate]  = useState(user?.birthDate?.slice(0, 10) ?? '');
   const [roleId,     setRoleId]     = useState('');
   const [clinicId,   setClinicId]   = useState('');
-  const [errors,     setErrors]     = useState<Errors>({});
+  const [errors,     setErrors]     = useState<UserFormErrors>({});
   const [saving,     setSaving]     = useState(false);
   const [saveError,  setSaveError]  = useState<string | null>(null);
-  const birthDateRef = useRef<HTMLInputElement>(null);
+  const birthDateRef = useRef<DateInputElement | null>(null);
   useEffect(() => {
     if (!open) return;
     setFullName(user?.fullName ?? '');
@@ -79,8 +76,8 @@ const UserFormDialog: React.FC<Props> = (props) => {
     setClinicId('');
   }, [open, user, roles]);
 
-  const validate = (): Errors => {
-    const e: Errors = {};
+  const validate = (): UserFormErrors => {
+    const e: UserFormErrors = {};
     if (!fullName.trim() || fullName.trim().length < 2)
       e.fullName = 'שם חייב להכיל לפחות 2 תווים';
     if (!email.trim())
@@ -136,11 +133,11 @@ const UserFormDialog: React.FC<Props> = (props) => {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle sx={{ fontWeight: 700 }}>
+      <DialogTitle sx={userFormDialogTitleSx}>
         {isEdit ? 'עריכת משתמש' : 'משתמש חדש'}
       </DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ mt: 1 }}>
+        <Stack spacing={2} sx={userFormDialogStackSx}>
 
           {saveError && <Alert severity="error" onClose={() => setSaveError(null)}>{saveError}</Alert>}
 
@@ -218,17 +215,14 @@ const UserFormDialog: React.FC<Props> = (props) => {
                     <IconButton
                       size="small"
                       edge="end"
-                      onClick={() => (birthDateRef.current as any)?.showPicker?.()}
-                      sx={{ color: birthDate ? '#3b5bdb' : '#adb5bd', p: 0.5 }}
+                      onClick={() => birthDateRef.current?.showPicker?.()}
+                      sx={userFormCalendarButtonSx(!!birthDate)}
                     >
-                      <CalendarTodayIcon sx={{ fontSize: 16 }} />
+                      <CalendarTodayIcon sx={userFormCalendarIconSx} />
                     </IconButton>
                   </InputAdornment>
                 ),
-                sx: {
-                  '& input': { cursor: 'pointer' },
-                  '& input::-webkit-calendar-picker-indicator': { display: 'none' },
-                },
+                sx: userFormDateInputSx,
               },
             }}
           />
@@ -260,13 +254,13 @@ const UserFormDialog: React.FC<Props> = (props) => {
           })()}
 
           {Object.keys(errors).length > 0 && (
-            <Typography sx={{ fontSize: 12, color: 'error.main' }}>
+            <Typography sx={userFormValidationTextSx}>
               יש לתקן את השגיאות המסומנות לפני השמירה
             </Typography>
           )}
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions sx={userFormDialogActionsSx}>
         <Button onClick={onClose} disabled={saving}>ביטול</Button>
         <Button variant="contained" onClick={handleSave} disabled={saving}>
           {saving ? 'שומר...' : 'שמור'}

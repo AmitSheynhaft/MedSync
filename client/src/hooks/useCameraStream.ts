@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 export function useCameraStream() {
   const videoRef  = useRef<HTMLVideoElement>(null);
@@ -8,12 +8,12 @@ export function useCameraStream() {
   const [cameraMode,  setCameraMode]  = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  const stopCamera = useCallback(() => {
+  const stopCamera = () => {
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
     setCameraMode(false);
     setCameraError(null);
-  }, []);
+  };
 
   useEffect(() => {
     if (!cameraMode) return;
@@ -28,10 +28,16 @@ export function useCameraStream() {
       .catch(() => {
         if (!cancelled) setCameraError('Camera access denied. Please allow camera permissions.');
       });
-    return () => { cancelled = true; stopCamera(); };
-  }, [cameraMode, stopCamera]);
+    return () => {
+      cancelled = true;
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+      setCameraMode(false);
+      setCameraError(null);
+    };
+  }, [cameraMode]);
 
-  const capture = useCallback((onFile: (file: File) => void) => {
+  const capture = (onFile: (file: File) => void) => {
     if (!videoRef.current || !canvasRef.current) return;
     const { videoWidth: w, videoHeight: h } = videoRef.current;
     canvasRef.current.width  = w;
@@ -42,7 +48,7 @@ export function useCameraStream() {
       if (!blob) return;
       onFile(new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' }));
     }, 'image/jpeg', 0.92);
-  }, [stopCamera]);
+  };
 
   return { videoRef, canvasRef, cameraMode, setCameraMode, cameraError, stopCamera, capture };
 }

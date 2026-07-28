@@ -8,68 +8,27 @@ import {
 } from '@nestjs/common';
 import * as os from 'os';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
-import { Visit } from '../entities/visit/visitEntity';
-import { VisitRecording } from '../entities/visitRecording/visitRecordingEntity';
-import { VisitSummary } from '../entities/visitSummary/visitSummaryEntity';
-import { VisitDiagnosis } from '../entities/visitDiagnosis/visitDiagnosisEntity';
-import { VisitMedicine } from '../entities/visitMedicine/visitMedicineEntity';
-import { Diagnosis } from '../entities/diagnosis/diagnosisEntity';
-import { Medicine } from '../entities/medicine/medicineEntity';
-import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
-import { Patient } from '../entities/patient/patientEntity';
-import { Slot } from '../entities/slot/slotEntity';
-import { SlotStatus } from '../entities/slot/slotStatus';
-import { RecordingStatus, VisitSummaryType, VisitType } from '../entities/enums';
+import { Repository } from 'typeorm';
+import { Visit } from './entities/visitEntity';
+import { VisitRecording } from './entities/visitRecordingEntity';
+import { VisitSummary } from './entities/visitSummaryEntity';
+import { VisitDiagnosis } from './entities/visitDiagnosisEntity';
+import { VisitMedicine } from './entities/visitMedicineEntity';
+import { PatientClinic } from '../patients/entities/patientClinicEntity';
+import { Patient } from '../patients/entities/patientEntity';
+import { Slot } from '../slots/entities/slotEntity';
+import { SlotStatus } from '../slots/entities/slotStatus';
+import { RecordingStatus, VisitSummaryType, VisitType } from '../common/constants/domain-enums';
 import { DiagnosesService } from '../diagnoses/diagnoses.service';
 import { MedicinesService } from '../medicines/medicines.service';
 import { PatientMedicalSummaryService } from '../patient-medical-summary/patient-medical-summary.service';
-
-export interface VisitInput {
-  patientId: string;
-  caregiverId: string;
-  slotId?: string;
-  visitDate: string | Date;
-  actingClinicId?: string;
-  actingUserId?: string;
-  bloodPressure?: string;
-  pulse?: string;
-  bodyTemp?: string;
-  weight?: string;
-  height?: string;
-  oxygenSat?: string;
-  chiefComplaint?: string;
-  visitType?: string;
-  followUpDate?: string;
-  referralNotes?: string;
-}
-
-export interface VisitRecordingInput {
-  status?: RecordingStatus;
-  audioUrl: string;
-  transcriptText?: string;
-}
-
-export interface VisitSummaryInput {
-  summaryText: string;
-  visitType: VisitSummaryType;
-}
-
-export interface VisitDiagnosisInput {
-  diagnosisId?: string;
-  diagnosisCode?: string;
-  diagnosisDescription?: string;
-  note?: string;
-}
-
-export interface VisitMedicineInput {
-  medicineId?: string;
-  medicineName?: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
-  instructions?: string;
-}
+import {
+  VisitDiagnosisInput,
+  VisitInput,
+  VisitMedicineInput,
+  VisitRecordingInput,
+  VisitSummaryInput,
+} from './types/visit-records.types';
 
 @Injectable()
 export class VisitRecordsService {
@@ -85,10 +44,6 @@ export class VisitRecordsService {
     private readonly visitDiagnoses: Repository<VisitDiagnosis>,
     @InjectRepository(VisitMedicine)
     private readonly visitMedicines: Repository<VisitMedicine>,
-    @InjectRepository(Diagnosis)
-    private readonly diagnosesRepo: Repository<Diagnosis>,
-    @InjectRepository(Medicine)
-    private readonly medicinesRepo: Repository<Medicine>,
     @InjectRepository(PatientClinic)
     private readonly patientClinics: Repository<PatientClinic>,
     @InjectRepository(Patient)
@@ -97,7 +52,6 @@ export class VisitRecordsService {
     private readonly slots: Repository<Slot>,
     private readonly diagnosesService: DiagnosesService,
     private readonly medicinesService: MedicinesService,
-    private readonly dataSource: DataSource,
     private readonly medicalSummaryService: PatientMedicalSummaryService,
   ) {}
 
@@ -119,12 +73,19 @@ export class VisitRecordsService {
     return visitDateOnly < todayDateOnly;
   }
 
-  private throwIfPastVisit(visit: Visit, operation: string = 'modify'): void {
+  private throwIfPastVisit(visit: Visit): void {
     if (this.isVisitInPast(visit.visitDate)) {
       throw new BadRequestException(
         'לא ניתן לערוך ביקור שהתרחש בעבר',
       );
     }
+  }
+
+  private async getEditableVisitById(visitId: string): Promise<Visit> {
+    const visit = await this.visits.findOne({ where: { id: visitId } });
+    if (!visit) throw new NotFoundException(`Visit ${visitId} not found`);
+    this.throwIfPastVisit(visit);
+    return visit;
   }
 
   private sanitizeHtml(value?: string | null): string {
@@ -413,8 +374,8 @@ export class VisitRecordsService {
 </html>`;
   }
 
-  async generateSummaryPdf(visitId: string): Promise<Buffer> {
-    const visit = await this.findOne(visitId);
+  async generateVisitSummaryPdf(visitId: string): Promise<Buffer> {
+    const visit = await this.getVisitRecordById(visitId);
     const html = this.buildSummaryPdfHtml(visit);
 
     // Dynamic import required: puppeteer is ESM-only and cannot be statically required
@@ -443,7 +404,11 @@ export class VisitRecordsService {
     }
   }
 
-  findAll(patientId?: string, caregiverId?: string, actingClinicId?: string): Promise<Visit[]> {
+  getVisitRecords(
+    patientId?: string,
+    caregiverId?: string,
+    actingClinicId?: string,
+  ): Promise<Visit[]> {
     const qb = this.visits
       .createQueryBuilder('visit')
       .leftJoinAndSelect('visit.patient', 'patient')
@@ -470,9 +435,9 @@ export class VisitRecordsService {
     return qb.getMany();
   }
 
-  async findOne(id: string): Promise<Visit> {
+  async getVisitRecordById(visitId: string): Promise<Visit> {
     const visit = await this.visits.findOne({
-      where: { id },
+      where: { id: visitId },
       relations: [
         'patient',
         'patient.user',
@@ -487,11 +452,11 @@ export class VisitRecordsService {
         'medicines.medicine',
       ],
     });
-    if (!visit) throw new NotFoundException(`Visit ${id} not found`);
+    if (!visit) throw new NotFoundException(`Visit ${visitId} not found`);
     return visit;
   }
 
-  async create(input: VisitInput): Promise<Visit> {
+  async createVisitRecord(input: VisitInput): Promise<Visit> {
     if (!input?.patientId || !input?.caregiverId || !input?.visitDate) {
       throw new BadRequestException(
         'patientId, caregiverId and visitDate are required',
@@ -566,15 +531,14 @@ export class VisitRecordsService {
       }
     }
 
-    return this.findOne(saved.id);
+    return this.getVisitRecordById(saved.id);
   }
 
-  async update(id: string, input: Partial<VisitInput>): Promise<Visit> {
-    const visit = await this.visits.findOne({ where: { id } });
-    if (!visit) throw new NotFoundException(`Visit ${id} not found`);
-    
-    // Prevent editing past visits
-    this.throwIfPastVisit(visit, 'update');
+  async updateVisitRecordById(
+    visitId: string,
+    input: Partial<VisitInput>,
+  ): Promise<Visit> {
+    const visit = await this.getEditableVisitById(visitId);
     
     if (input.visitDate !== undefined)
       visit.visitDate = new Date(input.visitDate);
@@ -592,29 +556,23 @@ export class VisitRecordsService {
     if (input.patientId !== undefined) visit.patientId = input.patientId;
     if (input.caregiverId !== undefined) visit.caregiverId = input.caregiverId;
     await this.visits.save(visit);
-    return this.findOne(id);
+    return this.getVisitRecordById(visitId);
   }
 
-  async remove(id: string): Promise<void> {
-    const visit = await this.visits.findOne({ where: { id } });
-    if (!visit) throw new NotFoundException(`Visit ${id} not found`);
+  async deleteVisitRecordById(visitId: string): Promise<void> {
+    await this.getEditableVisitById(visitId);
     
-    // Prevent deleting past visits
-    this.throwIfPastVisit(visit, 'delete');
-    
-    const result = await this.visits.delete(id);
-    if (!result.affected) throw new NotFoundException(`Visit ${id} not found`);
+    const result = await this.visits.delete(visitId);
+    if (!result.affected)
+      throw new NotFoundException(`Visit ${visitId} not found`);
   }
 
   // -------- recording --------
-  async upsertRecording(
+  async upsertVisitRecordingByVisitId(
     visitId: string,
     input: VisitRecordingInput,
   ): Promise<VisitRecording> {
-    const visit = await this.findOne(visitId);
-    
-    // Prevent editing past visits
-    this.throwIfPastVisit(visit);
+    await this.getEditableVisitById(visitId);
     
     let rec = await this.recordings.findOne({ where: { visitId } });
     if (!rec) {
@@ -634,14 +592,11 @@ export class VisitRecordsService {
   }
 
   // -------- summary --------
-  async upsertSummary(
+  async upsertVisitSummaryByVisitId(
     visitId: string,
     input: VisitSummaryInput,
   ): Promise<VisitSummary> {
-    const visit = await this.findOne(visitId);
-    
-    // Prevent editing past visits
-    this.throwIfPastVisit(visit);
+    const visit = await this.getEditableVisitById(visitId);
     
     let summary = await this.summaries.findOne({ where: { visitId } });
     if (!summary) {
@@ -659,7 +614,7 @@ export class VisitRecordsService {
     // Fire-and-forget: regenerate patient medical summary
     if (visit?.patientId) {
       this.medicalSummaryService
-        .generateAndSave(visit.patientId)
+        .generateAndSavePatientMedicalSummary(visit.patientId)
         .catch((e) =>
           this.logger.error(`Medical summary trigger failed: ${e instanceof Error ? e.message : String(e)}`),
         );
@@ -669,21 +624,18 @@ export class VisitRecordsService {
   }
 
   // -------- diagnoses --------
-  async addDiagnosis(
+  async addDiagnosisToVisit(
     visitId: string,
     input: VisitDiagnosisInput,
   ): Promise<VisitDiagnosis> {
-    const visit = await this.findOne(visitId);
-    
-    // Prevent editing past visits
-    this.throwIfPastVisit(visit);
+    await this.getEditableVisitById(visitId);
     
     let diagnosisId = input.diagnosisId;
     if (!diagnosisId) {
       if (!input.diagnosisCode) {
         throw new BadRequestException('diagnosisId or diagnosisCode is required');
       }
-      const diag = await this.diagnosesService.getOrCreateByCode(
+      const diag = await this.diagnosesService.getOrCreateDiagnosisByCode(
         input.diagnosisCode,
         input.diagnosisDescription ?? input.diagnosisCode,
       );
@@ -704,28 +656,30 @@ export class VisitRecordsService {
     return this.visitDiagnoses.save(created);
   }
 
-  async removeDiagnosis(visitId: string, diagnosisId: string): Promise<void> {
+  async removeDiagnosisFromVisit(
+    visitId: string,
+    diagnosisId: string,
+  ): Promise<void> {
     const result = await this.visitDiagnoses.delete({ visitId, diagnosisId });
     if (!result.affected)
       throw new NotFoundException('Visit diagnosis link not found');
   }
 
   // -------- medicines --------
-  async addMedicine(
+  async addMedicineToVisit(
     visitId: string,
     input: VisitMedicineInput,
   ): Promise<VisitMedicine> {
-    const visit = await this.findOne(visitId);
-    
-    // Prevent editing past visits
-    this.throwIfPastVisit(visit);
+    await this.getEditableVisitById(visitId);
     
     let medicineId = input.medicineId;
     if (!medicineId) {
       if (!input.medicineName) {
         throw new BadRequestException('medicineId or medicineName is required');
       }
-      const med = await this.medicinesService.getOrCreateByName(input.medicineName);
+      const med = await this.medicinesService.getOrCreateMedicineByName(
+        input.medicineName,
+      );
       medicineId = med.id;
     }
     const existing = await this.visitMedicines.findOne({
@@ -749,7 +703,10 @@ export class VisitRecordsService {
     return this.visitMedicines.save(created);
   }
 
-  async removeMedicine(visitId: string, medicineId: string): Promise<void> {
+  async removeMedicineFromVisit(
+    visitId: string,
+    medicineId: string,
+  ): Promise<void> {
     const result = await this.visitMedicines.delete({ visitId, medicineId });
     if (!result.affected)
       throw new NotFoundException('Visit medicine link not found');

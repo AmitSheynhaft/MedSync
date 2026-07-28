@@ -2,6 +2,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import BadgeIcon from '@mui/icons-material/Badge';
 import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
+import { Role } from '../../../constants/roles';
 import type { TFieldConfig } from '../types';
 
 const ICON_SX = { color: '#adb5bd', fontSize: 18 };
@@ -18,7 +19,7 @@ export const ACCOUNT_FIELDS: TFieldConfig[] = [
   },
   {
     key: 'idOrLicense',
-    placeholder: (role) => (role === 'doctor' ? 'מספר רישיון' : 'תעודת זהות'),
+    placeholder: role => (role === Role.Doctor ? 'מספר רישיון' : 'תעודת זהות'),
     icon: <BadgeIcon sx={ICON_SX} />,
     autoComplete: 'off',
     getValue: f => f.idOrLicense,

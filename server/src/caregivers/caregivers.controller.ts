@@ -4,12 +4,14 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
 } from '@nestjs/common';
-import { CaregiverInput, CaregiversService } from './caregivers.service';
+import { CaregiversService } from './caregivers.service';
+import { CaregiverInput } from './types/caregiver.types';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ROLE_DOCTOR } from '../common/constants/roles';
 
@@ -19,31 +21,39 @@ export class CaregiversController {
   constructor(private readonly service: CaregiversService) {}
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  getAllCaregivers() {
+    return this.service.getAllCaregivers();
   }
 
   @Get(':id')
-  findOne(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.service.findOne(id);
+  getCaregiverById(@Param('id', new ParseUUIDPipe()) caregiverId: string) {
+    return this.service.getCaregiverById(caregiverId);
   }
 
   @Post()
-  create(@Body() body: CaregiverInput) {
-    return this.service.create(body);
+  createCaregiver(@Body() caregiverInput: CaregiverInput) {
+    return this.service.createCaregiver(caregiverInput);
+  }
+
+  @Patch('by-user/:userId')
+  updateCaregiverByUserId(
+    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @Body() caregiverUpdates: Partial<CaregiverInput>,
+  ) {
+    return this.service.updateCaregiverByUserId(userId, caregiverUpdates);
   }
 
   @Patch(':id')
-  update(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: Partial<CaregiverInput>,
+  updateCaregiverById(
+    @Param('id', new ParseUUIDPipe()) caregiverId: string,
+    @Body() caregiverUpdates: Partial<CaregiverInput>,
   ) {
-    return this.service.update(id, body);
+    return this.service.updateCaregiverById(caregiverId, caregiverUpdates);
   }
 
   @Delete(':id')
-  @HttpCode(204)
-  remove(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.service.remove(id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteCaregiverById(@Param('id', new ParseUUIDPipe()) caregiverId: string) {
+    return this.service.deleteCaregiverById(caregiverId);
   }
 }

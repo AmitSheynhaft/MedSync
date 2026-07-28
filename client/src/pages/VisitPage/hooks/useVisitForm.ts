@@ -1,32 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAudioRecorder } from '../../../hooks/useAudioRecorder';
-import { getEffectiveRole } from '../../../auth/viewAs';
-import { Role } from '../../../constants/roles';
 import {
   createVisit, upsertVisitSummary,
   addVisitDiagnosis, addVisitMedicine, updateVisit, getVisit,
+  VisitDiagnosisEntry, VisitMedicineEntry,
 } from '../../../api/visits';
-import { getDiagnoses, Diagnosis } from '../../../api/diagnoses';
-import { getMedicines, Medicine } from '../../../api/medicines';
 import { ToastState, DiagnosisItem, MedicineItem, PatientInfo } from '../constants';
 import { parseSummaryText, buildSummaryText } from '../utils';
+import { useVisitReadOnlyMode } from './useVisitReadOnlyMode';
+import { useVisitCatalogOptions } from './useVisitCatalogOptions';
 
 
-function isDateInPast(dateString: string | null): boolean {
-  if (!dateString) return false;
-  
-  try {
-    const visitDate = new Date(dateString);
-    visitDate.setHours(0, 0, 0, 0);
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    return visitDate < today;
-  } catch {
-    return false;
-  }
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
 }
 
 export function useVisitForm() {
@@ -40,9 +28,8 @@ export function useVisitForm() {
   const [diagnosis, setDiagnosis] = useState('');
   const [plan, setPlan] = useState('');
   const [saving, setSaving] = useState(false);
-  // Determine if the form should be read-only based on role and visit date
   const [visitDateObj, setVisitDateObj] = useState<Date | null>(null);
-  const [isReadOnly, setIsReadOnly] = useState(() => getEffectiveRole() !== Role.Doctor);
+  const isReadOnly = useVisitReadOnlyMode(visitDateObj);
   const [visitDate, setVisitDate] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
 
@@ -67,46 +54,24 @@ export function useVisitForm() {
   // Tracks codes/keys of items already persisted to avoid re-POSTing on subsequent saves
   const persistedDiagnosisCodesRef = useRef<Set<string>>(new Set());
   const persistedMedicineKeysRef = useRef<Set<string>>(new Set());
+  const {
+    diagnosisSearch,
+    setDiagnosisSearch,
+    diagnosisOptions,
+    medicineSearch,
+    setMedicineSearch,
+    medicineOptions,
+  } = useVisitCatalogOptions(isReadOnly);
   // Diagnoses list
   const [diagnosesList, setDiagnosesList] = useState<DiagnosisItem[]>([]);
-  const [diagnosisSearch, setDiagnosisSearch] = useState('');
-  const [diagnosisOptions, setDiagnosisOptions] = useState<Diagnosis[]>([]);
   // Medicines list
   const [medicinesList, setMedicinesList] = useState<MedicineItem[]>([]);
-  const [medicineSearch, setMedicineSearch] = useState('');
-  const [medicineOptions, setMedicineOptions] = useState<Medicine[]>([]);
   const [medicineDosage, setMedicineDosage] = useState('');
   const [medicineFrequency, setMedicineFrequency] = useState('');
   const [medicineDuration, setMedicineDuration] = useState('');
 
   const isRecording = status === 'recording';
   const isProcessing = status === 'processing';
-
-  // Pre-load catalog options for the editing dropdowns. These are doctor-only
-  // endpoints, so skip them in read-only (patient) mode to avoid 403s.
-  useEffect(() => {
-    if (isReadOnly) return;
-    getDiagnoses().then(res => setDiagnosisOptions(res.slice(0, 30))).catch(() => {});
-    getMedicines().then(res => setMedicineOptions(res.slice(0, 30))).catch(() => {});
-  }, [isReadOnly]);
-
-  // Debounced diagnosis search.
-  useEffect(() => {
-    if (isReadOnly || !diagnosisSearch.trim()) return;
-    const debounceTimer = window.setTimeout(() => {
-      getDiagnoses(diagnosisSearch).then(res => setDiagnosisOptions(res.slice(0, 10))).catch(() => {});
-    }, 250);
-    return () => window.clearTimeout(debounceTimer);
-  }, [diagnosisSearch, isReadOnly]);
-
-  // Debounced medicine search.
-  useEffect(() => {
-    if (isReadOnly || !medicineSearch.trim()) return;
-    const debounceTimer = window.setTimeout(() => {
-      getMedicines(medicineSearch).then(res => setMedicineOptions(res.slice(0, 10))).catch(() => {});
-    }, 250);
-    return () => window.clearTimeout(debounceTimer);
-  }, [medicineSearch, isReadOnly]);
 
   // Load existing visit when visitId is in the URL.
   useEffect(() => {
@@ -144,7 +109,7 @@ export function useVisitForm() {
       setReferralNotes(visitData.referralNotes ?? '');
 
       if (visitData.diagnoses && visitData.diagnoses.length > 0) {
-        const loadedDiagnoses = visitData.diagnoses.map((diagEntry: any) => ({
+        const loadedDiagnoses = visitData.diagnoses.map((diagEntry: VisitDiagnosisEntry) => ({
           code: diagEntry.diagnosis?.code ?? '',
           description: diagEntry.diagnosis?.description ?? '',
         }));
@@ -152,7 +117,7 @@ export function useVisitForm() {
         persistedDiagnosisCodesRef.current = new Set(loadedDiagnoses.map(d => d.code));
       }
       if (visitData.medicines && visitData.medicines.length > 0) {
-        const loadedMedicines = visitData.medicines.map((medEntry: any) => ({
+        const loadedMedicines = visitData.medicines.map((medEntry: VisitMedicineEntry) => ({
           name: medEntry.medicine?.name ?? '',
           dosage: medEntry.dosage ?? '',
           frequency: medEntry.frequency ?? '',
@@ -164,26 +129,18 @@ export function useVisitForm() {
           loadedMedicines.map(m => `${m.name}|${m.dosage}|${m.frequency}|${m.duration}`),
         );
       }
-    }).catch((err: any) => {
+    }).catch((err: unknown) => {
       if (!active) return;
-      setToast({ severity: 'error', message: `Load error: ${err?.message || 'Failed to load visit data.'}` });
+      setToast({
+        severity: 'error',
+        message: `Load error: ${getErrorMessage(err, 'Failed to load visit data.')}`,
+      });
     }).finally(() => {
       if (active) setIsLoadingVisit(false);
     });
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visitId]);
-
-  useEffect(() => {
-    const compute = () => {
-      const userIsDoctor = getEffectiveRole() === Role.Doctor;
-      const visitIsPast = visitDateObj && isDateInPast(visitDateObj.toISOString());
-      setIsReadOnly(!userIsDoctor || !!visitIsPast);
-    };
-    compute();
-    window.addEventListener('medsync:viewAsChange', compute);
-    return () => window.removeEventListener('medsync:viewAsChange', compute);
-  }, [visitDateObj]);
 
   const handleRecord = () => {
     if (isStarting) return;
@@ -280,8 +237,8 @@ export function useVisitForm() {
 
       setToast({ severity: 'success', message: 'ביקור נשמר.' });
       window.setTimeout(() => navigate('/patients'), 700);
-    } catch (err: any) {
-      setToast({ severity: 'error', message: err?.message || 'שמירת ביקור נכשלה.' });
+    } catch (err: unknown) {
+      setToast({ severity: 'error', message: getErrorMessage(err, 'שמירת ביקור נכשלה.') });
     } finally {
       isSavingRef.current = false;
       setSaving(false);

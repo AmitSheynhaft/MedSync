@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 
 export type TToastSeverity = 'success' | 'error' | 'warning' | 'info';
 
@@ -12,11 +12,11 @@ export type ToastState = TToastState;
 export const useToast = () => {
   const [toast, setToast] = useState<TToastState | null>(null);
 
-  const showToast = useCallback((severity: TToastSeverity, message: string) => {
+  const showToast = (severity: TToastSeverity, message: string) => {
     setToast({ severity, message });
-  }, []);
+  };
 
-  const clearToast = useCallback(() => setToast(null), []);
+  const clearToast = () => setToast(null);
 
   return { toast, setToast, showToast, clearToast };
 };

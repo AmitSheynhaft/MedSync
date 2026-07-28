@@ -8,7 +8,7 @@ const ffmpegPath: string = require('ffmpeg-static');
 // Re-encode the browser's WebM/Opus blob into a compact OGG/Opus stream
 // (mono, 16 kHz, ~16 kbps) so 30+ minutes fit under the 10 MB inline limit
 // and the file has a proper duration header.
-function transcodeToOggOpus(input: Buffer): Promise<Buffer> {
+function transcodeAudioBufferToOggOpus16kMono(input: Buffer): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const proc = spawn(ffmpegPath, [
       '-i', 'pipe:0',
@@ -62,7 +62,7 @@ export class SpeechService implements OnModuleInit {
     this.client = new SpeechClient({ keyFilename: credentials });
   }
 
-  async transcribeAudio(audioBuffer: Buffer): Promise<string> {
+  async transcribeVisitAudio(audioBuffer: Buffer): Promise<string> {
     if (!this.client) {
       throw new ServiceUnavailableException(
         'שירות התמלול אינו זמין — GOOGLE_APPLICATION_CREDENTIALS חסר',
@@ -72,7 +72,7 @@ export class SpeechService implements OnModuleInit {
       this.logger.log(
         `Received ${audioBuffer.length} bytes; transcoding to OGG/Opus 16k mono`,
       );
-      const compact = await transcodeToOggOpus(audioBuffer);
+      const compact = await transcodeAudioBufferToOggOpus16kMono(audioBuffer);
       this.logger.log(
         `Transcoded to ${compact.length} bytes; sending to Speech-to-Text`,
       );

@@ -3,10 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
+import { DocumentsLogicService } from './documents-logic.service';
 import { OcrService } from './ocr.service';
 import { DocumentSummaryService } from './document-summary.service';
-import { MedicalDocument } from '../entities/medicalDocument/medicalDocumentEntity';
-import { DocumentSummary } from '../entities/documentSummary/documentSummaryEntity';
+import { MedicalDocument } from '../medical-documents/entities/medicalDocumentEntity';
+import { DocumentSummary } from './entities/documentSummaryEntity';
 import { PatientMedicalSummaryModule } from '../patient-medical-summary/patient-medical-summary.module';
 import { PatientsModule } from '../patients/patients.module';
 
@@ -18,6 +19,11 @@ import { PatientsModule } from '../patients/patients.module';
     PatientsModule,
   ],
   controllers: [DocumentsController],
-  providers: [DocumentsService, OcrService, DocumentSummaryService],
+  providers: [
+    DocumentsService,
+    DocumentsLogicService,
+    OcrService,
+    DocumentSummaryService,
+  ],
 })
 export class DocumentsModule {}

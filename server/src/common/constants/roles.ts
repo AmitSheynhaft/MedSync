@@ -1,4 +1,4 @@
-import { IRole } from '../../entities';
+import { IRole } from '../types/entity-interfaces';
 
 export const ROLE_ADMIN = 'admin';
 export const ROLE_DOCTOR = 'doctor';

@@ -7,10 +7,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
-import { User } from '../entities/user/userEntity';
-import { Patient } from '../entities/patient/patientEntity';
-import { Caregiver } from '../entities/caregiver/caregiverEntity';
-import { Secretary } from '../entities/secretary/secretaryEntity';
+import { User } from './entities/userEntity';
+import { Patient } from '../patients/entities/patientEntity';
+import { Caregiver } from '../caregivers/entities/caregiverEntity';
+import { Secretary } from './entities/secretaryEntity';
 import { hashPassword, isHashedPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
 import { ROLE_DOCTOR, ROLE_PATIENT, ROLE_SECRETARY } from '../common/constants/roles';
@@ -42,141 +42,168 @@ export type SafeUser = Omit<User, 'password'>;
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User)      private readonly repo:        Repository<User>,
-    @InjectRepository(Patient)   private readonly patients:    Repository<Patient>,
-    @InjectRepository(Caregiver) private readonly caregivers:  Repository<Caregiver>,
-    @InjectRepository(Secretary) private readonly secretaries: Repository<Secretary>,
-    private readonly roles: RolesService,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Patient)
+    private readonly patientRepository: Repository<Patient>,
+    @InjectRepository(Caregiver)
+    private readonly caregiverRepository: Repository<Caregiver>,
+    @InjectRepository(Secretary)
+    private readonly secretaryRepository: Repository<Secretary>,
+    private readonly rolesService: RolesService,
   ) {}
 
-  private strip(user: User): SafeUser {
+  private mapUserEntityToSafeUser(user: User): SafeUser {
     if (!user) return user;
-    const clone: any = { ...user };
-    delete clone.password;
+    const { password: _password, roleId: _roleId, role, ...rest } = user;
     // Never expose the role's internal uuid — only its name is meaningful to clients.
-    delete clone.roleId;
-    if (clone.role) {
-      clone.role = { name: clone.role.name };
-    }
-    return clone;
+    return {
+      ...rest,
+      role: role ? { name: role.name } : role,
+    } as SafeUser;
   }
 
-  async findAll(roleName?: string): Promise<SafeUser[]> {
-    const users = await this.repo.find({
+  async getAllUsers(roleName?: string): Promise<SafeUser[]> {
+    const userEntities = await this.userRepository.find({
       relations: ['role'],
       order: { createdAt: 'DESC' },
     });
-    const filtered = roleName
-      ? users.filter((u) => u.role?.name === roleName)
-      : users;
-    return filtered.map((u) => this.strip(u));
+    const filteredUsers = roleName
+      ? userEntities.filter((userEntity) => userEntity.role?.name === roleName)
+      : userEntities;
+    return filteredUsers.map((userEntity) =>
+      this.mapUserEntityToSafeUser(userEntity),
+    );
   }
 
-  async findOne(id: string): Promise<SafeUser> {
-    const user = await this.repo.findOne({
-      where: { id },
+  async getUserById(userId: string): Promise<SafeUser> {
+    const userEntity = await this.userRepository.findOne({
+      where: { id: userId },
       relations: ['role', 'patient', 'caregiver'],
     });
-    if (!user) throw new NotFoundException(`User ${id} not found`);
-    return this.strip(user);
+    if (!userEntity) throw new NotFoundException(`User ${userId} not found`);
+    return this.mapUserEntityToSafeUser(userEntity);
   }
 
- async findUserByIdWithRole(id: string): Promise<SafeUser | null> {
-    const user = await this.repo.findOne({
-      where: { id },
+ async getUserByIdWithRole(userId: string): Promise<SafeUser | null> {
+    const userEntity = await this.userRepository.findOne({
+      where: { id: userId },
       relations: ['role', 'patient', 'caregiver'],
     });
-    return user ? this.strip(user) : null;
+    return userEntity ? this.mapUserEntityToSafeUser(userEntity) : null;
   }
 
-  findRawByEmail(email: string): Promise<User | null> {
-    return this.repo.findOne({
+  getRawUserByEmail(email: string): Promise<User | null> {
+    return this.userRepository.findOne({
       where: { email: email.toLowerCase() },
       relations: ['role', 'patient', 'caregiver'],
     });
   }
 
-  async create(input: CreateUserInput): Promise<User> {
-    if (!input?.email || !input?.password || !input?.fullName) {
+  async createUser(createUserInput: CreateUserInput): Promise<User> {
+    if (
+      !createUserInput?.email ||
+      !createUserInput?.password ||
+      !createUserInput?.fullName
+    ) {
       throw new BadRequestException('fullName, email and password are required');
     }
-    const email = input.email.toLowerCase();
-    const existing = await this.repo.findOne({ where: { email } });
-    if (existing) throw new ConflictException(`Email '${email}' already in use`);
-
-    const password = isHashedPassword(input.password)
-      ? input.password
-      : hashPassword(input.password);
-
-    const roleId = await this.resolveRoleId(input);
-
-    const user = this.repo.create({
-      roleId,
-      fullName: input.fullName,
-      email,
-      password,
-      phone: input.phone,
-      birthDate: input.birthDate ? new Date(input.birthDate) : null,
-      gender: input.gender,
+    const normalizedEmail = createUserInput.email.toLowerCase();
+    const existingUser = await this.userRepository.findOne({
+      where: { email: normalizedEmail },
     });
-    const saved = await this.repo.save(user);
+    if (existingUser)
+      throw new ConflictException(`Email '${normalizedEmail}' already in use`);
+
+    const password = isHashedPassword(createUserInput.password)
+      ? createUserInput.password
+      : hashPassword(createUserInput.password);
+
+    const roleId = await this.resolveRoleIdForCreateUser(createUserInput);
+
+    const user = this.userRepository.create({
+      roleId,
+      fullName: createUserInput.fullName,
+      email: normalizedEmail,
+      password,
+      phone: createUserInput.phone,
+      birthDate: createUserInput.birthDate
+        ? new Date(createUserInput.birthDate)
+        : null,
+      gender: createUserInput.gender,
+    });
+    const savedUser = await this.userRepository.save(user);
 
     // Auto-create the role-specific profile so role-gated features work immediately.
-    const roleName = (await this.roles.findOne(roleId)).name;
+    const roleName = (await this.rolesService.getRoleById(roleId)).name;
     if (roleName === ROLE_PATIENT) {
-      await this.patients.save(this.patients.create({ userId: saved.id }));
+      await this.patientRepository.save(
+        this.patientRepository.create({ userId: savedUser.id }),
+      );
     } else if (roleName === ROLE_SECRETARY) {
-      await this.secretaries.save(this.secretaries.create({
-        userId: saved.id,
-        idNumber: randomUUID(),
-        clinicId: input.clinicId ?? null,
-      }));
+      await this.secretaryRepository.save(
+        this.secretaryRepository.create({
+          userId: savedUser.id,
+          idNumber: randomUUID(),
+          clinicId: createUserInput.clinicId ?? null,
+        }),
+      );
     } else if (roleName === ROLE_DOCTOR) {
-      await this.caregivers.save(this.caregivers.create({
-        userId: saved.id,
-        clinicId: input.clinicId ?? null,
-        specialization: null,
-      }));
+      await this.caregiverRepository.save(
+        this.caregiverRepository.create({
+          userId: savedUser.id,
+          clinicId: createUserInput.clinicId ?? null,
+          specialization: null,
+        }),
+      );
     }
 
-    return saved;
+    return savedUser;
   }
 
-  private async resolveRoleId(input: CreateUserInput): Promise<string> {
-    if (input.roleId) {
-      const role = await this.roles.findOne(input.roleId);
+  private async resolveRoleIdForCreateUser(
+    createUserInput: CreateUserInput,
+  ): Promise<string> {
+    if (createUserInput.roleId) {
+      const role = await this.rolesService.getRoleById(createUserInput.roleId);
       return role.id;
     }
-    const name = input.roleName?.trim() || 'patient';
-    const role = await this.roles.getOrCreate(name);
+    const roleName = createUserInput.roleName?.trim() || 'patient';
+    const role = await this.rolesService.getOrCreateRoleByName(roleName);
     return role.id;
   }
 
-  async update(id: string, input: UpdateUserInput): Promise<SafeUser> {
-    const user = await this.repo.findOne({ where: { id } });
-    if (!user) throw new NotFoundException(`User ${id} not found`);
+  async updateUserById(
+    userId: string,
+    userUpdates: UpdateUserInput,
+  ): Promise<SafeUser> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException(`User ${userId} not found`);
 
-    if (input.email && input.email.toLowerCase() !== user.email) {
-      const clash = await this.repo.findOne({
-        where: { email: input.email.toLowerCase() },
+    if (userUpdates.email && userUpdates.email.toLowerCase() !== user.email) {
+      const existingUserWithEmail = await this.userRepository.findOne({
+        where: { email: userUpdates.email.toLowerCase() },
       });
-      if (clash) throw new ConflictException('Email already in use');
-      user.email = input.email.toLowerCase();
+      if (existingUserWithEmail) throw new ConflictException('Email already in use');
+      user.email = userUpdates.email.toLowerCase();
     }
-    if (input.fullName !== undefined) user.fullName = input.fullName;
-    if (input.phone !== undefined) user.phone = input.phone;
-    if (input.gender !== undefined) user.gender = input.gender;
-    if (input.birthDate !== undefined)
-      user.birthDate = input.birthDate ? new Date(input.birthDate) : null;
-    if (input.roleId !== undefined) user.roleId = input.roleId;
-    if (input.password) user.password = hashPassword(input.password);
+    if (userUpdates.fullName !== undefined) user.fullName = userUpdates.fullName;
+    if (userUpdates.phone !== undefined) user.phone = userUpdates.phone;
+    if (userUpdates.gender !== undefined) user.gender = userUpdates.gender;
+    if (userUpdates.birthDate !== undefined)
+      user.birthDate = userUpdates.birthDate
+        ? new Date(userUpdates.birthDate)
+        : null;
+    if (userUpdates.roleId !== undefined) user.roleId = userUpdates.roleId;
+    if (userUpdates.password) user.password = hashPassword(userUpdates.password);
 
-    const saved = await this.repo.save(user);
-    return this.strip(saved);
+    const savedUser = await this.userRepository.save(user);
+    return this.mapUserEntityToSafeUser(savedUser);
   }
 
-  async remove(id: string): Promise<void> {
-    const result = await this.repo.delete(id);
-    if (!result.affected) throw new NotFoundException(`User ${id} not found`);
+  async deleteUserById(userId: string): Promise<void> {
+    const deleteResult = await this.userRepository.delete(userId);
+    if (!deleteResult.affected)
+      throw new NotFoundException(`User ${userId} not found`);
   }
 }

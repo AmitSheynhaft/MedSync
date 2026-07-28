@@ -13,16 +13,17 @@ import {
 import { calcAge as calcAgeYears } from '../common/age.util';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
-import { Patient as PatientEntity } from '../entities/patient/patientEntity';
-import { User } from '../entities/user/userEntity';
-import { Visit } from '../entities/visit/visitEntity';
-import { MedicalDocument } from '../entities/medicalDocument/medicalDocumentEntity';
-import { PatientMedicalSummary } from '../entities/patientMedicalSummary/patientMedicalSummaryEntity';
-import { PatientClinic } from '../entities/patientClinic/patientClinicEntity';
-import { Secretary } from '../entities/secretary/secretaryEntity';
+import { Patient as PatientEntity } from './entities/patientEntity';
+import { User } from '../users/entities/userEntity';
+import { Visit } from '../visits/entities/visitEntity';
+import { MedicalDocument } from '../medical-documents/entities/medicalDocumentEntity';
+import { PatientMedicalSummary } from '../patient-medical-summary/entities/patientMedicalSummaryEntity';
+import { PatientClinic } from './entities/patientClinicEntity';
+import { Secretary } from '../users/entities/secretaryEntity';
 import { RolesService } from '../roles/roles.service';
 import { hashPassword } from '../common/password.util';
 import { ClinicalAlertsService } from '../clinical-alerts/clinical-alerts.service';
+import { IUser } from '../common/types/entity-interfaces';
 import {
   CreatePatientInput,
   Encounter,
@@ -82,37 +83,39 @@ export class PatientsService {
     private readonly clinicalAlertsService: ClinicalAlertsService,
   ) {}
 
-  private toSummary(p: PatientEntity): PatientSummary {
-    const { first, last } = splitName(p.user?.fullName);
+  private mapPatientEntityToSummary(patientEntity: PatientEntity): PatientSummary {
+    const { first, last } = splitName(patientEntity.user?.fullName);
     return {
-      id: p.id,
-      idNumber: p.idNumber,
+      id: patientEntity.id,
+      idNumber: patientEntity.idNumber,
       firstName: first,
       lastName: last,
-      age: calcAgeYears(p.user?.birthDate) ?? 0,
-      gender: (p.user?.gender as any) || '',
+      age: calcAgeYears(patientEntity.user?.birthDate) ?? 0,
+      gender: patientEntity.user?.gender ?? '',
     };
   }
 
-  private async toDetail(p: PatientEntity): Promise<Patient> {
-    const { first, last } = splitName(p.user?.fullName);
+  private async mapPatientEntityToDetail(
+    patientEntity: PatientEntity,
+  ): Promise<Patient> {
+    const { first, last } = splitName(patientEntity.user?.fullName);
 
     const [medicalSummary, visits, docs, clinicalAlerts] = await Promise.all([
       this.medicalSummaries.findOne({
-        where: { patientId: p.id },
+        where: { patientId: patientEntity.id },
       }),
       this.visits.find({
-        where: { patientId: p.id },
+        where: { patientId: patientEntity.id },
         relations: ['caregiver', 'caregiver.user', 'summary'],
         order: { visitDate: 'DESC' },
         take: 10,
       }),
       this.documents.find({
-        where: { patientId: p.id },
+        where: { patientId: patientEntity.id },
         order: { uploadedAt: 'DESC' },
         take: 10,
       }),
-      this.clinicalAlertsService.getForPatient(p.id),
+      this.clinicalAlertsService.getForPatient(patientEntity.id),
     ]);
 
     const encounters: Encounter[] = visits.map((v) => ({
@@ -133,32 +136,39 @@ export class PatientsService {
     }));
 
     return {
-      id: p.id,
-      userId: p.userId,
+      id: patientEntity.id,
+      userId: patientEntity.userId,
       firstName: first,
       lastName: last,
-      fullName: p.user?.fullName ?? '',
-      age: calcAgeYears(p.user?.birthDate) ?? 0,
-      gender: (p.user?.gender as any) || '',
-      dob: formatDob(p.user?.birthDate),
-      email: p.user?.email ?? '',
-      phone: p.user?.phone ?? '',
-      idNumber: p.idNumber,
-      hmo: p.hmo ?? '',
-      bloodType: p.bloodType,
-      address: p.address ?? '',
-      notes: p.notes,
-      overview: medicalSummary?.summaryText ?? p.notes ?? '',
+      fullName: patientEntity.user?.fullName ?? '',
+      age: calcAgeYears(patientEntity.user?.birthDate) ?? 0,
+      gender: patientEntity.user?.gender ?? '',
+      dob: formatDob(patientEntity.user?.birthDate),
+      email: patientEntity.user?.email ?? '',
+      phone: patientEntity.user?.phone ?? '',
+      idNumber: patientEntity.idNumber,
+      hmo: patientEntity.hmo ?? '',
+      bloodType: patientEntity.bloodType,
+      address: patientEntity.address ?? '',
+      notes: patientEntity.notes,
+      overview: medicalSummary?.summaryText ?? patientEntity.notes ?? '',
       encounters,
       documents,
       clinicalAlerts,
-      createdAt: p.createdAt?.toISOString?.() ?? String(p.createdAt ?? ''),
-      updatedAt: p.updatedAt?.toISOString?.() ?? String(p.updatedAt ?? ''),
+      createdAt:
+        patientEntity.createdAt?.toISOString?.() ??
+        String(patientEntity.createdAt ?? ''),
+      updatedAt:
+        patientEntity.updatedAt?.toISOString?.() ??
+        String(patientEntity.updatedAt ?? ''),
     };
   }
 
-  async findAll(search?: string, actingUser?: any): Promise<PatientSummary[]> {
-    const trimmed = search?.trim();
+  async getAllPatients(
+    searchQuery?: string,
+    actingUser?: IUser,
+  ): Promise<PatientSummary[]> {
+    const trimmedSearchQuery = searchQuery?.trim();
     const clinicId = this.getActingClinicId(actingUser);
 
     const qb = this.patients
@@ -181,17 +191,19 @@ export class PatientsService {
       qb.andWhere('user.id != :actingUserId', { actingUserId: actingUser.id });
     }
 
-    if (trimmed) {
+    if (trimmedSearchQuery) {
       qb.andWhere('(user.fullName ILIKE :q OR user.email ILIKE :q)', {
-        q: `%${trimmed}%`,
+        q: `%${trimmedSearchQuery}%`,
       });
     }
 
-    const list = await qb.getMany();
-    return list.map((p) => this.toSummary(p));
+    const patientEntities = await qb.getMany();
+    return patientEntities.map((patientEntity) =>
+      this.mapPatientEntityToSummary(patientEntity),
+    );
   }
 
-  private getActingClinicId(actingUser?: any): string | undefined {
+  private getActingClinicId(actingUser?: IUser): string | undefined {
     if (!actingUser) return undefined;
     if (actingUser.role?.name !== ROLE_DOCTOR) return undefined;
     return actingUser.caregiver?.clinicId ?? undefined;
@@ -207,9 +219,9 @@ export class PatientsService {
     return !!membership;
   }
 
-  private async assertCanAccess(
+  private async assertActingUserCanAccessPatient(
     patientId: string,
-    actingUser?: any,
+    actingUser?: IUser,
   ): Promise<void> {
     if (!actingUser) return;
     if (actingUser.role?.name === ROLE_DOCTOR) {
@@ -234,11 +246,11 @@ export class PatientsService {
     );
   }
 
-  async assertCanAccessPatient(
+  async assertUserCanAccessPatient(
     patientId: string,
-    actingUser?: any,
+    actingUser?: IUser,
   ): Promise<void> {
-    await this.assertCanAccess(patientId, actingUser);
+    await this.assertActingUserCanAccessPatient(patientId, actingUser);
   }
 
   private async getSecretaryClinicId(userId: string): Promise<string> {
@@ -249,47 +261,64 @@ export class PatientsService {
     return secretary.clinicId;
   }
 
-  async findOne(id: string, actingUser?: any): Promise<Patient> {
-    await this.assertCanAccess(id, actingUser);
+  async getPatientById(
+    patientId: string,
+    actingUser?: IUser,
+  ): Promise<Patient> {
+    await this.assertActingUserCanAccessPatient(patientId, actingUser);
     const patient = await this.patients.findOne({
-      where: { id },
+      where: { id: patientId },
       relations: ['user'],
     });
-    if (!patient) throw new NotFoundException(`Patient ${id} not found`);
-    return this.toDetail(patient);
+    if (!patient) throw new NotFoundException(`Patient ${patientId} not found`);
+    return this.mapPatientEntityToDetail(patient);
   }
 
-  async create(input: CreatePatientInput, actingUser?: any): Promise<Patient> {
-    if (!input?.email || !input?.password || !input?.fullName) {
+  async createPatient(
+    createPatientInput: CreatePatientInput,
+    actingUser?: IUser,
+  ): Promise<Patient> {
+    if (
+      !createPatientInput?.email ||
+      !createPatientInput?.password ||
+      !createPatientInput?.fullName
+    ) {
       throw new BadRequestException(
         'fullName, email and password are required',
       );
     }
-    const email = input.email.toLowerCase();
-    const existing = await this.users.findOne({ where: { email } });
-    if (existing) throw new ConflictException('Email already in use');
+    const normalizedEmail = createPatientInput.email.toLowerCase();
+    const existingUserWithEmail = await this.users.findOne({
+      where: { email: normalizedEmail },
+    });
+    if (existingUserWithEmail) throw new ConflictException('Email already in use');
 
-    const role = await this.roles.getOrCreate('patient', 'Patient role');
+    const role = await this.roles.getOrCreateRoleByName(
+      'patient',
+      'Patient role',
+    );
 
     const newId = await this.dataSource.transaction(async (manager) => {
       const user = manager.getRepository(User).create({
         roleId: role.id,
-        fullName: input.fullName,
-        email,
-        password: hashPassword(input.password),
-        phone: input.phone,
-        birthDate: input.birthDate ? new Date(input.birthDate) : null,
-        gender: input.gender,
+        fullName: createPatientInput.fullName,
+        email: normalizedEmail,
+        password: hashPassword(createPatientInput.password),
+        phone: createPatientInput.phone,
+        birthDate: createPatientInput.birthDate
+          ? new Date(createPatientInput.birthDate)
+          : null,
+        gender: createPatientInput.gender,
       });
       const savedUser = await manager.getRepository(User).save(user);
 
       const patient = manager.getRepository(PatientEntity).create({
         userId: savedUser.id,
-        idNumber: input.idNumber,
-        hmo: input.hmo,
-        bloodType: input.bloodType,
-        address: input.address ?? '',
-        notes: input.notes,
+        idNumber: createPatientInput.idNumber,
+        hmo: createPatientInput.hmo,
+        bloodType: createPatientInput.bloodType,
+        address: createPatientInput.address ?? '',
+        notes: createPatientInput.notes,
       });
       const savedPatient = await manager
         .getRepository(PatientEntity)
@@ -308,10 +337,10 @@ export class PatientsService {
       return savedPatient.id;
     });
 
-    return this.findOne(newId, actingUser);
+    return this.getPatientById(newId, actingUser);
   }
 
-  async ensureForUser(
+  async ensurePatientProfileForUser(
     userId: string,
     manager?: EntityManager,
   ): Promise<PatientEntity> {
@@ -329,42 +358,52 @@ export class PatientsService {
     return patientRepo.save(patientRepo.create({ userId, address: '' }));
   }
 
-  async update(
-    id: string,
-    input: UpdatePatientInput,
-    actingUser?: any,
+  async updatePatientById(
+    patientId: string,
+    updatePatientInput: UpdatePatientInput,
+    actingUser?: IUser,
   ): Promise<Patient> {
-    await this.assertCanAccess(id, actingUser);
+    await this.assertActingUserCanAccessPatient(patientId, actingUser);
     const patient = await this.patients.findOne({
-      where: { id },
+      where: { id: patientId },
       relations: ['user'],
     });
-    if (!patient) throw new NotFoundException(`Patient ${id} not found`);
+    if (!patient) throw new NotFoundException(`Patient ${patientId} not found`);
 
     await this.dataSource.transaction(async (manager) => {
       const user = patient.user;
       if (user) {
-        if (input.fullName !== undefined) user.fullName = input.fullName;
-        if (input.email !== undefined) user.email = input.email.toLowerCase();
-        if (input.phone !== undefined) user.phone = input.phone;
-        if (input.gender !== undefined) user.gender = input.gender;
-        if (input.birthDate !== undefined)
-          user.birthDate = input.birthDate ? new Date(input.birthDate) : null;
+        if (updatePatientInput.fullName !== undefined)
+          user.fullName = updatePatientInput.fullName;
+        if (updatePatientInput.email !== undefined)
+          user.email = updatePatientInput.email.toLowerCase();
+        if (updatePatientInput.phone !== undefined)
+          user.phone = updatePatientInput.phone;
+        if (updatePatientInput.gender !== undefined)
+          user.gender = updatePatientInput.gender;
+        if (updatePatientInput.birthDate !== undefined)
+          user.birthDate = updatePatientInput.birthDate
+            ? new Date(updatePatientInput.birthDate)
+            : null;
         await manager.getRepository(User).save(user);
       }
-      if (input.hmo !== undefined) patient.hmo = input.hmo;
-      if (input.bloodType !== undefined) patient.bloodType = input.bloodType;
-      if (input.address !== undefined) patient.address = input.address;
-      if (input.notes !== undefined) patient.notes = input.notes;
+      if (updatePatientInput.hmo !== undefined)
+        patient.hmo = updatePatientInput.hmo;
+      if (updatePatientInput.bloodType !== undefined)
+        patient.bloodType = updatePatientInput.bloodType;
+      if (updatePatientInput.address !== undefined)
+        patient.address = updatePatientInput.address;
+      if (updatePatientInput.notes !== undefined)
+        patient.notes = updatePatientInput.notes;
       await manager.getRepository(PatientEntity).save(patient);
     });
 
-    return this.findOne(id, actingUser);
+    return this.getPatientById(patientId, actingUser);
   }
 
-  async remove(id: string): Promise<void> {
-    const patient = await this.patients.findOne({ where: { id } });
-    if (!patient) throw new NotFoundException(`Patient ${id} not found`);
+  async deletePatientById(patientId: string): Promise<void> {
+    const patient = await this.patients.findOne({ where: { id: patientId } });
+    if (!patient) throw new NotFoundException(`Patient ${patientId} not found`);
     await this.users.delete(patient.userId);
   }
 }

@@ -11,14 +11,14 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   VisitsService,
-  TranscribeResult,
-  SummarizeResult,
 } from './visits.service';
+import { SummarizeResult, TranscribeResult } from './types/visits.types';
+import {
+  MAX_AUDIO_BYTES,
+  MAX_SUMMARY_TEXT_CHARS,
+} from './constants/visits.constants';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ROLE_DOCTOR } from '../common/constants/roles';
-
-export const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
-const MAX_SUMMARY_TEXT_CHARS = 20_000;
 
 @Roles(ROLE_DOCTOR)
 @Controller('api/visits')
@@ -29,7 +29,7 @@ export class VisitsController {
   @UseInterceptors(
     FileInterceptor('audio', { limits: { fileSize: MAX_AUDIO_BYTES } }),
   )
-  async transcribe(
+  async transcribeVisitAudio(
     @UploadedFile() file: Express.Multer.File,
   ): Promise<TranscribeResult> {
     if (!file || !file.buffer) {
@@ -40,7 +40,7 @@ export class VisitsController {
     }
 
     try {
-      return await this.visitsService.transcribe(file.buffer);
+      return await this.visitsService.transcribeVisitAudio(file.buffer);
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;
@@ -50,7 +50,7 @@ export class VisitsController {
   }
 
   @Post('summarize')
-  async summarize(
+  async summarizeVisitText(
     @Body('text') text?: string,
   ): Promise<SummarizeResult> {
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
@@ -63,7 +63,7 @@ export class VisitsController {
     }
 
     try {
-      return await this.visitsService.summarizeText(text);
+      return await this.visitsService.summarizeVisitText(text);
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;

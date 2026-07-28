@@ -1,15 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SpeechService } from './speech.service';
-import { SummaryService, VisitSummaryObject } from './summary.service';
-
-export interface TranscribeResult {
-  transcript: string;
-  summary: VisitSummaryObject;
-}
-
-export interface SummarizeResult {
-  summary: VisitSummaryObject;
-}
+import { SummaryService } from './summary.service';
+import { SummarizeResult, TranscribeResult } from './types/visits.types';
 
 @Injectable()
 export class VisitsService {
@@ -18,14 +10,15 @@ export class VisitsService {
     private readonly summaryService: SummaryService,
   ) {}
 
-  async transcribe(audioBuffer: Buffer): Promise<TranscribeResult> {
-    const transcript = await this.speechService.transcribeAudio(audioBuffer);
-    const summary = await this.summaryService.summarize(transcript);
+  async transcribeVisitAudio(audioBuffer: Buffer): Promise<TranscribeResult> {
+    const transcript = await this.speechService.transcribeVisitAudio(audioBuffer);
+    const summary =
+      await this.summaryService.generateStructuredVisitSummary(transcript);
     return { transcript, summary };
   }
 
-  async summarizeText(text: string): Promise<SummarizeResult> {
-    const summary = await this.summaryService.summarize(text);
+  async summarizeVisitText(text: string): Promise<SummarizeResult> {
+    const summary = await this.summaryService.generateStructuredVisitSummary(text);
     return { summary };
   }
 }

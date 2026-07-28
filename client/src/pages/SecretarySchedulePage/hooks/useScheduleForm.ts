@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import {
   bookSlot,
   getAvailability,
@@ -34,41 +34,41 @@ export function useScheduleForm() {
     [caregiverId, date, reloadKey],
   );
 
-  const selectTherapist = useCallback((next: TherapistOption | null) => {
+  const selectTherapist = (next: TherapistOption | null) => {
     setTherapist(next);
     setTime('');
-  }, []);
+  };
 
-  const selectPatient = useCallback((next: BookablePatient | null) => {
+  const selectPatient = (next: BookablePatient | null) => {
     if (next && currentUser?.userId && next.userId === currentUser.userId) {
       setError('לא ניתן לקבוע תור עבור עצמך');
       return;
     }
     setError(null);
     setPatient(next);
-  }, [currentUser?.userId]);
+  };
 
-  const selectDate = useCallback((next: string) => {
+  const selectDate = (next: string) => {
     if (next && next < todayISO()) {
       setError('לא ניתן לקבוע תור לתאריך שכבר עבר');
       return;
     }
     setDate(next);
     setTime('');
-  }, []);
+  };
 
-  const resetForm = useCallback(() => {
+  const resetForm = () => {
     setTherapist(null);
     setPatient(null);
     setDate('');
     setTime('');
     setHasReferral(false);
     setError(null);
-  }, []);
+  };
 
   const canSubmit = Boolean(caregiverId && patient && date && time) && !submitting;
 
-  const submit = useCallback(async () => {
+  const submit = async () => {
     setError(null);
     if (!caregiverId || !patient || !therapist || !date || !time) {
       setError('יש לבחור מטפל, מטופל, תאריך ושעה');
@@ -98,12 +98,12 @@ export function useScheduleForm() {
     } finally {
       setSubmitting(false);
     }
-  }, [caregiverId, patient, therapist, date, time, hasReferral, currentUser?.userId]);
+  };
 
-  const dismissSuccess = useCallback(() => {
+  const dismissSuccess = () => {
     setSuccessDialog(null);
     resetForm();
-  }, [resetForm]);
+  };
 
   return {
     therapist,

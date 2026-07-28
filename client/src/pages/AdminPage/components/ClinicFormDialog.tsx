@@ -4,6 +4,12 @@ import {
   Button, TextField, Stack, Typography,
 } from '@mui/material';
 import { Clinic, ClinicInput } from '../../../api/clinics';
+import {
+  clinicDialogActionsSx,
+  clinicDialogErrorSx,
+  clinicDialogStackSx,
+  clinicDialogTitleSx,
+} from './ClinicFormDialog.styles';
 
 interface Props {
   open: boolean;
@@ -49,11 +55,11 @@ const ClinicFormDialog: React.FC<Props> = ({ open, clinic, onClose, onSave }) =>
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle sx={{ fontWeight: 700 }}>
+      <DialogTitle sx={clinicDialogTitleSx}>
         {clinic ? 'עריכת מרפאה' : 'מרפאה חדשה'}
       </DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ mt: 1 }}>
+        <Stack spacing={2} sx={clinicDialogStackSx}>
           <TextField
             label="שם מרפאה"
             value={name}
@@ -72,11 +78,11 @@ const ClinicFormDialog: React.FC<Props> = ({ open, clinic, onClose, onSave }) =>
             size="small"
           />
           {apiError && (
-            <Typography sx={{ fontSize: 12, color: 'error.main' }}>{apiError}</Typography>
+            <Typography sx={clinicDialogErrorSx}>{apiError}</Typography>
           )}
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions sx={clinicDialogActionsSx}>
         <Button onClick={onClose} disabled={saving}>ביטול</Button>
         <Button variant="contained" onClick={handleSave} disabled={saving}>
           {saving ? 'שומר...' : 'שמור'}

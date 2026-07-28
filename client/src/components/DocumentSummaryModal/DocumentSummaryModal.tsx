@@ -12,7 +12,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
 import DescriptionIcon from "@mui/icons-material/Description";
 import { getDocumentSummary, downloadDocument } from "../../api/documents";
-import MedicalSummary from "../MedicalSummary";
+import MedicalSummary from '../MedicalSummary/MedicalSummary';
 
 export interface IDocumentSummaryModalProps {
   docId: string;

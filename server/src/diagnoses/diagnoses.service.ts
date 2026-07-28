@@ -6,58 +6,77 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Diagnosis } from '../entities/diagnosis/diagnosisEntity';
-
-export interface DiagnosisInput {
-  code: string;
-  description: string;
-}
+import { Diagnosis } from './entities/diagnosisEntity';
+import { DiagnosisInput } from './types/diagnosis.types';
 
 @Injectable()
 export class DiagnosesService {
   constructor(
-    @InjectRepository(Diagnosis) private readonly repo: Repository<Diagnosis>,
+    @InjectRepository(Diagnosis)
+    private readonly diagnosisRepository: Repository<Diagnosis>,
   ) {}
 
-  findAll(search?: string): Promise<Diagnosis[]> {
-    const qb = this.repo.createQueryBuilder('d');
-    if (search?.trim()) {
-      qb.where('d.code ILIKE :q OR d.description ILIKE :q', {
-        q: `%${search.trim()}%`,
+  getAllDiagnoses(searchQuery?: string): Promise<Diagnosis[]> {
+    const diagnosesQueryBuilder = this.diagnosisRepository.createQueryBuilder('d');
+    if (searchQuery?.trim()) {
+      diagnosesQueryBuilder.where('d.code ILIKE :q OR d.description ILIKE :q', {
+        q: `%${searchQuery.trim()}%`,
       });
     }
-    return qb.orderBy('d.code', 'ASC').getMany();
+    return diagnosesQueryBuilder.orderBy('d.code', 'ASC').getMany();
   }
 
-  async findOne(id: string): Promise<Diagnosis> {
-    const item = await this.repo.findOne({ where: { id } });
-    if (!item) throw new NotFoundException(`Diagnosis ${id} not found`);
-    return item;
+  async getDiagnosisById(diagnosisId: string): Promise<Diagnosis> {
+    const diagnosis = await this.diagnosisRepository.findOne({
+      where: { id: diagnosisId },
+    });
+    if (!diagnosis)
+      throw new NotFoundException(`Diagnosis ${diagnosisId} not found`);
+    return diagnosis;
   }
 
-  async getOrCreateByCode(code: string, description = ''): Promise<Diagnosis> {
-    const existing = await this.repo.findOne({ where: { code } });
-    if (existing) return existing;
-    return this.repo.save(this.repo.create({ code, description }));
+  async getOrCreateDiagnosisByCode(
+    diagnosisCode: string,
+    diagnosisDescription = '',
+  ): Promise<Diagnosis> {
+    const existingDiagnosis = await this.diagnosisRepository.findOne({
+      where: { code: diagnosisCode },
+    });
+    if (existingDiagnosis) return existingDiagnosis;
+    return this.diagnosisRepository.save(
+      this.diagnosisRepository.create({
+        code: diagnosisCode,
+        description: diagnosisDescription,
+      }),
+    );
   }
 
-  async create(input: DiagnosisInput): Promise<Diagnosis> {
-    if (!input?.code || !input?.description) {
+  async createDiagnosis(diagnosisInput: DiagnosisInput): Promise<Diagnosis> {
+    if (!diagnosisInput?.code || !diagnosisInput?.description) {
       throw new BadRequestException('code and description are required');
     }
-    const dup = await this.repo.findOne({ where: { code: input.code } });
-    if (dup) throw new ConflictException(`Diagnosis code '${input.code}' exists`);
-    return this.repo.save(this.repo.create(input));
+    const existingDiagnosisWithCode = await this.diagnosisRepository.findOne({
+      where: { code: diagnosisInput.code },
+    });
+    if (existingDiagnosisWithCode)
+      throw new ConflictException(`Diagnosis code '${diagnosisInput.code}' exists`);
+    return this.diagnosisRepository.save(
+      this.diagnosisRepository.create(diagnosisInput),
+    );
   }
 
-  async update(id: string, input: Partial<DiagnosisInput>): Promise<Diagnosis> {
-    const item = await this.findOne(id);
-    Object.assign(item, input);
-    return this.repo.save(item);
+  async updateDiagnosisById(
+    diagnosisId: string,
+    diagnosisUpdates: Partial<DiagnosisInput>,
+  ): Promise<Diagnosis> {
+    const diagnosis = await this.getDiagnosisById(diagnosisId);
+    Object.assign(diagnosis, diagnosisUpdates);
+    return this.diagnosisRepository.save(diagnosis);
   }
 
-  async remove(id: string): Promise<void> {
-    const result = await this.repo.delete(id);
-    if (!result.affected) throw new NotFoundException(`Diagnosis ${id} not found`);
+  async deleteDiagnosisById(diagnosisId: string): Promise<void> {
+    const result = await this.diagnosisRepository.delete(diagnosisId);
+    if (!result.affected)
+      throw new NotFoundException(`Diagnosis ${diagnosisId} not found`);
   }
 }

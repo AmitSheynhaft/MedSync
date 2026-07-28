@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -16,58 +17,58 @@ import {
   UsersService,
 } from './users.service';
 import { User } from '../common/decorators/user.decorator';
-import { IUser } from '../entities';
+import { IUser } from '../common/types/entity-interfaces';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ROLE_DOCTOR } from '../common/constants/roles';
 
 @Controller('api/users')
 export class UsersController {
-  constructor(private readonly service: UsersService) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Get('me')
-  findMe(@User() user: IUser) {
-    return this.service.findOne(user.id);
+  getCurrentUser(@User() user: IUser) {
+    return this.usersService.getUserById(user.id);
   }
 
   @Patch('me')
-  updateMe(@User() user: IUser, @Body() body: UpdateUserInput) {
+  updateCurrentUser(@User() user: IUser, @Body() userUpdates: UpdateUserInput) {
     // Strip roleId to prevent self-elevation (C1)
-    const { roleId: _stripped, ...safeBody } = body;
-    return this.service.update(user.id, safeBody);
+    const { roleId: _stripped, ...safeUserUpdates } = userUpdates;
+    return this.usersService.updateUserById(user.id, safeUserUpdates);
   }
 
   @Roles(ROLE_DOCTOR)
   @Get()
-  findAll(@Query('role') role?: string) {
-    return this.service.findAll(role);
+  getAllUsers(@Query('role') roleName?: string) {
+    return this.usersService.getAllUsers(roleName);
   }
 
   @Roles(ROLE_DOCTOR)
   @Get(':id')
-  findOne(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.service.findOne(id);
+  getUserById(@Param('id', new ParseUUIDPipe()) userId: string) {
+    return this.usersService.getUserById(userId);
   }
 
   @Roles(ROLE_DOCTOR)
   @Post()
-  async create(@Body() body: CreateUserInput) {
-    const user = await this.service.create(body);
-    return this.service.findOne(user.id);
+  async createUser(@Body() createUserInput: CreateUserInput) {
+    const createdUser = await this.usersService.createUser(createUserInput);
+    return this.usersService.getUserById(createdUser.id);
   }
 
   @Roles(ROLE_DOCTOR)
   @Patch(':id')
-  update(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: UpdateUserInput,
+  updateUserById(
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    @Body() userUpdates: UpdateUserInput,
   ) {
-    return this.service.update(id, body);
+    return this.usersService.updateUserById(userId, userUpdates);
   }
 
   @Roles(ROLE_DOCTOR)
   @Delete(':id')
-  @HttpCode(204)
-  remove(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.service.remove(id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteUserById(@Param('id', new ParseUUIDPipe()) userId: string) {
+    return this.usersService.deleteUserById(userId);
   }
 }
