@@ -29,10 +29,23 @@ import {
   rootSx,
 } from './AppLayout.styles';
 
+const clearButtonFocus = (event: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
+  event.currentTarget.blur();
+};
+
 const NavItem: React.FC<{ to: string; title: string; icon: React.ReactNode }> = ({ to, title, icon }) => {
   return (
     <Tooltip title={title} placement="left">
-      <IconButton component={NavLink} to={to} sx={navItemSx}>
+      <IconButton
+        component={NavLink}
+        to={to}
+        sx={navItemSx}
+        disableRipple
+        disableFocusRipple
+        disableTouchRipple
+        onMouseUp={clearButtonFocus}
+        onTouchEnd={clearButtonFocus}
+      >
         {icon}
       </IconButton>
     </Tooltip>
@@ -89,7 +102,15 @@ export const AppLayout: React.FC = () => {
 
         <Box sx={utilityGroupSx}>
           <Tooltip title="מדריך המערכת" placement="left">
-            <IconButton onClick={() => setShowWelcomeSystemInfo(true)} sx={navItemSx}>
+            <IconButton
+              onClick={() => setShowWelcomeSystemInfo(true)}
+              sx={navItemSx}
+              disableRipple
+              disableFocusRipple
+              disableTouchRipple
+              onMouseUp={clearButtonFocus}
+              onTouchEnd={clearButtonFocus}
+            >
               <HelpOutlineIcon fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -97,6 +118,11 @@ export const AppLayout: React.FC = () => {
             <IconButton
               onClick={() => { logout().catch(() => {}).finally(() => { resetSessionVerification(); navigate('/login'); }); }}
               sx={[logoutButtonSx, { display: { xs: (isDoctor || isSecretary) ? 'inline-flex' : 'none', md: 'inline-flex' } }] as SxProps<Theme>}
+              disableRipple
+              disableFocusRipple
+              disableTouchRipple
+              onMouseUp={clearButtonFocus}
+              onTouchEnd={clearButtonFocus}
             >
               <LogoutIcon fontSize="small" />
             </IconButton>
