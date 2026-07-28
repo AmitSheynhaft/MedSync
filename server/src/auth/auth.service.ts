@@ -139,7 +139,7 @@ export class AuthService {
       if (existingPatient) throw new BadRequestException('ID number already in use');
     }
 
-    const role = await this.roles.getOrCreate(
+    const role = await this.roles.getOrCreateRoleByName(
       input.role === 'patient' ? input.role : 'patient',
       'Patient role',
     );
@@ -208,7 +208,7 @@ export class AuthService {
     const existing = await this.users.findOne({ where: { email } });
     if (existing) throw new BadRequestException('Email already in use');
 
-    const role = await this.roles.getOrCreate(
+    const role = await this.roles.getOrCreateRoleByName(
       input.role === 'doctor' ? input.role : 'doctor',
       'Doctor role',
     );
@@ -277,7 +277,10 @@ export class AuthService {
     });
     if (existingSecretary) throw new BadRequestException('תעודת זהות כבר קיימת במערכת');
 
-    const role = await this.roles.getOrCreate(ROLE_SECRETARY, 'Secretary role');
+    const role = await this.roles.getOrCreateRoleByName(
+      ROLE_SECRETARY,
+      'Secretary role',
+    );
 
     return this.dataSource.transaction(async (manager) => {
       const user = manager.getRepository(User).create({
@@ -326,7 +329,10 @@ export class AuthService {
     const existing = await this.users.findOne({ where: { email } });
     if (existing) throw new BadRequestException('Email already in use');
 
-    const role = await this.roles.getOrCreate(ROLE_ADMIN, 'Admin role');
+    const role = await this.roles.getOrCreateRoleByName(
+      ROLE_ADMIN,
+      'Admin role',
+    );
 
     const user = this.users.create({
       roleId: role.id,

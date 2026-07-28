@@ -122,7 +122,7 @@ export class UsersService {
     const saved = await this.repo.save(user);
 
     // Auto-create the role-specific profile so role-gated features work immediately.
-    const roleName = (await this.roles.findOne(roleId)).name;
+    const roleName = (await this.roles.getRoleById(roleId)).name;
     if (roleName === ROLE_PATIENT) {
       await this.patients.save(this.patients.create({ userId: saved.id }));
     } else if (roleName === ROLE_SECRETARY) {
@@ -144,11 +144,11 @@ export class UsersService {
 
   private async resolveRoleId(input: CreateUserInput): Promise<string> {
     if (input.roleId) {
-      const role = await this.roles.findOne(input.roleId);
+      const role = await this.roles.getRoleById(input.roleId);
       return role.id;
     }
     const name = input.roleName?.trim() || 'patient';
-    const role = await this.roles.getOrCreate(name);
+    const role = await this.roles.getOrCreateRoleByName(name);
     return role.id;
   }
 

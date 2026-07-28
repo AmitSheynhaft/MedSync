@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -13,34 +14,34 @@ import { RoleInput, RolesService } from './roles.service';
 
 @Controller('api/roles')
 export class RolesController {
-  constructor(private readonly service: RolesService) {}
+  constructor(private readonly rolesService: RolesService) {}
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  getAllRoles() {
+    return this.rolesService.getAllRoles();
   }
 
   @Get(':id')
-  findOne(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.service.findOne(id);
+  getRoleById(@Param('id', new ParseUUIDPipe()) roleId: string) {
+    return this.rolesService.getRoleById(roleId);
   }
 
   @Post()
-  create(@Body() body: RoleInput) {
-    return this.service.create(body);
+  createRole(@Body() roleInput: RoleInput) {
+    return this.rolesService.createRole(roleInput);
   }
 
   @Patch(':id')
-  update(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: Partial<RoleInput>,
+  updateRoleById(
+    @Param('id', new ParseUUIDPipe()) roleId: string,
+    @Body() roleUpdates: Partial<RoleInput>,
   ) {
-    return this.service.update(id, body);
+    return this.rolesService.updateRoleById(roleId, roleUpdates);
   }
 
   @Delete(':id')
-  @HttpCode(204)
-  remove(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.service.remove(id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteRoleById(@Param('id', new ParseUUIDPipe()) roleId: string) {
+    return this.rolesService.deleteRoleById(roleId);
   }
 }

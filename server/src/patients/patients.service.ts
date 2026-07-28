@@ -289,7 +289,10 @@ export class PatientsService {
     });
     if (existingUserWithEmail) throw new ConflictException('Email already in use');
 
-    const role = await this.roles.getOrCreate('patient', 'Patient role');
+    const role = await this.roles.getOrCreateRoleByName(
+      'patient',
+      'Patient role',
+    );
 
     const newId = await this.dataSource.transaction(async (manager) => {
       const user = manager.getRepository(User).create({
