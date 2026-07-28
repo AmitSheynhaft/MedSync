@@ -725,7 +725,9 @@ export class VisitRecordsService {
       if (!input.medicineName) {
         throw new BadRequestException('medicineId or medicineName is required');
       }
-      const med = await this.medicinesService.getOrCreateByName(input.medicineName);
+      const med = await this.medicinesService.getOrCreateMedicineByName(
+        input.medicineName,
+      );
       medicineId = med.id;
     }
     const existing = await this.visitMedicines.findOne({
