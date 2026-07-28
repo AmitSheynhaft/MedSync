@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Box, Typography } from '@mui/material';
 
 interface MedicalSummaryProps {
@@ -194,7 +194,7 @@ const ItemView: React.FC<{ item: Item }> = ({ item }) => (
 );
 
 export const MedicalSummary: React.FC<MedicalSummaryProps> = ({ text }) => {
-  const blocks = useMemo(() => parseSummary(text), [text]);
+  const blocks = parseSummary(text);
 
   if (blocks.length === 0) {
     return (

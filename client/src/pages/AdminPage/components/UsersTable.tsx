@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Table, TableBody, TableCell, TableHead, TableRow, TablePagination,
   IconButton, Chip, Typography, Tooltip, Box,
@@ -14,6 +14,7 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { User, UpdateUserInput, CreateUserInput } from '../../../api/users';
 import { TablePaper } from '../styled';
 import UserFormDialog from './UserFormDialog';
+import { GENDER_LABELS, ROLE_CHIP, ROLE_LABELS } from './adminUser.constants';
 
 interface Props {
   users: User[];
@@ -23,19 +24,6 @@ interface Props {
   onUpdate: (id: string, input: UpdateUserInput) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }
-
-const ROLE_CHIP: Record<string, { bg: string; fg: string }> = {
-  admin:     { bg: '#fff0f0', fg: '#fa5252' },
-  doctor:    { bg: '#f3f0ff', fg: '#7048e8' },
-  secretary: { bg: '#e7f5ff', fg: '#3b5bdb' },
-  patient:   { bg: '#ebfbee', fg: '#40c057' },
-};
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'אדמין', doctor: 'רופא', patient: 'מטופל', secretary: 'מזכירה',
-};
-const GENDER_LABELS: Record<string, string> = {
-  male: 'זכר', female: 'נקבה', MALE: 'זכר', FEMALE: 'נקבה',
-};
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
@@ -48,18 +36,16 @@ const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate
   const [page, setPage]         = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return users.filter((u) => {
-      const matchesSearch =
-        !q ||
-        u.fullName.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        (u.phone ?? '').includes(q);
-      const matchesRole = roleFilter.length === 0 || roleFilter.includes(u.role?.name ?? '');
-      return matchesSearch && matchesRole;
-    });
-  }, [users, search, roleFilter]);
+  const q = search.trim().toLowerCase();
+  const filtered = users.filter((u) => {
+    const matchesSearch =
+      !q ||
+      u.fullName.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      (u.phone ?? '').includes(q);
+    const matchesRole = roleFilter.length === 0 || roleFilter.includes(u.role?.name ?? '');
+    return matchesSearch && matchesRole;
+  });
 
   const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
@@ -115,7 +101,7 @@ const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate
             <InputLabel>תפקיד</InputLabel>
             <Select
               multiple
-              value={roleFilter as any}
+              value={roleFilter}
               onChange={(e) => handleRoleChange(e.target.value as string[])}
               input={<OutlinedInput label="תפקיד" />}
               renderValue={(selected) => {

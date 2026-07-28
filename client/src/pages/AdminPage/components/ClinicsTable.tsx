@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Table, TableBody, TableCell, TableHead, TableRow, TablePagination,
   IconButton, Typography, Tooltip, Box,
@@ -31,13 +31,12 @@ const ClinicsTable: React.FC<Props> = ({ clinics, onCreate, onUpdate, onDelete }
   const [page, setPage]       = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return clinics;
-    return clinics.filter(
-      (c) => c.name.toLowerCase().includes(q) || (c.address ?? '').toLowerCase().includes(q),
-    );
-  }, [clinics, search]);
+  const q = search.trim().toLowerCase();
+  const filtered = !q
+    ? clinics
+    : clinics.filter(
+        (c) => c.name.toLowerCase().includes(q) || (c.address ?? '').toLowerCase().includes(q),
+      );
 
   const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 

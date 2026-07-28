@@ -3,17 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { logout } from '../../../api/authApi';
 import { loadUserDataSession, saveUserDataSession } from '../../../auth/userDataSessionStore';
 import { resetSessionVerification } from '../../../auth/verifySession';
-import { getMe, updateMe, User } from '../../../api/users';
-import { getCaregiver } from '../../../api/caregivers';
-import { getPatientById, updatePatient } from '../../../api/patients';
-import { getClinics } from '../../../api/clinics';
+import { updateMe, User } from '../../../api/users';
+import { updatePatient } from '../../../api/patients';
+import { getEffectiveRole } from '../../../auth/viewAs';
+import { Role } from '../../../constants/roles';
 import { useToast } from '../../../hooks/useToast';
 import { toDateInput } from '../utils';
+import { loadProfileBootstrapData } from './useProfileBootstrap';
 
 export function useProfile() {
   const navigate = useNavigate();
   const userDataSession = loadUserDataSession();
-  const role = (userDataSession?.role as 'patient' | 'doctor' | undefined) ?? 'patient';
+  const effectiveRole = getEffectiveRole();
+  const role = effectiveRole ?? userDataSession?.role ?? Role.Patient;
   const isPatient = !!userDataSession?.patientId;
 
   const [user, setUser] = useState<User | null>(null);
@@ -31,47 +33,25 @@ export function useProfile() {
   useEffect(() => {
     if (loadedRef.current) return;
     loadedRef.current = true;
+    if (!userDataSession) return;
 
-    if (userDataSession) {
-      getMe()
-        .then(u => {
-          setUser(u);
-          setPhone(u.phone ?? '');
-          setBirthDate(toDateInput(u.birthDate));
-        })
-        .catch(() => setUser(null));
-    }
+    let active = true;
+    loadProfileBootstrapData(userDataSession).then(data => {
+      if (!active) return;
 
-    if (userDataSession?.role === 'doctor' && userDataSession?.caregiverId) {
-      getCaregiver(userDataSession.caregiverId)
-        .then(c => setIdNumber(c.licenseNumber ?? ''))
-        .catch(() => setIdNumber(''));
-    } else {
-      setIdNumber('');
-    }
+      setUser(data.user);
+      setPhone(data.user?.phone ?? '');
+      setBirthDate(toDateInput(data.user?.birthDate));
+      setIdNumber(data.idNumber);
+      setClinicName(data.clinicName);
+      setHmo(data.hmo);
+      setAddress(data.address);
+    });
 
-    if (userDataSession?.role === 'doctor' && userDataSession?.clinicId) {
-      getClinics()
-        .then(clinics => {
-          const match = clinics.find(c => c.id === userDataSession.clinicId);
-          setClinicName(match?.name ?? '');
-        })
-        .catch(() => setClinicName(''));
-    }
-
-    if (userDataSession?.patientId) {
-      getPatientById(userDataSession.patientId)
-        .then(p => {
-          setHmo(p.hmo ?? '');
-          setAddress(p.address ?? '');
-        })
-        .catch(() => {
-          setHmo('');
-          setAddress('');
-        });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [userDataSession]);
 
   const handleEdit = () => {
     setPhone(user?.phone ?? '');

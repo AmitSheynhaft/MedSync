@@ -8,6 +8,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import EditIcon from '@mui/icons-material/Edit';
+import { Role } from '../../../constants/roles';
 import { ProfileRow } from './ProfileRow';
 import { formatDob } from '../utils';
 import type { useProfile } from '../hooks/useProfile';
@@ -73,12 +74,12 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ profile,
               <Divider sx={{ my: 1.5 }} />
               <ProfileRow
                 icon={<BadgeIcon fontSize="small" />}
-                label={role === 'doctor' ? 'מספר רישיון' : 'תעודת זהות'}
+                label={role === Role.Doctor ? 'מספר רישיון' : 'תעודת זהות'}
                 value={idNumber}
               />
             </>
           )}
-          {role === 'doctor' && (
+          {role === Role.Doctor && (
             <>
               <Divider sx={{ my: 1.5 }} />
               <ProfileRow icon={<MeetingRoomIcon fontSize="small" />} label="מרפאה" value={clinicName || '—'} />

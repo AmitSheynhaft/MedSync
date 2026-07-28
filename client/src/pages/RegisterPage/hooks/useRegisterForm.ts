@@ -5,15 +5,16 @@ import { getClinics, type Clinic } from '../../../api/clinics';
 import { saveUserDataSession } from '../../../auth/userDataSessionStore';
 import { markWelcomePending } from '../../../components/SystemInfoModal/welcomeFlag';
 import { homeForRole } from '../../../auth/viewAs';
+import { Role } from '../../../constants/roles';
 import type { RegisterRole } from '../types';
 
 export function useRegisterForm(role: RegisterRole) {
   const navigate = useNavigate();
 
-  const isDoctor = role === 'doctor';
-  const isSecretary = role === 'secretary';
-  const isPatient = role === 'patient';
-  const isAdmin = role === 'admin';
+  const isDoctor = role === Role.Doctor;
+  const isSecretary = role === Role.Secretary;
+  const isPatient = role === Role.Patient;
+  const isAdmin = role === Role.Admin;
 
   const [step, setStep] = useState(0);
   const [agreed, setAgreed] = useState(false);
@@ -88,12 +89,12 @@ export function useRegisterForm(role: RegisterRole) {
     setSubmitting(true);
     try {
       const result = isAdmin
-        ? await registerAdmin({ role: 'admin', fullName, email, password, phone: phone || undefined })
+        ? await registerAdmin({ role: Role.Admin, fullName, email, password, phone: phone || undefined })
         : isSecretary
-        ? await registerSecretary({ role: 'secretary', fullName, email, password, idNumber: idOrLicense.trim(), clinicId, phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined })
+        ? await registerSecretary({ role: Role.Secretary, fullName, email, password, idNumber: idOrLicense.trim(), clinicId, phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined })
         : isDoctor
-        ? await registerDoctor({ role: 'doctor', fullName, email, password, licenseNumber: idOrLicense || 'TBD', specialization: specialization || 'General', phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined, clinicId: clinicId || undefined })
-        : await registerPatient({ role: 'patient', fullName, email, password, idNumber: idOrLicense || undefined, address: address || '', hmo: hmo || undefined, phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined, clinicId: clinicId || undefined });
+        ? await registerDoctor({ role: Role.Doctor, fullName, email, password, licenseNumber: idOrLicense || 'TBD', specialization: specialization || 'General', phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined, clinicId: clinicId || undefined })
+        : await registerPatient({ role: Role.Patient, fullName, email, password, idNumber: idOrLicense || undefined, address: address || '', hmo: hmo || undefined, phone: phone || undefined, birthDate: birthDate || undefined, gender: gender || undefined, clinicId: clinicId || undefined });
       saveUserDataSession(result);
       markWelcomePending();
       navigate(homeForRole(result.role));

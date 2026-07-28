@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { loadUserDataSession } from '../../../auth/userDataSessionStore';
 import { getPatientById, Patient } from '../../../api/patients';
@@ -116,15 +116,13 @@ export function useDocumentsPage() {
   const patientName = patient ? `${patient.firstName} ${patient.lastName}` : 'מטופל';
   const pageTitle = isDoctorView ? `מסמכים — ${patientName}` : 'המסמכים הרפואיים שלי';
 
-  const filteredDocuments = useMemo(() => {
-    const searchTerm = query.trim().toLowerCase();
-    return (documents ?? []).filter(doc => {
-      if (filter !== 'all' && doc.documentType !== filter) return false;
-      if (!searchTerm) return true;
-      const typeLabel = doc.documentType ? DOC_TYPE_LABELS[doc.documentType] : '';
-      return doc.fileName.toLowerCase().includes(searchTerm) || typeLabel.toLowerCase().includes(searchTerm);
-    });
-  }, [documents, filter, query]);
+  const searchTerm = query.trim().toLowerCase();
+  const filteredDocuments = (documents ?? []).filter(doc => {
+    if (filter !== 'all' && doc.documentType !== filter) return false;
+    if (!searchTerm) return true;
+    const typeLabel = doc.documentType ? DOC_TYPE_LABELS[doc.documentType] : '';
+    return doc.fileName.toLowerCase().includes(searchTerm) || typeLabel.toLowerCase().includes(searchTerm);
+  });
 
   return {
     navigate, id, isDoctorView, patientId,

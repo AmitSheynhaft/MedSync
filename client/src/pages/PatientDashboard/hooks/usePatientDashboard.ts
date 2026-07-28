@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { loadUserDataSession } from "../../../auth/userDataSessionStore";
 import { uploadDocument } from "../../../api/documents";
 import { DocumentTypeEnum } from "../../../api/medical-documents";
@@ -66,7 +66,7 @@ export function usePatientDashboard() {
     };
   }, [patientId]);
 
-  const refreshDocuments = useCallback(async () => {
+  const refreshDocuments = async () => {
     if (!patientId) return;
     try {
       const p = await getPatientById(patientId);
@@ -74,38 +74,35 @@ export function usePatientDashboard() {
     } catch {
       /* ignore — list will refresh on next successful load */
     }
-  }, [patientId]);
+  };
 
-  const uploadFile = useCallback(
-    async (file: File, documentType?: DocumentTypeEnum) => {
-      setUploading(true);
-      const placeholder: PendingDoc = {
-        id: `pending-${Date.now()}`,
-        name: file.name,
-        date: null,
-        status: "processing",
-        kind: docKind(file.name),
-      };
-      setDocuments((prev) => [placeholder, ...prev]);
-      try {
-        await uploadDocument(file, patientId, documentType);
-        setToast({
-          severity: "success",
-          message: `"${file.name}" uploaded successfully.`,
-        });
-        await refreshDocuments();
-      } catch {
-        setDocuments((prev) => prev.filter((d) => d.id !== placeholder.id));
-        setToast({
-          severity: "error",
-          message: `Failed to upload "${file.name}". Please try again.`,
-        });
-      } finally {
-        setUploading(false);
-      }
-    },
-    [patientId, refreshDocuments],
-  );
+  const uploadFile = async (file: File, documentType?: DocumentTypeEnum) => {
+    setUploading(true);
+    const placeholder: PendingDoc = {
+      id: `pending-${Date.now()}`,
+      name: file.name,
+      date: null,
+      status: "processing",
+      kind: docKind(file.name),
+    };
+    setDocuments((prev) => [placeholder, ...prev]);
+    try {
+      await uploadDocument(file, patientId, documentType);
+      setToast({
+        severity: "success",
+        message: `"${file.name}" uploaded successfully.`,
+      });
+      await refreshDocuments();
+    } catch {
+      setDocuments((prev) => prev.filter((d) => d.id !== placeholder.id));
+      setToast({
+        severity: "error",
+        message: `Failed to upload "${file.name}". Please try again.`,
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return {
     patientId,

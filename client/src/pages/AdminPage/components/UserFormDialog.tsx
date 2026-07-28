@@ -5,6 +5,15 @@ import {
 } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { User, UpdateUserInput, CreateUserInput } from '../../../api/users';
+import { ROLE_LABELS } from './adminUser.constants';
+import {
+  GENDER_OPTIONS,
+  isValidDate,
+  isValidEmail,
+  isValidPassword,
+  isValidPhone,
+  UserFormErrors,
+} from './userForm.validation';
 
 interface EditProps {
   mode: 'edit';
@@ -24,28 +33,7 @@ interface CreateProps {
 }
 
 type Props = (EditProps | CreateProps) & { open: boolean };
-
-const GENDER_OPTIONS = [
-  { value: 'male',   label: 'זכר' },
-  { value: 'female', label: 'נקבה' },
-];
-
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'אדמין', doctor: 'רופא', patient: 'מטופל', secretary: 'מזכירה',
-};
-
-/* ── Validators ──────────────────────────────────────────── */
-const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
-const isValidPhone = (v: string) => /^0[0-9]{1,2}[-\s]?[0-9]{3}[-\s]?[0-9]{4}$/.test(v.trim());
-const isValidPassword = (v: string) =>
-  v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v);
-const isValidDate = (v: string) => {
-  if (!v) return true;
-  const d = new Date(v);
-  return !isNaN(d.getTime()) && d.getFullYear() >= 1900 && d < new Date();
-};
-
-type Errors = Partial<Record<'fullName' | 'email' | 'password' | 'phone' | 'birthDate', string>>;
+type DateInputElement = HTMLInputElement & { showPicker?: () => void };
 
 const UserFormDialog: React.FC<Props> = (props) => {
   const { open, mode, roles, clinics, onClose } = props;
@@ -60,10 +48,10 @@ const UserFormDialog: React.FC<Props> = (props) => {
   const [birthDate,  setBirthDate]  = useState(user?.birthDate?.slice(0, 10) ?? '');
   const [roleId,     setRoleId]     = useState('');
   const [clinicId,   setClinicId]   = useState('');
-  const [errors,     setErrors]     = useState<Errors>({});
+  const [errors,     setErrors]     = useState<UserFormErrors>({});
   const [saving,     setSaving]     = useState(false);
   const [saveError,  setSaveError]  = useState<string | null>(null);
-  const birthDateRef = useRef<HTMLInputElement>(null);
+  const birthDateRef = useRef<DateInputElement | null>(null);
   useEffect(() => {
     if (!open) return;
     setFullName(user?.fullName ?? '');
@@ -79,8 +67,8 @@ const UserFormDialog: React.FC<Props> = (props) => {
     setClinicId('');
   }, [open, user, roles]);
 
-  const validate = (): Errors => {
-    const e: Errors = {};
+  const validate = (): UserFormErrors => {
+    const e: UserFormErrors = {};
     if (!fullName.trim() || fullName.trim().length < 2)
       e.fullName = 'שם חייב להכיל לפחות 2 תווים';
     if (!email.trim())
@@ -218,7 +206,7 @@ const UserFormDialog: React.FC<Props> = (props) => {
                     <IconButton
                       size="small"
                       edge="end"
-                      onClick={() => (birthDateRef.current as any)?.showPicker?.()}
+                      onClick={() => birthDateRef.current?.showPicker?.()}
                       sx={{ color: birthDate ? '#3b5bdb' : '#adb5bd', p: 0.5 }}
                     >
                       <CalendarTodayIcon sx={{ fontSize: 16 }} />

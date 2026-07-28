@@ -3,6 +3,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import { Role } from '../../constants/roles';
+import { parseRegisterRole, type RegisterRole } from './types';
 
 export interface RegisterRoleConfig {
   label: string;
@@ -12,29 +14,29 @@ export interface RegisterRoleConfig {
   subtitle: string;
 }
 
-export const roleConfig: Record<'patient' | 'doctor' | 'secretary' | 'admin', RegisterRoleConfig> = {
-  patient: {
+export const roleConfig: Record<RegisterRole, RegisterRoleConfig> = {
+  [Role.Patient]: {
     label: 'מטופל',
     icon: <PersonIcon sx={{ fontSize: 16 }} />,
     color: '#0ca678',
     heading: 'יצירת חשבון מטופל',
     subtitle: 'נהל את הרשומות הרפואיות שלך במקום אחד.',
   },
-  doctor: {
+  [Role.Doctor]: {
     label: 'מטפל',
     icon: <LocalHospitalIcon sx={{ fontSize: 16 }} />,
     color: '#7048e8',
     heading: 'יצירת חשבון מטפל',
     subtitle: 'נהל מטופלים, ביקורים ותיעוד רפואי במקום אחד.',
   },
-  secretary: {
+  [Role.Secretary]: {
     label: 'מזכירות',
     icon: <SupportAgentIcon sx={{ fontSize: 16 }} />,
     color: '#1971c2',
     heading: 'יצירת חשבון מזכירות',
     subtitle: 'תאם תורים בין מטפלים למטופלים ונהל מסמכים.',
   },
-  admin: {
+  [Role.Admin]: {
     label: 'מנהל מערכת',
     icon: <AdminPanelSettingsIcon sx={{ fontSize: 16 }} />,
     color: '#e03131',
@@ -46,4 +48,4 @@ export const roleConfig: Record<'patient' | 'doctor' | 'secretary' | 'admin', Re
 export const STEPS = ['פרטי חשבון', 'פרטים אישיים'];
 
 export const resolveRegisterRole = (role?: string): RegisterRoleConfig =>
-  roleConfig[role as keyof typeof roleConfig] || roleConfig.patient;
+  roleConfig[parseRegisterRole(role)];

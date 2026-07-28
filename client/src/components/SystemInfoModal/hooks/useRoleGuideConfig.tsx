@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import HomeIcon from "@mui/icons-material/Home";
 import DescriptionIcon from "@mui/icons-material/Description";
 import PersonIcon from "@mui/icons-material/Person";
@@ -148,9 +147,7 @@ const ROLE_GUIDES_CONFIG: Record<TGuideRole, IRoleGuide> = {
 };
 
 export function useRoleGuide(role?: RoleName): IRoleGuide {
-  return useMemo(() => {
-    if (role === "doctor") return ROLE_GUIDES_CONFIG.doctor;
-    if (role === "secretary") return ROLE_GUIDES_CONFIG.secretary;
-    return ROLE_GUIDES_CONFIG.patient;
-  }, [role]);
+  if (role === "doctor") return ROLE_GUIDES_CONFIG.doctor;
+  if (role === "secretary") return ROLE_GUIDES_CONFIG.secretary;
+  return ROLE_GUIDES_CONFIG.patient;
 }

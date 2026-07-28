@@ -1,10 +1,12 @@
 import React from 'react';
 import { Box, Typography, Avatar, Chip } from '@mui/material';
+import type { RoleName } from '../../../auth/types';
+import { getRoleLabel } from '../constants';
 
 interface ProfileHeaderCardProps {
   name: string;
   initials: string;
-  role: 'patient' | 'doctor';
+  role: RoleName | null;
 }
 
 export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({ name, initials, role }) => (
@@ -21,7 +23,7 @@ export const ProfileHeaderCard: React.FC<ProfileHeaderCardProps> = ({ name, init
     <Box sx={{ flex: 1 }}>
       <Typography sx={{ fontSize: { xs: 18, sm: 20 }, fontWeight: 700, color: '#1a1a2e' }}>{name}</Typography>
       <Chip
-        label={role === 'doctor' ? 'רופא' : 'מטופל'}
+        label={getRoleLabel(role)}
         size="small"
         sx={{ mt: 0.6, bgcolor: '#eef2ff', color: 'primary.main', fontWeight: 700 }}
       />
