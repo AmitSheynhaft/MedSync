@@ -1,7 +1,7 @@
 import React from 'react';
 import { TextField } from '@mui/material';
-import { RTL_TEXT_DIRECTION } from '../constants';
-import { SectionHeader } from './SectionHeader';
+import { RTL_TEXT_DIRECTION } from '../../constants';
+import { SectionHeader } from '../SectionHeader/SectionHeader';
 
 interface ITextSectionProps {
   icon: React.ReactNode;

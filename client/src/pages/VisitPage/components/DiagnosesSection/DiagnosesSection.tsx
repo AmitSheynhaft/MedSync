@@ -1,10 +1,15 @@
 import React from 'react';
 import { Autocomplete, Box, Stack, TextField, Typography } from '@mui/material';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import { SectionHeader } from './SectionHeader';
-import { ListItemRow } from './ListItemRow';
-import { RTL_TEXT_DIRECTION, DiagnosisItem } from '../constants';
-import type { Diagnosis } from '../../../api/diagnoses';
+import { SectionHeader } from '../SectionHeader/SectionHeader';
+import { ListItemRow } from '../ListItemRow/ListItemRow';
+import { RTL_TEXT_DIRECTION, DiagnosisItem } from '../../constants';
+import type { Diagnosis } from '../../../../api/diagnoses';
+import {
+  diagnosesSectionIconSx,
+  diagnosesSectionListSx,
+  diagnosesSectionOptionSx,
+} from './styles';
 
 interface IDiagnosesSectionProps {
   isReadOnly: boolean;
@@ -20,8 +25,8 @@ export const DiagnosesSection: React.FC<IDiagnosesSectionProps> = ({
   isReadOnly, diagnosesList, diagnosisOptions, diagnosisSearch, setDiagnosisSearch, addDiagnosis, removeDiagnosis,
 }) => (
   <>
-    <SectionHeader icon={<LocalHospitalIcon sx={{ fontSize: 16 }} />} label="אבחנות ICD-10" color="#7048e8" bg="#f3f0ff" />
-    <Stack sx={{ gap: 0.5 }}>
+    <SectionHeader icon={<LocalHospitalIcon sx={diagnosesSectionIconSx} />} label="אבחנות ICD-10" color="#7048e8" bg="#f3f0ff" />
+    <Stack sx={diagnosesSectionListSx}>
       {diagnosesList.map((diagnosis, index) => (
         <ListItemRow
           key={index}
@@ -51,7 +56,7 @@ export const DiagnosesSection: React.FC<IDiagnosesSectionProps> = ({
             slotProps={{ ...params.slotProps, htmlInput: { ...(params.slotProps?.htmlInput as object), ...RTL_TEXT_DIRECTION } }} />
         )}
         renderOption={(props, option) => (
-          <Box component="li" {...props} sx={{ direction: 'rtl' }}>
+          <Box component="li" {...props} sx={diagnosesSectionOptionSx}>
             <Typography variant="body2"><strong style={{ color: '#7048e8' }}>{option.code}</strong> — {option.description}</Typography>
           </Box>
         )}

@@ -1,5 +1,16 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
+import {
+  medicalSummaryFallbackTextSx,
+  medicalSummaryHeadingSx,
+  medicalSummaryItemLabelSx,
+  medicalSummaryItemMarkerSx,
+  medicalSummaryItemRowSx,
+  medicalSummaryItemTextSx,
+  medicalSummaryItemsBlockSx,
+  medicalSummaryParagraphSx,
+  medicalSummaryRootSx,
+} from './MedicalSummary.styles';
 
 interface MedicalSummaryProps {
   text: string;
@@ -164,27 +175,15 @@ function parseSummary(raw: string): Block[] {
 }
 
 const ItemView: React.FC<{ item: Item }> = ({ item }) => (
-  <Box
-    sx={{
-      display: 'flex',
-      gap: 1,
-      alignItems: 'flex-start',
-      fontSize: 14,
-      color: '#495057',
-      lineHeight: 1.7,
-    }}
-  >
+  <Box sx={medicalSummaryItemRowSx}>
     {item.marker && (
-      <Typography
-        component="span"
-        sx={{ fontWeight: 700, color: '#3b5bdb', flexShrink: 0, minWidth: 22 }}
-      >
+      <Typography component="span" sx={medicalSummaryItemMarkerSx}>
         {item.marker}
       </Typography>
     )}
-    <Typography component="span" sx={{ fontSize: 14, lineHeight: 1.7 }}>
+    <Typography component="span" sx={medicalSummaryItemTextSx}>
       {item.label && (
-        <Typography component="span" sx={{ fontWeight: 700, color: '#1a1a2e' }}>
+        <Typography component="span" sx={medicalSummaryItemLabelSx}>
           {item.label}:{' '}
         </Typography>
       )}
@@ -198,33 +197,25 @@ export const MedicalSummary: React.FC<MedicalSummaryProps> = ({ text }) => {
 
   if (blocks.length === 0) {
     return (
-      <Typography sx={{ fontSize: 14, color: '#495057', lineHeight: 1.7 }}>
+      <Typography sx={medicalSummaryFallbackTextSx}>
         {text}
       </Typography>
     );
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+    <Box sx={medicalSummaryRootSx}>
       {blocks.map((block, idx) => {
         if (block.kind === 'heading') {
           return (
-            <Typography
-              key={idx}
-              sx={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: '#1a1a2e',
-                mt: idx === 0 ? 0 : 1.25,
-              }}
-            >
+            <Typography key={idx} sx={medicalSummaryHeadingSx(idx === 0)}>
               {block.text}
             </Typography>
           );
         }
         if (block.kind === 'items') {
           return (
-            <Box key={idx} sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            <Box key={idx} sx={medicalSummaryItemsBlockSx}>
               {block.items.map((it, i) => (
                 <ItemView key={i} item={it} />
               ))}
@@ -232,10 +223,7 @@ export const MedicalSummary: React.FC<MedicalSummaryProps> = ({ text }) => {
           );
         }
         return (
-          <Typography
-            key={idx}
-            sx={{ fontSize: 14, color: '#495057', lineHeight: 1.7 }}
-          >
+          <Typography key={idx} sx={medicalSummaryParagraphSx}>
             {block.text}
           </Typography>
         );

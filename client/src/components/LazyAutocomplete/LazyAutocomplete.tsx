@@ -2,6 +2,7 @@ import React from 'react';
 import { Autocomplete, Box, TextField } from '@mui/material';
 import type { Paginated } from '../../api/slots';
 import { useLazyOptions } from '../../hooks/useLazyOptions';
+import { lazyAutocompleteSx } from './LazyAutocomplete.styles';
 
 const SCROLL_THRESHOLD_PX = 32;
 
@@ -66,7 +67,7 @@ export function LazyAutocomplete<T>({
           },
         },
       }}
-      sx={{ bgcolor: '#fff' }}
+      sx={lazyAutocompleteSx}
       renderInput={params => (
         <TextField {...params} label={label} placeholder={placeholder} />
       )}

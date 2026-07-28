@@ -3,6 +3,7 @@ import { Box, Typography } from '@mui/material';
 import type { MedicalDocument } from '../../../api/medical-documents';
 import type { AsyncStatus } from '../../../hooks/useAsyncData';
 import { DocumentCard } from './DocumentCard';
+import { documentsGridEmptyTextSx, documentsGridRootSx } from './DocumentsGrid.styles';
 
 interface IDocumentsGridProps {
   patientId: string | undefined;
@@ -13,7 +14,7 @@ interface IDocumentsGridProps {
 }
 
 const EmptyState: React.FC<{ text: string }> = ({ text }) => (
-  <Typography sx={{ textAlign: 'center', color: '#868e96', fontSize: 14, py: 8 }}>
+  <Typography sx={documentsGridEmptyTextSx}>
     {text}
   </Typography>
 );
@@ -41,7 +42,7 @@ export const DocumentsGrid: React.FC<IDocumentsGridProps> = ({
   }
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fill, minmax(280px, 1fr))' }, gap: 2.5 }}>
+    <Box sx={documentsGridRootSx}>
       {filteredDocuments.map(document => (
         <DocumentCard
           key={document.id}

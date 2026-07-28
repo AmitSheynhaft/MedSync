@@ -1,8 +1,9 @@
 import React from 'react';
 import { Box, TextField } from '@mui/material';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
-import { RTL_TEXT_DIRECTION } from '../constants';
-import { SectionHeader } from './SectionHeader';
+import { RTL_TEXT_DIRECTION } from '../../constants';
+import { SectionHeader } from '../SectionHeader/SectionHeader';
+import { vitalsSectionGridSx, vitalsSectionIconSx } from './styles';
 
 type TVitalField = {
   label: string;
@@ -42,8 +43,8 @@ export const VitalsSection: React.FC<IVitalsSectionProps> = ({
 
   return (
     <>
-      <SectionHeader icon={<MonitorHeartIcon sx={{ fontSize: 16 }} />} label="מדדים" color="#0c8599" bg="#e3fafc" />
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' }, gap: 1.5 }}>
+      <SectionHeader icon={<MonitorHeartIcon sx={vitalsSectionIconSx} />} label="מדדים" color="#0c8599" bg="#e3fafc" />
+      <Box sx={vitalsSectionGridSx}>
         {VITALS_FIELDS.map(({ label, placeholder, value, onChange }) => (
           <TextField
             key={label}

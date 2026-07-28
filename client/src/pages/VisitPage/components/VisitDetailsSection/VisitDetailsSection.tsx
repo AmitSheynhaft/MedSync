@@ -1,8 +1,9 @@
 import React from 'react';
 import { Box, MenuItem, TextField } from '@mui/material';
 import AssignmentIcon from '@mui/icons-material/Assignment';
-import { RTL_TEXT_DIRECTION } from '../constants';
-import { SectionHeader } from './SectionHeader';
+import { RTL_TEXT_DIRECTION } from '../../constants';
+import { SectionHeader } from '../SectionHeader/SectionHeader';
+import { visitDetailsSectionGridSx, visitDetailsSectionIconSx } from './styles';
 
 interface IVisitDetailsSectionProps {
   visitType: string;
@@ -25,8 +26,8 @@ export const VisitDetailsSection: React.FC<IVisitDetailsSectionProps> = ({
   visitType, setVisitType, followUpDate, setFollowUpDate, referralNotes, setReferralNotes, isReadOnly,
 }) => (
   <>
-    <SectionHeader icon={<AssignmentIcon sx={{ fontSize: 16 }} />} label="פרטי ביקור" color="#3b5bdb" bg="#eef2ff" />
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+    <SectionHeader icon={<AssignmentIcon sx={visitDetailsSectionIconSx} />} label="פרטי ביקור" color="#3b5bdb" bg="#eef2ff" />
+    <Box sx={visitDetailsSectionGridSx}>
       <TextField select size="small" fullWidth label="סוג ביקור" value={visitType} onChange={e => setVisitType(e.target.value)}
         disabled={isReadOnly} slotProps={{ inputLabel: { shrink: true } }}>
         {VISIT_TYPE_OPTIONS.map(option => (

@@ -2,6 +2,14 @@ import React from 'react';
 import { Box, Chip, InputAdornment, Stack, TextField } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { FILTERS, TFilterKey } from '../utils';
+import {
+  documentsToolbarFilterChipSx,
+  documentsToolbarFilterScrollerSx,
+  documentsToolbarFilterStackSx,
+  documentsToolbarRootSx,
+  documentsToolbarSearchFieldSx,
+  documentsToolbarSearchIconSx,
+} from './DocumentsToolbar.styles';
 
 interface IDocumentsToolbarProps {
   query: string;
@@ -11,32 +19,24 @@ interface IDocumentsToolbarProps {
 }
 
 export const DocumentsToolbar: React.FC<IDocumentsToolbarProps> = ({ query, onQueryChange, activeFilter, onFilterChange }) => (
-  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3.5, flexWrap: 'wrap' }}>
+  <Box sx={documentsToolbarRootSx}>
     <TextField
       value={query}
       onChange={e => onQueryChange(e.target.value)}
       placeholder="חיפוש לפי רופא או סוג..."
-      sx={{ flex: 1, minWidth: 200, maxWidth: 360, '& .MuiOutlinedInput-root': { borderRadius: 999, bgcolor: '#fff' } }}
+      sx={documentsToolbarSearchFieldSx}
       slotProps={{
         input: {
           startAdornment: (
             <InputAdornment position="start">
-              <SearchIcon sx={{ color: '#adb5bd' }} />
+              <SearchIcon sx={documentsToolbarSearchIconSx} />
             </InputAdornment>
           ),
         },
       }}
     />
-    <Box
-      sx={{
-        width: { xs: '100%', sm: 'auto' },
-        overflowX: 'auto',
-        overflowY: 'hidden',
-        scrollbarWidth: 'thin',
-        WebkitOverflowScrolling: 'touch',
-      }}
-    >
-      <Stack direction="row" sx={{ gap: 1.5, flexWrap: 'nowrap', width: 'max-content', py: 0.25 }}>
+    <Box sx={documentsToolbarFilterScrollerSx}>
+      <Stack direction="row" sx={documentsToolbarFilterStackSx}>
       {FILTERS.map(filterOption => {
         const isActive = activeFilter === filterOption.key;
         return (
@@ -46,7 +46,7 @@ export const DocumentsToolbar: React.FC<IDocumentsToolbarProps> = ({ query, onQu
             onClick={() => onFilterChange(filterOption.key)}
             variant={isActive ? 'filled' : 'outlined'}
             color={isActive ? 'primary' : 'default'}
-            sx={{ borderRadius: 999, fontWeight: 600, fontSize: 13, px: 1.5, height: 38, bgcolor: isActive ? undefined : '#fff', flexShrink: 0 }}
+            sx={documentsToolbarFilterChipSx(isActive)}
           />
         );
       })}

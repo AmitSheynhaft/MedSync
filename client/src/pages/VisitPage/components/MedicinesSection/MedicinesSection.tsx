@@ -1,10 +1,18 @@
 import React from 'react';
 import { Autocomplete, Box, Button, Stack, TextField, Typography } from '@mui/material';
 import MedicationIcon from '@mui/icons-material/Medication';
-import { SectionHeader } from './SectionHeader';
-import { ListItemRow } from './ListItemRow';
-import { RTL_TEXT_DIRECTION, MedicineItem } from '../constants';
-import type { Medicine } from '../../../api/medicines';
+import { SectionHeader } from '../SectionHeader/SectionHeader';
+import { ListItemRow } from '../ListItemRow/ListItemRow';
+import { RTL_TEXT_DIRECTION, MedicineItem } from '../../constants';
+import type { Medicine } from '../../../../api/medicines';
+import {
+  medicinesSectionAddButtonSx,
+  medicinesSectionFieldsGridSx,
+  medicinesSectionFormSx,
+  medicinesSectionIconSx,
+  medicinesSectionListSx,
+  medicinesSectionOptionSx,
+} from './styles';
 
 interface IMedicinesSectionProps {
   isReadOnly: boolean;
@@ -28,8 +36,8 @@ export const MedicinesSection: React.FC<IMedicinesSectionProps> = ({
   medicineDuration, setMedicineDuration, handleAddMedicine, removeMedicine,
 }) => (
   <>
-    <SectionHeader icon={<MedicationIcon sx={{ fontSize: 16 }} />} label="תרופות" color="#e8590c" bg="#fff3e6" />
-    <Stack sx={{ gap: 0.5 }}>
+    <SectionHeader icon={<MedicationIcon sx={medicinesSectionIconSx} />} label="תרופות" color="#e8590c" bg="#fff3e6" />
+    <Stack sx={medicinesSectionListSx}>
       {medicinesList.map((medicine, index) => (
         <ListItemRow
           key={index}
@@ -42,7 +50,7 @@ export const MedicinesSection: React.FC<IMedicinesSectionProps> = ({
       ))}
     </Stack>
     {!isReadOnly && (
-      <Stack sx={{ gap: 1 }}>
+      <Stack sx={medicinesSectionFormSx}>
         <Autocomplete
           size="small"
           options={medicineOptions}
@@ -59,14 +67,14 @@ export const MedicinesSection: React.FC<IMedicinesSectionProps> = ({
               slotProps={{ ...params.slotProps, htmlInput: { ...(params.slotProps?.htmlInput as object), ...RTL_TEXT_DIRECTION } }} />
           )}
           renderOption={(props, option) => (
-            <Box component="li" {...props} sx={{ direction: 'rtl' }}>
+            <Box component="li" {...props} sx={medicinesSectionOptionSx}>
               <Typography variant="body2">{option.name}</Typography>
             </Box>
           )}
           noOptionsText="לא נמצאו תרופות"
           slotProps={{ popper: { placement: 'bottom-start', modifiers: [{ name: 'flip', enabled: false }] } }}
         />
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 1 }}>
+        <Box sx={medicinesSectionFieldsGridSx}>
           <TextField size="small" placeholder="מינון (100mg)" value={medicineDosage}
             onChange={e => setMedicineDosage(e.target.value)} slotProps={{ htmlInput: RTL_TEXT_DIRECTION }} />
           <TextField size="small" placeholder="תדירות (פעם ביום)" value={medicineFrequency}
@@ -74,8 +82,7 @@ export const MedicinesSection: React.FC<IMedicinesSectionProps> = ({
           <TextField size="small" placeholder="משך טיפול (7 ימים)" value={medicineDuration}
             onChange={e => setMedicineDuration(e.target.value)} slotProps={{ htmlInput: RTL_TEXT_DIRECTION }} />
         </Box>
-        <Button variant="outlined" size="small" onClick={handleAddMedicine}
-          sx={{ alignSelf: 'flex-start', px: 3, borderRadius: '6px', fontWeight: 600 }}>
+        <Button variant="outlined" size="small" onClick={handleAddMedicine} sx={medicinesSectionAddButtonSx}>
           הוסף תרופה
         </Button>
       </Stack>

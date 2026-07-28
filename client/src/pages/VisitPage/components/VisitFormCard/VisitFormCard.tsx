@@ -1,15 +1,16 @@
 import React from 'react';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
-import { FormCard } from '../styled';
-import type { VisitFormState } from '../hooks/useVisitForm';
-import { ProcessingOverlay } from './ProcessingOverlay';
-import { FormCardHeader } from './FormCardHeader';
-import { VisitDetailsSection } from './VisitDetailsSection';
-import { TextSection } from './TextSection';
-import { VitalsSection } from './VitalsSection';
-import { DiagnosesSection } from './DiagnosesSection';
-import { MedicinesSection } from './MedicinesSection';
+import { FormCard } from '../../styled';
+import type { VisitFormState } from '../../hooks/useVisitForm';
+import { ProcessingOverlay } from '../ProcessingOverlay/ProcessingOverlay';
+import { FormCardHeader } from '../FormCardHeader/FormCardHeader';
+import { VisitDetailsSection } from '../VisitDetailsSection/VisitDetailsSection';
+import { TextSection } from '../TextSection/TextSection';
+import { VitalsSection } from '../VitalsSection/VitalsSection';
+import { DiagnosesSection } from '../DiagnosesSection/DiagnosesSection';
+import { MedicinesSection } from '../MedicinesSection/MedicinesSection';
+import { visitFormCardIconSx } from './styles';
 
 interface IVisitFormCardProps {
   form: VisitFormState;
@@ -38,7 +39,7 @@ export const VisitFormCard: React.FC<IVisitFormCardProps> = ({ form }) => (
     />
 
     <TextSection
-      icon={<FavoriteIcon sx={{ fontSize: 16 }} />}
+      icon={<FavoriteIcon sx={visitFormCardIconSx} />}
       label="תלונות המטופל"
       color="#e64980"
       bg="#fff0f6"
@@ -49,7 +50,7 @@ export const VisitFormCard: React.FC<IVisitFormCardProps> = ({ form }) => (
     />
 
     <TextSection
-      icon={<TaskAltIcon sx={{ fontSize: 16 }} />}
+      icon={<TaskAltIcon sx={visitFormCardIconSx} />}
       label="המלצות הרופא"
       color="#2f9e44"
       bg="#ebfbee"
