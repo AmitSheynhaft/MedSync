@@ -1,51 +1,33 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { OcrService } from './ocr.service';
-import { DocumentSummaryService } from './document-summary.service';
 import { MedicalDocument } from '../entities/medicalDocument/medicalDocumentEntity';
 import { DocumentSummary } from '../entities/documentSummary/documentSummaryEntity';
 import { DocumentType, SummaryStatus } from '../entities/enums';
-import { PatientMedicalSummaryService } from '../patient-medical-summary/patient-medical-summary.service';
-
-export interface DocumentResult {
-  id: string;
-  filename: string;
-  extractedText: string;
-  summary: string;
-  patientId: string | null;
-}
-
-export interface PendingDocumentResult {
-  id: string;
-  filename: string;
-  status: SummaryStatus;
-  patientId: string;
-}
+import {
+  DocumentFileDataResult,
+  DocumentSummaryResult,
+  PendingMedicalDocumentResult,
+} from './documents.types';
 
 @Injectable()
 export class DocumentsService {
-  private readonly logger = new Logger(DocumentsService.name);
-
   constructor(
-    private readonly ocrService: OcrService,
-    private readonly summaryService: DocumentSummaryService,
     @InjectRepository(MedicalDocument)
-    private readonly medicalDocuments: Repository<MedicalDocument>,
+    private readonly medicalDocumentRepository: Repository<MedicalDocument>,
     @InjectRepository(DocumentSummary)
-    private readonly documentSummaries: Repository<DocumentSummary>,
-    private readonly medicalSummaryService: PatientMedicalSummaryService,
+    private readonly documentSummaryRepository: Repository<DocumentSummary>,
   ) {}
 
-  async createPendingDocument(
+  async createPendingMedicalDocument(
     buffer: Buffer,
     mimeType: string,
     originalName: string,
     patientId: string,
     uploadedByUserId: string,
     documentType?: DocumentType,
-  ): Promise<PendingDocumentResult> {
-    const doc = this.medicalDocuments.create({
+  ): Promise<PendingMedicalDocumentResult> {
+    const medicalDocument = this.medicalDocumentRepository.create({
       patientId,
       uploadedByUserId,
       summaryStatus: SummaryStatus.PROCESSING,
@@ -56,102 +38,75 @@ export class DocumentsService {
       processingCount: 0,
       fileData: buffer,
     });
-    const saved = await this.medicalDocuments.save(doc);
+    const savedMedicalDocument =
+      await this.medicalDocumentRepository.save(medicalDocument);
     return {
-      id: saved.id,
-      filename: originalName,
-      status: saved.summaryStatus,
+      id: savedMedicalDocument.id,
+      filename: savedMedicalDocument.fileName,
+      status: savedMedicalDocument.summaryStatus,
       patientId,
     };
   }
 
-  /**
-   * Background job: runs OCR + summarization and updates the document row to
-   * SUCCESS or FAILED. Never throws — failures are recorded on the row.
-   */
-  async analyzeDocument(
+  async saveDocumentSummary(
     documentId: string,
-    buffer: Buffer,
-    mimeType: string,
-    originalName: string,
+    summaryText: string,
+    extractedText: string,
   ): Promise<void> {
-    this.logger.log(
-      `Analyzing document ${documentId}: ${originalName} (${mimeType})`,
+    await this.documentSummaryRepository.save(
+      this.documentSummaryRepository.create({
+        documentId,
+        summaryText,
+        extractedText,
+      }),
     );
-    try {
-      const extractedText = await this.ocrService.extractText(buffer, mimeType);
-      const hasText = !!extractedText && extractedText.trim().length > 0;
-
-      const summary = hasText
-        ? await this.summaryService.summarize(extractedText)
-        : 'Could not extract any text from the uploaded document.';
-
-      await this.documentSummaries.save(
-        this.documentSummaries.create({
-          documentId,
-          summaryText: summary,
-          extractedText: extractedText ?? '',
-        }),
-      );
-
-      await this.medicalDocuments.update(documentId, {
-        summaryStatus: hasText ? SummaryStatus.SUCCESS : SummaryStatus.FAILED,
-        processingCount: 1,
-      });
-      this.logger.log(`Finished analyzing document ${documentId}`);
-
-      if (hasText) {
-        const doc = await this.medicalDocuments.findOne({
-          where: { id: documentId },
-          select: ['patientId'],
-        });
-        if (doc?.patientId) {
-          this.medicalSummaryService
-            .generateAndSave(doc.patientId)
-            .catch((e) =>
-              this.logger.error(
-                `Medical summary trigger failed: ${e instanceof Error ? e.message : String(e)}`,
-              ),
-            );
-        }
-      }
-    } catch (err) {
-      const detail = err instanceof Error ? err.message : String(err);
-      this.logger.error(
-        `Background analysis failed for ${documentId}: ${detail}`,
-      );
-      await this.medicalDocuments.update(documentId, {
-        summaryStatus: SummaryStatus.FAILED,
-        processingCount: 1,
-      });
-    }
   }
 
-  async getFileData(
-    id: string,
-  ): Promise<{ buffer: Buffer; mimeType: string; fileName: string; patientId: string | null } | null> {
-    const doc = await this.medicalDocuments.findOne({ where: { id } });
-    if (!doc || !doc.fileData) return null;
+  async updateDocumentProcessingResult(
+    documentId: string,
+    summaryStatus: SummaryStatus,
+  ): Promise<void> {
+    await this.medicalDocumentRepository.update(documentId, {
+      summaryStatus,
+      processingCount: 1,
+    });
+  }
+
+  async getDocumentPatientId(documentId: string): Promise<string | null> {
+    const medicalDocument = await this.medicalDocumentRepository.findOne({
+      where: { id: documentId },
+      select: ['patientId'],
+    });
+    return medicalDocument?.patientId ?? null;
+  }
+
+  async getDocumentFileData(
+    documentId: string,
+  ): Promise<DocumentFileDataResult | null> {
+    const medicalDocument = await this.medicalDocumentRepository.findOne({
+      where: { id: documentId },
+    });
+    if (!medicalDocument || !medicalDocument.fileData) return null;
     return {
-      buffer: doc.fileData,
-      mimeType: doc.fileFormat || 'application/octet-stream',
-      fileName: doc.fileName,
-      patientId: doc.patientId ?? null,
+      buffer: medicalDocument.fileData,
+      mimeType: medicalDocument.fileFormat || 'application/octet-stream',
+      fileName: medicalDocument.fileName,
+      patientId: medicalDocument.patientId ?? null,
     };
   }
 
-  async getSummary(
-    id: string,
-  ): Promise<{ summaryText: string; fileName: string; patientId: string | null } | null> {
-    const doc = await this.medicalDocuments.findOne({
-      where: { id },
+  async getDocumentSummaryById(
+    documentId: string,
+  ): Promise<DocumentSummaryResult | null> {
+    const medicalDocument = await this.medicalDocumentRepository.findOne({
+      where: { id: documentId },
       relations: ['summary'],
     });
-    if (!doc) return null;
+    if (!medicalDocument) return null;
     return {
-      summaryText: doc.summary?.summaryText ?? '',
-      fileName: doc.fileName,
-      patientId: doc.patientId ?? null,
+      summaryText: medicalDocument.summary?.summaryText ?? '',
+      fileName: medicalDocument.fileName,
+      patientId: medicalDocument.patientId ?? null,
     };
   }
 }

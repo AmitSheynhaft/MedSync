@@ -683,7 +683,7 @@ export class VisitRecordsService {
       if (!input.diagnosisCode) {
         throw new BadRequestException('diagnosisId or diagnosisCode is required');
       }
-      const diag = await this.diagnosesService.getOrCreateByCode(
+      const diag = await this.diagnosesService.getOrCreateDiagnosisByCode(
         input.diagnosisCode,
         input.diagnosisDescription ?? input.diagnosisCode,
       );
