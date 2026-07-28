@@ -192,7 +192,7 @@ const ItemView: React.FC<{ item: Item }> = ({ item }) => (
 );
 
 export const MedicalSummary: React.FC<MedicalSummaryProps> = ({ text }) => {
-  const blocks = parseSummary(text);
+  const blocks = React.useMemo(() => parseSummary(text), [text]);
 
   if (blocks.length === 0) {
     return (

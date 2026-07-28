@@ -9,6 +9,7 @@ import {
   Res,
   UploadedFile,
   UseInterceptors,
+  ValidationPipe,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -31,7 +32,8 @@ export class DocumentsController {
   async uploadDocument(
     @UploadedFile() file: Express.Multer.File,
     @User() user: IUser,
-    @Body() uploadDocumentDto: UploadDocumentDto,
+    @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+    uploadDocumentDto: UploadDocumentDto,
   ) {
     return this.documentsLogicService.uploadDocumentForUser(
       file,

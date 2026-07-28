@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../../../api/authApi';
 import { loadUserDataSession, saveUserDataSession } from '../../../auth/userDataSessionStore';
@@ -29,13 +29,21 @@ export function useProfile() {
   const [saving, setSaving] = useState(false);
   const { toast, setToast, showToast } = useToast();
 
-  const loadedRef = useRef(false);
   useEffect(() => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
-    if (!userDataSession) return;
-
     let active = true;
+    if (!userDataSession) {
+      setUser(null);
+      setPhone('');
+      setBirthDate('');
+      setIdNumber('');
+      setClinicName('');
+      setHmo('');
+      setAddress('');
+      return () => {
+        active = false;
+      };
+    }
+
     loadProfileBootstrapData(userDataSession).then(data => {
       if (!active) return;
 
