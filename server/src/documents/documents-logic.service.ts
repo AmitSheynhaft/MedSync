@@ -140,11 +140,13 @@ export class DocumentsLogicService {
 
       const patientId = await this.documentsQueryService.getDocumentPatientId(documentId);
       if (patientId) {
-        this.medicalSummaryService.generateAndSave(patientId).catch((error) =>
-          this.logger.error(
-            `Medical summary trigger failed: ${error instanceof Error ? error.message : String(error)}`,
-          ),
-        );
+        this.medicalSummaryService
+          .generateAndSavePatientMedicalSummary(patientId)
+          .catch((error) =>
+            this.logger.error(
+              `Medical summary trigger failed: ${error instanceof Error ? error.message : String(error)}`,
+            ),
+          );
       }
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);

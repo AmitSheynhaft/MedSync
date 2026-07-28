@@ -74,7 +74,7 @@ export class PatientsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @User() user: IUser,
   ): Promise<Patient> {
-    await this.medicalSummaryService.generateAndSave(id);
+    await this.medicalSummaryService.generateAndSavePatientMedicalSummary(id);
     return this.patientsService.findOne(id, user);
   }
 
@@ -86,6 +86,6 @@ export class PatientsController {
     succeeded: number;
     failed: number;
   }> {
-    return this.medicalSummaryService.forceRegenerateAll();
+    return this.medicalSummaryService.forceRegenerateAllPatientMedicalSummaries();
   }
 }

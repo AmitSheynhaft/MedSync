@@ -659,7 +659,7 @@ export class VisitRecordsService {
     // Fire-and-forget: regenerate patient medical summary
     if (visit?.patientId) {
       this.medicalSummaryService
-        .generateAndSave(visit.patientId)
+        .generateAndSavePatientMedicalSummary(visit.patientId)
         .catch((e) =>
           this.logger.error(`Medical summary trigger failed: ${e instanceof Error ? e.message : String(e)}`),
         );
