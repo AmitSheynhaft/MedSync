@@ -1,10 +1,10 @@
 import React from 'react';
 import { Button } from '@mui/material';
-import type { RegisterFormState } from '../hooks/useRegisterForm';
-import type { RegisterRole } from '../types';
-import { FormFields } from './FormFields';
-import { ACCOUNT_FIELDS } from '../config/accountFields';
-import { accountStepContinueButtonSx } from './AccountStep.styles';
+import type { RegisterFormState } from '../../hooks/useRegisterForm';
+import type { RegisterRole } from '../../types';
+import { FormFields } from '../FormFields/FormFields';
+import { ACCOUNT_FIELDS } from '../../config/accountFields';
+import { accountStepContinueButtonSx } from './styles';
 
 interface IAccountStepProps {
   form: RegisterFormState;

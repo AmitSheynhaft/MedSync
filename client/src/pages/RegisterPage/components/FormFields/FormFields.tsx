@@ -1,7 +1,7 @@
 import React from 'react';
 import { TextField, InputAdornment, MenuItem } from '@mui/material';
-import type { RegisterFormState } from '../hooks/useRegisterForm';
-import type { RegisterRole, TFieldConfig } from '../types';
+import type { RegisterFormState } from '../../hooks/useRegisterForm';
+import type { RegisterRole, TFieldConfig } from '../../types';
 
 export interface IFormFieldsProps {
   fields: TFieldConfig[];

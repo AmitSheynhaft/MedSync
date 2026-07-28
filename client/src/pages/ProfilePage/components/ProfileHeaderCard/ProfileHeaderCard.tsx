@@ -1,14 +1,14 @@
 import React from 'react';
 import { Box, Typography, Avatar, Chip } from '@mui/material';
-import type { RoleName } from '../../../auth/types';
-import { getRoleLabel } from '../constants';
+import type { RoleName } from '../../../../auth/types';
+import { getRoleLabel } from '../../constants';
 import {
   profileHeaderAvatarSx,
   profileHeaderCardSx,
   profileHeaderContentSx,
   profileHeaderNameSx,
   profileHeaderRoleChipSx,
-} from './ProfileHeaderCard.styles';
+} from './styles';
 
 interface ProfileHeaderCardProps {
   name: string;

@@ -8,10 +8,10 @@ import HomeIcon from '@mui/icons-material/Home';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import EditIcon from '@mui/icons-material/Edit';
-import { Role } from '../../../constants/roles';
-import { ProfileRow } from './ProfileRow';
-import { formatDob } from '../utils';
-import type { useProfile } from '../hooks/useProfile';
+import { Role } from '../../../../constants/roles';
+import { ProfileRow } from '../ProfileRow/ProfileRow';
+import { formatDob } from '../../utils';
+import type { useProfile } from '../../hooks/useProfile';
 import {
   profileDetailsCardSx,
   profileDetailsHeaderSx,
@@ -20,7 +20,7 @@ import {
   profileEditIconButtonSx,
   profilePrimaryActionButtonSx,
   profileSecondaryActionButtonSx,
-} from './ProfileDetailsCard.styles';
+} from './styles';
 
 interface ProfileDetailsCardProps {
   profile: ReturnType<typeof useProfile>;

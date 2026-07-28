@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { Box, Typography, Chip, Alert, Stepper, Step, StepLabel } from "@mui/material";
 import { resolveRegisterRole, STEPS } from "./roleConfig";
 import { useRegisterForm } from "./hooks/useRegisterForm";
-import { RegisterForm } from "./components/RegisterForm";
+import { RegisterForm } from "./components/RegisterForm/RegisterForm";
 import { parseRegisterRole } from "./types";
 
 export const RegisterPage: React.FC = () => {

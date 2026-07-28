@@ -5,8 +5,8 @@ import PageHeader from '../../components/PageHeader/PageHeader';
 import Toast from '../../components/Toast/Toast';
 import { useProfile } from './hooks/useProfile';
 import { initialsFromName } from './utils';
-import { ProfileHeaderCard } from './components/ProfileHeaderCard';
-import { ProfileDetailsCard } from './components/ProfileDetailsCard';
+import { ProfileHeaderCard } from './components/ProfileHeaderCard/ProfileHeaderCard';
+import { ProfileDetailsCard } from './components/ProfileDetailsCard/ProfileDetailsCard';
 
 export const ProfilePage: React.FC = () => {
   const profile = useProfile();

@@ -1,8 +1,8 @@
 import React from 'react';
-import type { RegisterFormState } from '../hooks/useRegisterForm';
-import type { RegisterRole } from '../types';
-import { FormFields } from './FormFields';
-import { PERSONAL_FIELDS } from '../config/personalFields';
+import type { RegisterFormState } from '../../hooks/useRegisterForm';
+import type { RegisterRole } from '../../types';
+import { FormFields } from '../FormFields/FormFields';
+import { PERSONAL_FIELDS } from '../../config/personalFields';
 
 interface IPersonalStepProps {
   form: RegisterFormState;

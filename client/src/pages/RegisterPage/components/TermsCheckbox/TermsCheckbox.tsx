@@ -1,6 +1,6 @@
 import React from 'react';
 import { FormControlLabel, Checkbox, Typography } from '@mui/material';
-import { termsCheckboxSx, termsLinkSx, termsTextSx } from './TermsCheckbox.styles';
+import { termsCheckboxSx, termsLinkSx, termsTextSx } from './styles';
 
 interface ITermsCheckboxProps {
   agreed: boolean;

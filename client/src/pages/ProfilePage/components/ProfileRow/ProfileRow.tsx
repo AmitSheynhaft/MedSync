@@ -6,7 +6,7 @@ import {
   profileRowIconBoxSx,
   profileRowLabelSx,
   profileRowValueSx,
-} from './ProfileRow.styles';
+} from './styles';
 
 interface ProfileRowProps {
   icon: React.ReactNode;

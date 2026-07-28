@@ -1,12 +1,12 @@
 import React from 'react';
 import { Box } from '@mui/material';
-import type { RegisterFormState } from '../hooks/useRegisterForm';
-import type { RegisterRole } from '../types';
-import { AccountStep } from './AccountStep';
-import { PersonalStep } from './PersonalStep';
-import { TermsCheckbox } from './TermsCheckbox';
-import { StepActions } from './StepActions';
-import { registerFormSx } from './RegisterForm.styles';
+import type { RegisterFormState } from '../../hooks/useRegisterForm';
+import type { RegisterRole } from '../../types';
+import { AccountStep } from '../AccountStep/AccountStep';
+import { PersonalStep } from '../PersonalStep/PersonalStep';
+import { TermsCheckbox } from '../TermsCheckbox/TermsCheckbox';
+import { StepActions } from '../StepActions/StepActions';
+import { registerFormSx } from './styles';
 
 interface IRegisterFormProps {
   form: RegisterFormState;

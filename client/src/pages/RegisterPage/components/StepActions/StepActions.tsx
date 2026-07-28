@@ -4,7 +4,7 @@ import {
   stepActionsBackButtonSx,
   stepActionsStackSx,
   stepActionsSubmitButtonSx,
-} from './StepActions.styles';
+} from './styles';
 
 interface IStepActionsProps {
   color: string;
