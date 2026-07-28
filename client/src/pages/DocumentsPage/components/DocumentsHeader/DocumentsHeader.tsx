@@ -7,7 +7,7 @@ import {
   documentsHeaderTitleSx,
   documentsHeaderTitleWrapSx,
   documentsHeaderUploadButtonSx,
-} from './DocumentsHeader.styles';
+} from './styles';
 
 interface IDocumentsHeaderProps {
   title: string;

@@ -3,7 +3,7 @@ import { Box, Typography, Button, Stack, Paper } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import MedicalSummary from '../../../components/MedicalSummary';
+import MedicalSummary from '../../../components/MedicalSummary/MedicalSummary';
 
 interface AiSummaryCardProps {
   overview: string;

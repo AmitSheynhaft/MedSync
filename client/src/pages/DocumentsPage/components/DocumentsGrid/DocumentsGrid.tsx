@@ -1,9 +1,9 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import type { MedicalDocument } from '../../../api/medical-documents';
-import type { AsyncStatus } from '../../../hooks/useAsyncData';
-import { DocumentCard } from './DocumentCard';
-import { documentsGridEmptyTextSx, documentsGridRootSx } from './DocumentsGrid.styles';
+import type { MedicalDocument } from '../../../../api/medical-documents';
+import type { AsyncStatus } from '../../../../hooks/useAsyncData';
+import { DocumentCard } from '../DocumentCard/DocumentCard';
+import { documentsGridEmptyTextSx, documentsGridRootSx } from './styles';
 
 interface IDocumentsGridProps {
   patientId: string | undefined;

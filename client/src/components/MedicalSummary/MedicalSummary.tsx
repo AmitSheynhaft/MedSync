@@ -10,7 +10,7 @@ import {
   medicalSummaryItemsBlockSx,
   medicalSummaryParagraphSx,
   medicalSummaryRootSx,
-} from './MedicalSummary.styles';
+} from './styles';
 
 interface MedicalSummaryProps {
   text: string;
@@ -55,7 +55,6 @@ function stripLeadingDemographics(raw: string): string {
   return lines.slice(start).join('\n').trim();
 }
 
-// Break up text that arrives as one long line with inline numbered markers.
 function injectStructure(raw: string): string {
   return raw
     .replace(/\r\n/g, '\n')

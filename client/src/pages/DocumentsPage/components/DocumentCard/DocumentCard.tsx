@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Card, Chip, CircularProgress, Typography } from '@mui/material';
-import type { MedicalDocument } from '../../../api/medical-documents';
-import { getFileBadge, getStatusChip, formatDocumentDate, DOC_TYPE_LABELS } from '../utils';
+import type { MedicalDocument } from '../../../../api/medical-documents';
+import { getFileBadge, getStatusChip, formatDocumentDate, DOC_TYPE_LABELS } from '../../utils';
 import {
   documentCardBadgeWrapSx,
   documentCardFileNameSx,

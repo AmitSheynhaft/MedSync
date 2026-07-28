@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Chip, InputAdornment, Stack, TextField } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import { FILTERS, TFilterKey } from '../utils';
+import { FILTERS, TFilterKey } from '../../utils';
 import {
   documentsToolbarFilterChipSx,
   documentsToolbarFilterScrollerSx,
@@ -9,7 +9,7 @@ import {
   documentsToolbarRootSx,
   documentsToolbarSearchFieldSx,
   documentsToolbarSearchIconSx,
-} from './DocumentsToolbar.styles';
+} from './styles';
 
 interface IDocumentsToolbarProps {
   query: string;
@@ -37,19 +37,19 @@ export const DocumentsToolbar: React.FC<IDocumentsToolbarProps> = ({ query, onQu
     />
     <Box sx={documentsToolbarFilterScrollerSx}>
       <Stack direction="row" sx={documentsToolbarFilterStackSx}>
-      {FILTERS.map(filterOption => {
-        const isActive = activeFilter === filterOption.key;
-        return (
-          <Chip
-            key={filterOption.key}
-            label={filterOption.label}
-            onClick={() => onFilterChange(filterOption.key)}
-            variant={isActive ? 'filled' : 'outlined'}
-            color={isActive ? 'primary' : 'default'}
-            sx={documentsToolbarFilterChipSx(isActive)}
-          />
-        );
-      })}
+        {FILTERS.map(filterOption => {
+          const isActive = activeFilter === filterOption.key;
+          return (
+            <Chip
+              key={filterOption.key}
+              label={filterOption.label}
+              onClick={() => onFilterChange(filterOption.key)}
+              variant={isActive ? 'filled' : 'outlined'}
+              color={isActive ? 'primary' : 'default'}
+              sx={documentsToolbarFilterChipSx(isActive)}
+            />
+          );
+        })}
       </Stack>
     </Box>
   </Box>
