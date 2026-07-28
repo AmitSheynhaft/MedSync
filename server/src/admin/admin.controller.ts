@@ -26,27 +26,27 @@ export class AdminController {
   // ── Users ──────────────────────────────────────────────
   @Get('users')
   getAllUsers() {
-    return this.users.findAll();
+    return this.users.getAllUsers();
   }
 
   @Post('users')
-  async createUser(@Body() body: CreateUserInput) {
-    const user = await this.users.create(body);
-    return this.users.findOne(user.id);
+  async createUser(@Body() createUserInput: CreateUserInput) {
+    const createdUser = await this.users.createUser(createUserInput);
+    return this.users.getUserById(createdUser.id);
   }
 
   @Patch('users/:id')
   updateUser(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: UpdateUserInput,
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    @Body() userUpdates: UpdateUserInput,
   ) {
-    return this.users.update(id, body);
+    return this.users.updateUserById(userId, userUpdates);
   }
 
   @Delete('users/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  removeUser(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.users.remove(id);
+  removeUser(@Param('id', new ParseUUIDPipe()) userId: string) {
+    return this.users.deleteUserById(userId);
   }
 
   // ── Clinics ────────────────────────────────────────────
