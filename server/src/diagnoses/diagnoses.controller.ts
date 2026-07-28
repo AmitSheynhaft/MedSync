@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -20,31 +21,31 @@ export class DiagnosesController {
   constructor(private readonly service: DiagnosesService) {}
 
   @Get()
-  findAll(@Query('search') search?: string) {
-    return this.service.findAll(search);
+  getAllDiagnoses(@Query('search') searchQuery?: string) {
+    return this.service.getAllDiagnoses(searchQuery);
   }
 
   @Get(':id')
-  findOne(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.service.findOne(id);
+  getDiagnosisById(@Param('id', new ParseUUIDPipe()) diagnosisId: string) {
+    return this.service.getDiagnosisById(diagnosisId);
   }
 
   @Post()
-  create(@Body() body: DiagnosisInput) {
-    return this.service.create(body);
+  createDiagnosis(@Body() diagnosisInput: DiagnosisInput) {
+    return this.service.createDiagnosis(diagnosisInput);
   }
 
   @Patch(':id')
-  update(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: Partial<DiagnosisInput>,
+  updateDiagnosisById(
+    @Param('id', new ParseUUIDPipe()) diagnosisId: string,
+    @Body() diagnosisUpdates: Partial<DiagnosisInput>,
   ) {
-    return this.service.update(id, body);
+    return this.service.updateDiagnosisById(diagnosisId, diagnosisUpdates);
   }
 
   @Delete(':id')
-  @HttpCode(204)
-  remove(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.service.remove(id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteDiagnosisById(@Param('id', new ParseUUIDPipe()) diagnosisId: string) {
+    return this.service.deleteDiagnosisById(diagnosisId);
   }
 }
