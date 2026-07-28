@@ -26,8 +26,8 @@ export class CaregiversController {
   }
 
   @Get(':id')
-  getCaregiverByUserId(@Param('id', new ParseUUIDPipe()) userId: string) {
-    return this.service.getCaregiverByUserId(userId);
+  getCaregiverById(@Param('id', new ParseUUIDPipe()) caregiverId: string) {
+    return this.service.getCaregiverById(caregiverId);
   }
 
   @Post()
@@ -35,12 +35,20 @@ export class CaregiversController {
     return this.service.createCaregiver(caregiverInput);
   }
 
-  @Patch(':id')
+  @Patch('by-user/:userId')
   updateCaregiverByUserId(
-    @Param('id', new ParseUUIDPipe()) userId: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string,
     @Body() caregiverUpdates: Partial<CaregiverInput>,
   ) {
     return this.service.updateCaregiverByUserId(userId, caregiverUpdates);
+  }
+
+  @Patch(':id')
+  updateCaregiverById(
+    @Param('id', new ParseUUIDPipe()) caregiverId: string,
+    @Body() caregiverUpdates: Partial<CaregiverInput>,
+  ) {
+    return this.service.updateCaregiverById(caregiverId, caregiverUpdates);
   }
 
   @Delete(':id')

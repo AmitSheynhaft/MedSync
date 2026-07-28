@@ -22,6 +22,16 @@ export class CaregiversService {
     });
   }
 
+  async getCaregiverById(caregiverId: string): Promise<Caregiver> {
+    const caregiver = await this.caregiverRepo.findOne({
+      where: { id: caregiverId },
+      relations: ['user'],
+    });
+    if (!caregiver)
+      throw new NotFoundException(`Caregiver ${caregiverId} not found`);
+    return caregiver;
+  }
+
   async getCaregiverByUserId(userId: string): Promise<Caregiver> {
     const caregiver = await this.caregiverRepo.findOne({
       where: { userId },
@@ -58,6 +68,20 @@ export class CaregiversService {
     caregiverUpdates: Partial<CaregiverInput>,
   ): Promise<Caregiver> {
     const caregiver = await this.getCaregiverByUserId(userId);
+    if (caregiverUpdates.licenseNumber !== null && caregiverUpdates.licenseNumber !== undefined)
+      caregiver.licenseNumber = caregiverUpdates.licenseNumber;
+    if (caregiverUpdates.specialization !== null && caregiverUpdates.specialization !== undefined)
+      caregiver.specialization = caregiverUpdates.specialization;
+    if (caregiverUpdates.clinicName !== null && caregiverUpdates.clinicName !== undefined)
+      caregiver.clinicName = caregiverUpdates.clinicName;
+    return this.caregiverRepo.save(caregiver);
+  }
+
+  async updateCaregiverById(
+    caregiverId: string,
+    caregiverUpdates: Partial<CaregiverInput>,
+  ): Promise<Caregiver> {
+    const caregiver = await this.getCaregiverById(caregiverId);
     if (caregiverUpdates.licenseNumber !== null && caregiverUpdates.licenseNumber !== undefined)
       caregiver.licenseNumber = caregiverUpdates.licenseNumber;
     if (caregiverUpdates.specialization !== null && caregiverUpdates.specialization !== undefined)
