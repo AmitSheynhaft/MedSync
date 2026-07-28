@@ -6,6 +6,7 @@ import { AccountStep } from './AccountStep';
 import { PersonalStep } from './PersonalStep';
 import { TermsCheckbox } from './TermsCheckbox';
 import { StepActions } from './StepActions';
+import { registerFormSx } from './RegisterForm.styles';
 
 interface IRegisterFormProps {
   form: RegisterFormState;
@@ -14,7 +15,7 @@ interface IRegisterFormProps {
 }
 
 export const RegisterForm: React.FC<IRegisterFormProps> = ({ form, role, color }) => (
-  <Box component="form" onSubmit={form.handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+  <Box component="form" onSubmit={form.handleSubmit} sx={registerFormSx}>
     {form.step === 0 ? (
       <AccountStep form={form} role={role} color={color} />
     ) : (

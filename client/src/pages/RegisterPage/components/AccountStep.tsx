@@ -4,6 +4,7 @@ import type { RegisterFormState } from '../hooks/useRegisterForm';
 import type { RegisterRole } from '../types';
 import { FormFields } from './FormFields';
 import { ACCOUNT_FIELDS } from '../config/accountFields';
+import { accountStepContinueButtonSx } from './AccountStep.styles';
 
 interface IAccountStepProps {
   form: RegisterFormState;
@@ -20,7 +21,7 @@ export const AccountStep: React.FC<IAccountStepProps> = ({ form, role, color }) 
       size="large"
       fullWidth
       onClick={form.handleNext}
-      sx={{ mt: 0.5, py: 1, fontSize: 15, bgcolor: color, '&:hover': { bgcolor: color, filter: 'brightness(0.9)' } }}
+      sx={accountStepContinueButtonSx(color)}
     >
       המשך
     </Button>

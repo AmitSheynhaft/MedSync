@@ -14,6 +14,15 @@ import {
   isValidPhone,
   UserFormErrors,
 } from './userForm.validation';
+import {
+  userFormCalendarButtonSx,
+  userFormCalendarIconSx,
+  userFormDateInputSx,
+  userFormDialogActionsSx,
+  userFormDialogStackSx,
+  userFormDialogTitleSx,
+  userFormValidationTextSx,
+} from './UserFormDialog.styles';
 
 interface EditProps {
   mode: 'edit';
@@ -124,11 +133,11 @@ const UserFormDialog: React.FC<Props> = (props) => {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle sx={{ fontWeight: 700 }}>
+      <DialogTitle sx={userFormDialogTitleSx}>
         {isEdit ? 'עריכת משתמש' : 'משתמש חדש'}
       </DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ mt: 1 }}>
+        <Stack spacing={2} sx={userFormDialogStackSx}>
 
           {saveError && <Alert severity="error" onClose={() => setSaveError(null)}>{saveError}</Alert>}
 
@@ -207,16 +216,13 @@ const UserFormDialog: React.FC<Props> = (props) => {
                       size="small"
                       edge="end"
                       onClick={() => birthDateRef.current?.showPicker?.()}
-                      sx={{ color: birthDate ? '#3b5bdb' : '#adb5bd', p: 0.5 }}
+                      sx={userFormCalendarButtonSx(!!birthDate)}
                     >
-                      <CalendarTodayIcon sx={{ fontSize: 16 }} />
+                      <CalendarTodayIcon sx={userFormCalendarIconSx} />
                     </IconButton>
                   </InputAdornment>
                 ),
-                sx: {
-                  '& input': { cursor: 'pointer' },
-                  '& input::-webkit-calendar-picker-indicator': { display: 'none' },
-                },
+                sx: userFormDateInputSx,
               },
             }}
           />
@@ -248,13 +254,13 @@ const UserFormDialog: React.FC<Props> = (props) => {
           })()}
 
           {Object.keys(errors).length > 0 && (
-            <Typography sx={{ fontSize: 12, color: 'error.main' }}>
+            <Typography sx={userFormValidationTextSx}>
               יש לתקן את השגיאות המסומנות לפני השמירה
             </Typography>
           )}
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions sx={userFormDialogActionsSx}>
         <Button onClick={onClose} disabled={saving}>ביטול</Button>
         <Button variant="contained" onClick={handleSave} disabled={saving}>
           {saving ? 'שומר...' : 'שמור'}

@@ -12,6 +12,15 @@ import { Role } from '../../../constants/roles';
 import { ProfileRow } from './ProfileRow';
 import { formatDob } from '../utils';
 import type { useProfile } from '../hooks/useProfile';
+import {
+  profileDetailsCardSx,
+  profileDetailsHeaderSx,
+  profileDetailsTitleSx,
+  profileDetailsDividerSx,
+  profileEditIconButtonSx,
+  profilePrimaryActionButtonSx,
+  profileSecondaryActionButtonSx,
+} from './ProfileDetailsCard.styles';
 
 interface ProfileDetailsCardProps {
   profile: ReturnType<typeof useProfile>;
@@ -28,14 +37,14 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ profile,
   } = profile;
 
   return (
-    <Box sx={{ bgcolor: '#fff', border: '1px solid #dee5ef', borderRadius: 3, p: { xs: 2.25, sm: 3 }, mb: 3, boxShadow: '0 1px 2px rgba(15,23,42,0.03)' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Typography sx={{ fontSize: 12, fontWeight: 800, color: '#8a94a5', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+    <Box sx={profileDetailsCardSx}>
+      <Box sx={profileDetailsHeaderSx}>
+        <Typography sx={profileDetailsTitleSx}>
           פרטים אישיים
         </Typography>
         {!editing && (
           <Tooltip title="עריכה">
-            <IconButton onClick={handleEdit} size="small" sx={{ color: 'primary.main' }}>
+            <IconButton onClick={handleEdit} size="small" sx={profileEditIconButtonSx}>
               <EditIcon fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -43,7 +52,7 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ profile,
       </Box>
 
       <ProfileRow icon={<EmailIcon fontSize="small" />} label="אימייל" value={email} />
-      <Divider sx={{ my: 1.5 }} />
+      <Divider sx={profileDetailsDividerSx} />
 
       {editing ? (
         <Stack spacing={2}>
@@ -56,10 +65,10 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ profile,
             </>
           )}
           <Stack direction="row" spacing={1.5}>
-            <Button variant="contained" onClick={handleSave} disabled={saving} sx={{ borderRadius: 999, fontWeight: 700, px: 2.5, boxShadow: 'none', '&:hover': { boxShadow: 'none' } }}>
+            <Button variant="contained" onClick={handleSave} disabled={saving} sx={profilePrimaryActionButtonSx}>
               {saving ? 'שומר…' : 'שמור'}
             </Button>
-            <Button variant="outlined" onClick={handleCancel} disabled={saving} sx={{ borderRadius: 999, fontWeight: 700, px: 2.5 }}>
+            <Button variant="outlined" onClick={handleCancel} disabled={saving} sx={profileSecondaryActionButtonSx}>
               ביטול
             </Button>
           </Stack>
@@ -67,11 +76,11 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ profile,
       ) : (
         <>
           <ProfileRow icon={<PhoneIcon fontSize="small" />} label="טלפון" value={phoneDisplay} />
-          <Divider sx={{ my: 1.5 }} />
+          <Divider sx={profileDetailsDividerSx} />
           <ProfileRow icon={<CakeIcon fontSize="small" />} label="תאריך לידה" value={formatDob(user?.birthDate)} />
           {idNumber && (
             <>
-              <Divider sx={{ my: 1.5 }} />
+              <Divider sx={profileDetailsDividerSx} />
               <ProfileRow
                 icon={<BadgeIcon fontSize="small" />}
                 label={role === Role.Doctor ? 'מספר רישיון' : 'תעודת זהות'}
@@ -81,15 +90,15 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = ({ profile,
           )}
           {role === Role.Doctor && (
             <>
-              <Divider sx={{ my: 1.5 }} />
+              <Divider sx={profileDetailsDividerSx} />
               <ProfileRow icon={<MeetingRoomIcon fontSize="small" />} label="מרפאה" value={clinicName || '—'} />
             </>
           )}
           {isPatient && (
             <>
-              <Divider sx={{ my: 1.5 }} />
+              <Divider sx={profileDetailsDividerSx} />
               <ProfileRow icon={<LocalHospitalIcon fontSize="small" />} label="קופת חולים" value={hmo || '—'} />
-              <Divider sx={{ my: 1.5 }} />
+              <Divider sx={profileDetailsDividerSx} />
               <ProfileRow icon={<HomeIcon fontSize="small" />} label="כתובת" value={address || '—'} />
             </>
           )}
