@@ -413,8 +413,8 @@ export class VisitRecordsService {
 </html>`;
   }
 
-  async generateSummaryPdf(visitId: string): Promise<Buffer> {
-    const visit = await this.findOne(visitId);
+  async generateVisitSummaryPdf(visitId: string): Promise<Buffer> {
+    const visit = await this.getVisitRecordById(visitId);
     const html = this.buildSummaryPdfHtml(visit);
 
     // Dynamic import required: puppeteer is ESM-only and cannot be statically required
@@ -443,7 +443,11 @@ export class VisitRecordsService {
     }
   }
 
-  findAll(patientId?: string, caregiverId?: string, actingClinicId?: string): Promise<Visit[]> {
+  getVisitRecords(
+    patientId?: string,
+    caregiverId?: string,
+    actingClinicId?: string,
+  ): Promise<Visit[]> {
     const qb = this.visits
       .createQueryBuilder('visit')
       .leftJoinAndSelect('visit.patient', 'patient')
@@ -470,9 +474,9 @@ export class VisitRecordsService {
     return qb.getMany();
   }
 
-  async findOne(id: string): Promise<Visit> {
+  async getVisitRecordById(visitId: string): Promise<Visit> {
     const visit = await this.visits.findOne({
-      where: { id },
+      where: { id: visitId },
       relations: [
         'patient',
         'patient.user',
@@ -487,11 +491,11 @@ export class VisitRecordsService {
         'medicines.medicine',
       ],
     });
-    if (!visit) throw new NotFoundException(`Visit ${id} not found`);
+    if (!visit) throw new NotFoundException(`Visit ${visitId} not found`);
     return visit;
   }
 
-  async create(input: VisitInput): Promise<Visit> {
+  async createVisitRecord(input: VisitInput): Promise<Visit> {
     if (!input?.patientId || !input?.caregiverId || !input?.visitDate) {
       throw new BadRequestException(
         'patientId, caregiverId and visitDate are required',
@@ -566,12 +570,15 @@ export class VisitRecordsService {
       }
     }
 
-    return this.findOne(saved.id);
+    return this.getVisitRecordById(saved.id);
   }
 
-  async update(id: string, input: Partial<VisitInput>): Promise<Visit> {
-    const visit = await this.visits.findOne({ where: { id } });
-    if (!visit) throw new NotFoundException(`Visit ${id} not found`);
+  async updateVisitRecordById(
+    visitId: string,
+    input: Partial<VisitInput>,
+  ): Promise<Visit> {
+    const visit = await this.visits.findOne({ where: { id: visitId } });
+    if (!visit) throw new NotFoundException(`Visit ${visitId} not found`);
     
     // Prevent editing past visits
     this.throwIfPastVisit(visit, 'update');
@@ -592,26 +599,27 @@ export class VisitRecordsService {
     if (input.patientId !== undefined) visit.patientId = input.patientId;
     if (input.caregiverId !== undefined) visit.caregiverId = input.caregiverId;
     await this.visits.save(visit);
-    return this.findOne(id);
+    return this.getVisitRecordById(visitId);
   }
 
-  async remove(id: string): Promise<void> {
-    const visit = await this.visits.findOne({ where: { id } });
-    if (!visit) throw new NotFoundException(`Visit ${id} not found`);
+  async deleteVisitRecordById(visitId: string): Promise<void> {
+    const visit = await this.visits.findOne({ where: { id: visitId } });
+    if (!visit) throw new NotFoundException(`Visit ${visitId} not found`);
     
     // Prevent deleting past visits
     this.throwIfPastVisit(visit, 'delete');
     
-    const result = await this.visits.delete(id);
-    if (!result.affected) throw new NotFoundException(`Visit ${id} not found`);
+    const result = await this.visits.delete(visitId);
+    if (!result.affected)
+      throw new NotFoundException(`Visit ${visitId} not found`);
   }
 
   // -------- recording --------
-  async upsertRecording(
+  async upsertVisitRecordingByVisitId(
     visitId: string,
     input: VisitRecordingInput,
   ): Promise<VisitRecording> {
-    const visit = await this.findOne(visitId);
+    const visit = await this.getVisitRecordById(visitId);
     
     // Prevent editing past visits
     this.throwIfPastVisit(visit);
@@ -634,11 +642,11 @@ export class VisitRecordsService {
   }
 
   // -------- summary --------
-  async upsertSummary(
+  async upsertVisitSummaryByVisitId(
     visitId: string,
     input: VisitSummaryInput,
   ): Promise<VisitSummary> {
-    const visit = await this.findOne(visitId);
+    const visit = await this.getVisitRecordById(visitId);
     
     // Prevent editing past visits
     this.throwIfPastVisit(visit);
@@ -669,11 +677,11 @@ export class VisitRecordsService {
   }
 
   // -------- diagnoses --------
-  async addDiagnosis(
+  async addDiagnosisToVisit(
     visitId: string,
     input: VisitDiagnosisInput,
   ): Promise<VisitDiagnosis> {
-    const visit = await this.findOne(visitId);
+    const visit = await this.getVisitRecordById(visitId);
     
     // Prevent editing past visits
     this.throwIfPastVisit(visit);
@@ -704,18 +712,21 @@ export class VisitRecordsService {
     return this.visitDiagnoses.save(created);
   }
 
-  async removeDiagnosis(visitId: string, diagnosisId: string): Promise<void> {
+  async removeDiagnosisFromVisit(
+    visitId: string,
+    diagnosisId: string,
+  ): Promise<void> {
     const result = await this.visitDiagnoses.delete({ visitId, diagnosisId });
     if (!result.affected)
       throw new NotFoundException('Visit diagnosis link not found');
   }
 
   // -------- medicines --------
-  async addMedicine(
+  async addMedicineToVisit(
     visitId: string,
     input: VisitMedicineInput,
   ): Promise<VisitMedicine> {
-    const visit = await this.findOne(visitId);
+    const visit = await this.getVisitRecordById(visitId);
     
     // Prevent editing past visits
     this.throwIfPastVisit(visit);
@@ -751,7 +762,10 @@ export class VisitRecordsService {
     return this.visitMedicines.save(created);
   }
 
-  async removeMedicine(visitId: string, medicineId: string): Promise<void> {
+  async removeMedicineFromVisit(
+    visitId: string,
+    medicineId: string,
+  ): Promise<void> {
     const result = await this.visitMedicines.delete({ visitId, medicineId });
     if (!result.affected)
       throw new NotFoundException('Visit medicine link not found');

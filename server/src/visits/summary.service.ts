@@ -44,7 +44,9 @@ export class SummaryService implements OnModuleInit {
     this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
-  async summarize(transcript: string): Promise<VisitSummaryObject> {
+  async generateStructuredVisitSummary(
+    transcript: string,
+  ): Promise<VisitSummaryObject> {
     if (!this.model) {
       throw new ServiceUnavailableException('שירות הסיכום אינו זמין — GEMINI_API_KEY חסר');
     }

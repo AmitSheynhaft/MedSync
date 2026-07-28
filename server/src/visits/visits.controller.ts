@@ -29,7 +29,7 @@ export class VisitsController {
   @UseInterceptors(
     FileInterceptor('audio', { limits: { fileSize: MAX_AUDIO_BYTES } }),
   )
-  async transcribe(
+  async transcribeVisitAudio(
     @UploadedFile() file: Express.Multer.File,
   ): Promise<TranscribeResult> {
     if (!file || !file.buffer) {
@@ -40,7 +40,7 @@ export class VisitsController {
     }
 
     try {
-      return await this.visitsService.transcribe(file.buffer);
+      return await this.visitsService.transcribeVisitAudio(file.buffer);
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;
@@ -50,7 +50,7 @@ export class VisitsController {
   }
 
   @Post('summarize')
-  async summarize(
+  async summarizeVisitText(
     @Body('text') text?: string,
   ): Promise<SummarizeResult> {
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
@@ -63,7 +63,7 @@ export class VisitsController {
     }
 
     try {
-      return await this.visitsService.summarizeText(text);
+      return await this.visitsService.summarizeVisitText(text);
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;

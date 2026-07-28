@@ -18,14 +18,15 @@ export class VisitsService {
     private readonly summaryService: SummaryService,
   ) {}
 
-  async transcribe(audioBuffer: Buffer): Promise<TranscribeResult> {
-    const transcript = await this.speechService.transcribeAudio(audioBuffer);
-    const summary = await this.summaryService.summarize(transcript);
+  async transcribeVisitAudio(audioBuffer: Buffer): Promise<TranscribeResult> {
+    const transcript = await this.speechService.transcribeVisitAudio(audioBuffer);
+    const summary =
+      await this.summaryService.generateStructuredVisitSummary(transcript);
     return { transcript, summary };
   }
 
-  async summarizeText(text: string): Promise<SummarizeResult> {
-    const summary = await this.summaryService.summarize(text);
+  async summarizeVisitText(text: string): Promise<SummarizeResult> {
+    const summary = await this.summaryService.generateStructuredVisitSummary(text);
     return { summary };
   }
 }
