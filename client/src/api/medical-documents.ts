@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './client';
+import { Paginated } from './pagination';
 
 export type SummaryStatus = 'PROCESSING' | 'SUCCESS' | 'FAILED';
 export type DocumentTypeEnum =
@@ -42,10 +43,33 @@ export interface CreateMedicalDocumentInput {
   fileFormat?: string;
 }
 
+export interface MedicalDocumentsListQuery {
+  patientId: string;
+  page?: number;
+  limit?: number;
+  documentType?: DocumentTypeEnum;
+}
+
 export const getMedicalDocuments = (patientId?: string) =>
-  apiGet<MedicalDocument[]>(
-    `/api/medical-documents${patientId ? `?patientId=${patientId}` : ''}`,
-  );
+  patientId
+    ? getMedicalDocumentsPage({ patientId, page: 1, limit: 20 }).then(
+        (response) => response.items,
+      )
+    : Promise.resolve([]);
+export const getMedicalDocumentsPage = ({
+  patientId,
+  page = 1,
+  limit = 20,
+  documentType,
+}: MedicalDocumentsListQuery) => {
+  const params = new URLSearchParams({
+    patientId: patientId.trim(),
+    page: String(page),
+    limit: String(limit),
+  });
+  if (documentType) params.set('documentType', documentType);
+  return apiGet<Paginated<MedicalDocument>>(`/api/medical-documents?${params.toString()}`);
+};
 export const getMedicalDocument = (id: string) =>
   apiGet<MedicalDocument>(`/api/medical-documents/${id}`);
 export const createMedicalDocument = (input: CreateMedicalDocumentInput) =>

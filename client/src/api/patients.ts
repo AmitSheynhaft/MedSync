@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from './client';
+import { Paginated } from './pagination';
 
 export interface Encounter {
   id: string;
@@ -83,13 +84,47 @@ export interface UpdatePatientInput {
   notes?: string;
 }
 
+export interface PatientListQuery {
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+const patientByIdInFlight = new Map<string, Promise<Patient>>();
+
 export function getPatients(search?: string): Promise<PatientSummary[]> {
-  const query = search ? `?search=${encodeURIComponent(search)}` : '';
-  return apiGet<PatientSummary[]>(`/api/patients${query}`);
+  return getPatientsPage({ search, page: 1, limit: 20 }).then(
+    (response) => response.items,
+  );
+}
+
+export function getPatientsPage({
+  search,
+  page = 1,
+  limit = 20,
+}: PatientListQuery = {}): Promise<Paginated<PatientSummary>> {
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  params.set('page', String(page));
+  params.set('limit', String(limit));
+  return apiGet<Paginated<PatientSummary>>(`/api/patients?${params.toString()}`);
 }
 
 export function getPatientById(id: string): Promise<Patient> {
-  return apiGet<Patient>(`/api/patients/${encodeURIComponent(id)}`);
+  const normalizedId = id.trim();
+  const inFlight = patientByIdInFlight.get(normalizedId);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const request = apiGet<Patient>(
+    `/api/patients/${encodeURIComponent(normalizedId)}`,
+  ).finally(() => {
+    patientByIdInFlight.delete(normalizedId);
+  });
+
+  patientByIdInFlight.set(normalizedId, request);
+  return request;
 }
 
 export function createPatient(input: CreatePatientInput): Promise<Patient> {

@@ -44,12 +44,19 @@ export function usePatientDashboard() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [documents, setDocuments] = useState<DashboardDoc[]>([]);
   const [visits, setVisits] = useState<Encounter[]>([]);
+  const [loadingData, setLoadingData] = useState(Boolean(patientId));
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
 
   useEffect(() => {
-    if (!patientId) return;
+    if (!patientId) {
+      setLoadingData(false);
+      return;
+    }
+
     let active = true;
+    setLoadingData(true);
+
     getPatientById(patientId)
       .then((p) => {
         if (!active) return;
@@ -60,7 +67,11 @@ export function usePatientDashboard() {
       .catch(() => {
         if (active)
           setToast({ severity: "error", message: "Failed to load your data." });
+      })
+      .finally(() => {
+        if (active) setLoadingData(false);
       });
+
     return () => {
       active = false;
     };
@@ -112,6 +123,7 @@ export function usePatientDashboard() {
     patient,
     documents,
     visits,
+    loadingData,
     uploading,
     toast,
     setToast,

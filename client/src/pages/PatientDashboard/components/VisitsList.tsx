@@ -8,6 +8,7 @@ import { downloadVisitSummaryPdf } from "../../../api/visits";
 
 interface VisitsListProps {
   visits: Encounter[];
+  loading?: boolean;
   patientId: string | undefined;
   onDownloadError?: (message: string) => void;
 }
@@ -128,6 +129,7 @@ function VisitRow({
 
 export const VisitsList: React.FC<VisitsListProps> = ({
   visits,
+  loading = false,
   patientId,
   onDownloadError,
 }) => {
@@ -139,7 +141,11 @@ export const VisitsList: React.FC<VisitsListProps> = ({
       <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 2 }}>
         ביקורים אחרונים
       </Typography>
-      {visits.length === 0 ? (
+      {loading ? (
+        <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+          טוען נתונים...
+        </Typography>
+      ) : visits.length === 0 ? (
         <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
           לא נרשמו ביקורים עדיין.
         </Typography>

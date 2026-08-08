@@ -15,6 +15,7 @@ import { DashboardDoc } from "../hooks/usePatientDashboard";
 
 interface DocumentsListProps {
   documents: DashboardDoc[];
+  loading?: boolean;
 }
 
 function DownloadIcon() {
@@ -98,7 +99,7 @@ function DocRow({ doc }: { doc: DashboardDoc }) {
   );
 }
 
-export const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
+export const DocumentsList: React.FC<DocumentsListProps> = ({ documents, loading = false }) => {
   return (
     <Paper
       elevation={0}
@@ -112,7 +113,11 @@ export const DocumentsList: React.FC<DocumentsListProps> = ({ documents }) => {
       <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 2 }}>
         מסמכים אחרונים
       </Typography>
-      {documents.length === 0 ? (
+      {loading ? (
+        <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
+          טוען נתונים...
+        </Typography>
+      ) : documents.length === 0 ? (
         <Typography sx={{ fontSize: 13, color: "text.secondary" }}>
           אין מסמכים עדיין.
         </Typography>

@@ -6,15 +6,6 @@ export const documentsToolbarRootSx = {
   flexWrap: 'wrap',
 };
 
-export const documentsToolbarSearchFieldSx = {
-  flex: 1,
-  minWidth: 200,
-  maxWidth: 360,
-  '& .MuiOutlinedInput-root': { borderRadius: 999, bgcolor: '#fff' },
-};
-
-export const documentsToolbarSearchIconSx = { color: '#adb5bd' };
-
 export const documentsToolbarFilterScrollerSx = {
   width: { xs: '100%', sm: 'auto' },
   overflowX: 'auto',
