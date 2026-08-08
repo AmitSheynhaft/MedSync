@@ -32,8 +32,12 @@ export interface UserListQuery {
   limit?: number;
 }
 
-export const getUsers = (role?: string) =>
-  getUsersPage({ role, page: 1, limit: 20 }).then((response) => response.items);
+export const getUsers = (role?: string) => {
+  const params = new URLSearchParams();
+  if (role) params.set('role', role);
+  const suffix = params.toString();
+  return apiGet<User[]>(`/api/users${suffix ? `?${suffix}` : ''}`);
+};
 export const getUsersPage = ({ role, page = 1, limit = 20 }: UserListQuery = {}) => {
   const params = new URLSearchParams();
   if (role) params.set('role', role);

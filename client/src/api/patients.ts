@@ -93,9 +93,10 @@ export interface PatientListQuery {
 const patientByIdInFlight = new Map<string, Promise<Patient>>();
 
 export function getPatients(search?: string): Promise<PatientSummary[]> {
-  return getPatientsPage({ search, page: 1, limit: 20 }).then(
-    (response) => response.items,
-  );
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  const suffix = params.toString();
+  return apiGet<PatientSummary[]>(`/api/patients${suffix ? `?${suffix}` : ''}`);
 }
 
 export function getPatientsPage({

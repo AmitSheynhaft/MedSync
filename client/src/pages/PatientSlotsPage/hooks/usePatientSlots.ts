@@ -1,9 +1,10 @@
 import React from 'react';
 import {
   cancelSlotAsPatient,
-  getCancelledPatientSlots,
-  getPastPatientSlots,
-  getUpcomingPatientSlots,
+  getCancelledPatientSlotsPage,
+  getPastPatientSlotsPage,
+  getUpcomingPatientSlotsPage,
+  type Paginated,
   type Slot,
 } from '../../../api/slots';
 import { AsyncStatus } from '../../../hooks/useAsyncData';
@@ -11,6 +12,7 @@ import { AsyncStatus } from '../../../hooks/useAsyncData';
 const UPCOMING_TAB = 0;
 const PAST_TAB = 1;
 const CANCELLED_TAB = 2;
+const PAGE_SIZE = 20;
 
 type PatientSlotsTab = typeof UPCOMING_TAB | typeof PAST_TAB | typeof CANCELLED_TAB;
 
@@ -20,41 +22,14 @@ const EMPTY_TEXT_BY_TAB: Record<PatientSlotsTab, string> = {
   [CANCELLED_TAB]: 'אין תורים שבוטלו.',
 };
 
-const SLOT_FETCHER_BY_TAB: Record<PatientSlotsTab, () => Promise<Slot[]>> = {
-  [UPCOMING_TAB]: getUpcomingPatientSlots,
-  [PAST_TAB]: getPastPatientSlots,
-  [CANCELLED_TAB]: getCancelledPatientSlots,
+const SLOT_FETCHER_BY_TAB: Record<
+  PatientSlotsTab,
+  (page: number, limit: number) => Promise<Paginated<Slot>>
+> = {
+  [UPCOMING_TAB]: getUpcomingPatientSlotsPage,
+  [PAST_TAB]: getPastPatientSlotsPage,
+  [CANCELLED_TAB]: getCancelledPatientSlotsPage,
 };
-
-type InFlightRequest = {
-  key: string;
-  promise: Promise<Slot[]>;
-};
-
-function getFetchKey(tab: PatientSlotsTab, reloadKey: number): string {
-  return `${tab}-${reloadKey}`;
-}
-
-function getOrCreateRequest(
-  activeRequestRef: React.MutableRefObject<InFlightRequest | null>,
-  fetchKey: string,
-  tab: PatientSlotsTab,
-): Promise<Slot[]> {
-  if (activeRequestRef.current?.key === fetchKey) {
-    return activeRequestRef.current.promise;
-  }
-
-  const promise = SLOT_FETCHER_BY_TAB[tab]();
-  activeRequestRef.current = { key: fetchKey, promise };
-
-  promise.finally(() => {
-    if (activeRequestRef.current?.key === fetchKey) {
-      activeRequestRef.current = null;
-    }
-  });
-
-  return promise;
-}
 
 export function usePatientSlots() {
   const [tab, setTab] = React.useState<PatientSlotsTab>(UPCOMING_TAB);
@@ -63,31 +38,65 @@ export function usePatientSlots() {
   const [cancelling, setCancelling] = React.useState(false);
   const [currentData, setCurrentData] = React.useState<Slot[] | null>(null);
   const [currentStatus, setCurrentStatus] = React.useState<AsyncStatus>('loading');
+  const [hasMore, setHasMore] = React.useState(true);
+  const [loadingMore, setLoadingMore] = React.useState(false);
 
-  const activeRequestRef = React.useRef<InFlightRequest | null>(null);
-  const latestRequestIdRef = React.useRef(0);
+  const pageRef = React.useRef(1);
+  const hasMoreRef = React.useRef(true);
+  const loadingMoreRef = React.useRef(false);
 
+  // Load page 1 whenever tab or reload changes.
   React.useEffect(() => {
-    const fetchKey = getFetchKey(tab, reloadKey);
-    const requestId = ++latestRequestIdRef.current;
-
+    let cancelled = false;
+    pageRef.current = 1;
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
+    setCurrentData(null);
     setCurrentStatus('loading');
 
-    const requestPromise = getOrCreateRequest(activeRequestRef, fetchKey, tab);
-
-    requestPromise
-      .then((slots) => {
-        if (requestId !== latestRequestIdRef.current) return;
-        setCurrentData(slots);
+    SLOT_FETCHER_BY_TAB[tab](1, PAGE_SIZE)
+      .then((response) => {
+        if (cancelled) return;
+        setCurrentData(response.items);
+        setHasMore(response.hasMore);
+        hasMoreRef.current = response.hasMore;
         setCurrentStatus('done');
       })
       .catch(() => {
-        if (requestId !== latestRequestIdRef.current) return;
+        if (cancelled) return;
+        setCurrentData([]);
+        setHasMore(false);
+        hasMoreRef.current = false;
         setCurrentStatus('error');
       });
 
-    return undefined;
+    return () => {
+      cancelled = true;
+    };
   }, [tab, reloadKey]);
+
+  const loadMore = React.useCallback(async () => {
+    if (!hasMoreRef.current || loadingMoreRef.current) return;
+
+    const nextPage = pageRef.current + 1;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+
+    try {
+      const response = await SLOT_FETCHER_BY_TAB[tab](nextPage, PAGE_SIZE);
+      pageRef.current = nextPage;
+      setCurrentData((prev) => [...(prev ?? []), ...response.items]);
+      setHasMore(response.hasMore);
+      hasMoreRef.current = response.hasMore;
+    } catch {
+      setCurrentStatus('error');
+      setHasMore(false);
+      hasMoreRef.current = false;
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [tab]);
 
   const confirmCancel = async () => {
     if (!pendingCancel) return;
@@ -109,6 +118,9 @@ export function usePatientSlots() {
     setTab,
     currentData,
     currentStatus,
+    hasMore,
+    loadingMore,
+    loadMore,
     emptyText: EMPTY_TEXT_BY_TAB[tab],
     pendingCancel,
     setPendingCancel,

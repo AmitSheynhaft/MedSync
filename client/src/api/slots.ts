@@ -109,7 +109,7 @@ export function getCaregiverSlots(date: string): Promise<Slot[]> {
 }
 
 export function getUpcomingPatientSlots(): Promise<Slot[]> {
-  return getUpcomingPatientSlotsPage(1, 20).then((response) => response.items);
+  return apiGet<Slot[]>('/api/slots/patient/upcoming');
 }
 
 export function getUpcomingPatientSlotsPage(
@@ -121,7 +121,7 @@ export function getUpcomingPatientSlotsPage(
 }
 
 export function getPastPatientSlots(): Promise<Slot[]> {
-  return getPastPatientSlotsPage(1, 20).then((response) => response.items);
+  return apiGet<Slot[]>('/api/slots/patient/past');
 }
 
 export function getPastPatientSlotsPage(
@@ -133,7 +133,7 @@ export function getPastPatientSlotsPage(
 }
 
 export function getCancelledPatientSlots(): Promise<Slot[]> {
-  return getCancelledPatientSlotsPage(1, 20).then((response) => response.items);
+  return apiGet<Slot[]>('/api/slots/patient/cancelled');
 }
 
 export function getCancelledPatientSlotsPage(
@@ -145,7 +145,7 @@ export function getCancelledPatientSlotsPage(
 }
 
 export function getSecretaryUpcomingSlots(): Promise<Slot[]> {
-  return getSecretaryUpcomingSlotsPage(1, 20).then((response) => response.items);
+  return apiGet<Slot[]>('/api/slots/secretary/upcoming');
 }
 
 export function getSecretaryUpcomingSlotsPage(
@@ -157,7 +157,7 @@ export function getSecretaryUpcomingSlotsPage(
 }
 
 export function getSecretaryPastSlots(): Promise<Slot[]> {
-  return getSecretaryPastSlotsPage(1, 20).then((response) => response.items);
+  return apiGet<Slot[]>('/api/slots/secretary/past');
 }
 
 export function getSecretaryPastSlotsPage(

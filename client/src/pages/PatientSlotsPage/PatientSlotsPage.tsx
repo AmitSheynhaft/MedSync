@@ -21,6 +21,9 @@ export const PatientSlotsPage: React.FC = () => {
     setTab,
     currentData,
     currentStatus,
+    hasMore,
+    loadingMore,
+    loadMore,
     emptyText,
     pendingCancel,
     setPendingCancel,
@@ -28,11 +31,19 @@ export const PatientSlotsPage: React.FC = () => {
     confirmCancel,
   } = usePatientSlots();
 
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    if (!hasMore || loadingMore || currentStatus !== 'done') return;
+    const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
+    if (scrollHeight - (scrollTop + clientHeight) < 200) {
+      void loadMore();
+    }
+  };
+
   return (
     <PageRoot>
       <PageHeader title="התורים שלי" subtitle="צפייה בתורים קרובים, קודמים ומבוטלים" showDoctorSubtitle={false} />
 
-      <ScrollArea>
+      <ScrollArea onScroll={handleScroll}>
         <ContentWrap>
           <SlotsTabs
             value={tab}
@@ -60,6 +71,9 @@ export const PatientSlotsPage: React.FC = () => {
                   disabled={cancelling}
                 />
               ))}
+              {loadingMore && (
+                <StatusText sx={{ py: 2 }}>טוען עוד תורים...</StatusText>
+              )}
             </Stack>
           )}
         </ContentWrap>

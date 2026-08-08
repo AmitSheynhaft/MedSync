@@ -39,13 +39,15 @@ export class PatientsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const pageNumber = page !== undefined ? Number(page) : 1;
-    const limitNumber = limit !== undefined ? Number(limit) : 20;
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    if (!shouldPaginate) {
+      return this.patientsService.getAllPatients(searchQuery, user);
+    }
     return this.patientsService.getAllPatients(
       searchQuery,
       user,
-      pageNumber,
-      limitNumber,
+      Number(page),
+      Number(limit),
     );
   }
 
