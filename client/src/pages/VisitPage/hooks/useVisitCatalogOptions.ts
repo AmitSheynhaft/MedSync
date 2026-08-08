@@ -19,38 +19,33 @@ export function useVisitCatalogOptions(
   const [medicineSearch, setMedicineSearch] = useState('');
   const [medicineOptions, setMedicineOptions] = useState<Medicine[]>([]);
 
-  // Pre-load catalog options for the editing dropdowns. These are doctor-only
-  // endpoints, so skip them in read-only (patient) mode to avoid 403s.
+  // Debounced diagnosis search and initial load. In dev Strict Mode, the first
+  // mount timeout is cleaned up before firing, so this still performs one query.
   useEffect(() => {
     if (isReadOnly) return;
-    getDiagnoses()
-      .then((responseDiagnoses) => setDiagnosisOptions(responseDiagnoses.slice(0, 30)))
-      .catch(() => {});
-    getMedicines()
-      .then((responseMedicines) => setMedicineOptions(responseMedicines.slice(0, 30)))
-      .catch(() => {});
-  }, [isReadOnly]);
-
-  // Debounced diagnosis search.
-  useEffect(() => {
-    if (isReadOnly || !diagnosisSearch.trim()) return;
+    const trimmedSearch = diagnosisSearch.trim();
     const debounceTimer = window.setTimeout(() => {
-      getDiagnoses(diagnosisSearch)
+      getDiagnoses(trimmedSearch || undefined)
         .then((responseDiagnoses) =>
-          setDiagnosisOptions(responseDiagnoses.slice(0, 10)),
+          setDiagnosisOptions(
+            responseDiagnoses.slice(0, trimmedSearch ? 10 : 30),
+          ),
         )
         .catch(() => {});
     }, 250);
     return () => window.clearTimeout(debounceTimer);
   }, [diagnosisSearch, isReadOnly]);
 
-  // Debounced medicine search.
+  // Debounced medicine search and initial load.
   useEffect(() => {
-    if (isReadOnly || !medicineSearch.trim()) return;
+    if (isReadOnly) return;
+    const trimmedSearch = medicineSearch.trim();
     const debounceTimer = window.setTimeout(() => {
-      getMedicines(medicineSearch)
+      getMedicines(trimmedSearch || undefined)
         .then((responseMedicines) =>
-          setMedicineOptions(responseMedicines.slice(0, 10)),
+          setMedicineOptions(
+            responseMedicines.slice(0, trimmedSearch ? 10 : 30),
+          ),
         )
         .catch(() => {});
     }, 250);
