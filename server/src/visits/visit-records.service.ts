@@ -22,6 +22,11 @@ import { RecordingStatus, VisitSummaryType, VisitType } from '../common/constant
 import { DiagnosesService } from '../diagnoses/diagnoses.service';
 import { MedicinesService } from '../medicines/medicines.service';
 import { PatientMedicalSummaryService } from '../patient-medical-summary/patient-medical-summary.service';
+import { PaginatedResult } from '../common/pagination/pagination.types';
+import {
+  resolvePagination,
+  toPaginatedResult,
+} from '../common/pagination/pagination.util';
 import {
   VisitDiagnosisInput,
   VisitInput,
@@ -404,11 +409,13 @@ export class VisitRecordsService {
     }
   }
 
-  getVisitRecords(
+  async getVisitRecords(
     patientId?: string,
     caregiverId?: string,
     actingClinicId?: string,
-  ): Promise<Visit[]> {
+    page?: number,
+    limit?: number,
+  ): Promise<Visit[] | PaginatedResult<Visit>> {
     const qb = this.visits
       .createQueryBuilder('visit')
       .leftJoinAndSelect('visit.patient', 'patient')
@@ -417,7 +424,8 @@ export class VisitRecordsService {
       .leftJoinAndSelect('caregiver.user', 'caregiverUser')
       .leftJoinAndSelect('visit.summary', 'summary')
       .leftJoinAndSelect('visit.recording', 'recording')
-      .orderBy('visit.visitDate', 'DESC');
+      .orderBy('visit.visitDate', 'DESC')
+      .addOrderBy('visit.id', 'DESC');
 
     if (patientId) qb.andWhere('visit.patientId = :patientId', { patientId });
     if (caregiverId) qb.andWhere('visit.caregiverId = :caregiverId', { caregiverId });
@@ -432,7 +440,14 @@ export class VisitRecordsService {
       );
     }
 
-    return qb.getMany();
+    if (page === undefined && limit === undefined) {
+      return qb.getMany();
+    }
+
+    const pagination = resolvePagination(page, limit);
+    qb.skip(pagination.skip).take(pagination.take);
+    const [items, total] = await qb.getManyAndCount();
+    return toPaginatedResult(items, total, pagination);
   }
 
   async getVisitRecordById(visitId: string): Promise<Visit> {
