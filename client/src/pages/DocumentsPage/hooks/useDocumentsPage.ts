@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { loadUserDataSession } from '../../../auth/userDataSessionStore';
 import { getPatientById, Patient } from '../../../api/patients';
 import { uploadDocument } from '../../../api/documents';
-import { getMedicalDocuments, MedicalDocument, DocumentTypeEnum } from '../../../api/medical-documents';
-import { useAsyncData } from '../../../hooks/useAsyncData';
+import { getMedicalDocumentsPage, MedicalDocument, DocumentTypeEnum } from '../../../api/medical-documents';
+import { AsyncStatus, useAsyncData } from '../../../hooks/useAsyncData';
 import { useCameraStream } from '../../../hooks/useCameraStream';
 import { isSupportedUploadFile, SUPPORTED_FORMATS_LABEL } from '../../PatientDashboard/components/UploadModal';
-import { TFilterKey, DOC_TYPE_LABELS } from '../utils';
+import { TFilterKey } from '../utils';
+
+const PAGE_SIZE = 20;
 
 export function useDocumentsPage() {
   const navigate = useNavigate();
@@ -16,7 +18,6 @@ export function useDocumentsPage() {
   const isDoctorView = !!id;
   const patientId = id ?? userDataSession?.patientId;
 
-  const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<TFilterKey>('all');
   const [refreshKey, setRefreshKey] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -26,24 +27,103 @@ export function useDocumentsPage() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [documents, setDocuments] = useState<MedicalDocument[] | null>(null);
+  const [documentsStatus, setDocumentsStatus] = useState<AsyncStatus>('loading');
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isUploadingRef = useRef(false);
+  const pageRef = useRef(1);
+  const hasMoreRef = useRef(true);
+  const loadingMoreRef = useRef(false);
 
   const { data: patient } = useAsyncData<Patient | null>(
     () => (patientId ? getPatientById(patientId) : Promise.resolve(null)),
     [patientId],
   );
 
-  const { data: documents, status: documentsStatus } = useAsyncData<MedicalDocument[]>(
-    () => (patientId ? getMedicalDocuments(patientId) : Promise.resolve([])),
-    [patientId, refreshKey],
-  );
+  // Load page 1 whenever patient, filter, or refresh changes.
+  useEffect(() => {
+    if (!patientId) {
+      setDocuments([]);
+      setDocumentsStatus('done');
+      setHasMore(false);
+      hasMoreRef.current = false;
+      return;
+    }
 
+    let cancelled = false;
+    pageRef.current = 1;
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
+    setDocuments(null);
+    setDocumentsStatus('loading');
+
+    getMedicalDocumentsPage({
+      patientId,
+      page: 1,
+      limit: PAGE_SIZE,
+      documentType: filter === 'all' ? undefined : filter,
+    })
+      .then((response) => {
+        if (cancelled) return;
+        setDocuments(response.items);
+        setHasMore(response.hasMore);
+        hasMoreRef.current = response.hasMore;
+        setDocumentsStatus('done');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDocuments([]);
+        setHasMore(false);
+        hasMoreRef.current = false;
+        setDocumentsStatus('error');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [patientId, filter, refreshKey]);
+
+  // Load next page (imperative). Guarded by refs to avoid duplicate scroll triggers.
+  const loadMore = useCallback(async () => {
+    if (!patientId || !hasMoreRef.current || loadingMoreRef.current) return;
+
+    const nextPage = pageRef.current + 1;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+
+    try {
+      const response = await getMedicalDocumentsPage({
+        patientId,
+        page: nextPage,
+        limit: PAGE_SIZE,
+        documentType: filter === 'all' ? undefined : filter,
+      });
+      pageRef.current = nextPage;
+      setDocuments((prev) => [...(prev ?? []), ...response.items]);
+      setHasMore(response.hasMore);
+      hasMoreRef.current = response.hasMore;
+    } catch {
+      setDocumentsStatus('error');
+      setHasMore(false);
+      hasMoreRef.current = false;
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [patientId, filter]);
+
+  // Poll while any document is still processing, but only on page 1.
   const hasProcessingDocuments = (documents ?? []).some(doc => doc.summaryStatus === 'PROCESSING');
   useEffect(() => {
-    if (!hasProcessingDocuments) return;
-    const pollInterval = setInterval(() => setRefreshKey(key => key + 1), 3000);
+    if (!hasProcessingDocuments || pageRef.current !== 1) return;
+
+    const pollInterval = setInterval(() => {
+      setRefreshKey((key) => key + 1);
+    }, 3000);
+
     return () => clearInterval(pollInterval);
   }, [hasProcessingDocuments]);
 
@@ -116,20 +196,15 @@ export function useDocumentsPage() {
   const patientName = patient ? `${patient.firstName} ${patient.lastName}` : 'מטופל';
   const pageTitle = isDoctorView ? `מסמכים — ${patientName}` : 'המסמכים הרפואיים שלי';
 
-  const searchTerm = query.trim().toLowerCase();
-  const filteredDocuments = (documents ?? []).filter(doc => {
-    if (filter !== 'all' && doc.documentType !== filter) return false;
-    if (!searchTerm) return true;
-    const typeLabel = doc.documentType ? DOC_TYPE_LABELS[doc.documentType] : '';
-    return doc.fileName.toLowerCase().includes(searchTerm) || typeLabel.toLowerCase().includes(searchTerm);
-  });
+  const filteredDocuments = documents ?? [];
 
   return {
     navigate, id, isDoctorView, patientId,
-    query, setQuery, filter, setFilter,
+    filter, setFilter,
     uploading, uploadOpen, uploadError, setUploadError,
     fileError, selectedFile, documentType, setDocumentType,
     fileInputRef, documentsStatus, documents,
+    hasMore, loadingMore, loadMore,
     filteredDocuments, summaryModal, setSummaryModal,
     pageTitle, cameraStream,
     openUploadModal, closeUploadModal,

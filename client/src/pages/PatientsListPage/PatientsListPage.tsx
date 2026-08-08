@@ -6,13 +6,25 @@ import { usePatientSearch } from './hooks/usePatientSearch';
 import { PatientListItem } from './components/PatientListItem';
 
 export const PatientsListPage: React.FC = () => {
-  const { query, setQuery, status, filteredPatients } = usePatientSearch();
+  const { query, setQuery, status, patients, hasMore, loadingMore, loadMore } = usePatientSearch();
+
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    if (!hasMore || loadingMore || status !== 'done') return;
+    const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
+    const isNearBottom = scrollHeight - (scrollTop + clientHeight) < 200;
+    if (isNearBottom) {
+      loadMore();
+    }
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
       <PageHeader title="רשימת מטופלים" subtitle="בחר מטופל להתחלת הטיפול" />
 
-      <Box sx={{ flex: 1, overflow: 'auto', bgcolor: '#f6f8fb', p: { xs: 2, sm: 3 } }}>
+      <Box
+        onScroll={handleScroll}
+        sx={{ flex: 1, overflow: 'auto', bgcolor: '#f6f8fb', p: { xs: 2, sm: 3 } }}
+      >
         <Box sx={{ maxWidth: 760, mx: 'auto' }}>
           <TextField
             fullWidth
@@ -51,15 +63,20 @@ export const PatientsListPage: React.FC = () => {
             <Typography sx={{ textAlign: 'center', color: 'error.main', py: 4 }}>
               טעינת המטופלים נכשלה.
             </Typography>
-          ) : filteredPatients.length === 0 ? (
+          ) : patients.length === 0 ? (
             <Typography sx={{ textAlign: 'center', color: '#868e96', py: 4 }}>
               לא נמצאו מטופלים תואמים.
             </Typography>
           ) : (
             <Stack spacing={1.25}>
-              {filteredPatients.map(patient => (
+              {patients.map(patient => (
                 <PatientListItem key={patient.id} patient={patient} />
               ))}
+              {loadingMore && (
+                <Typography sx={{ textAlign: 'center', color: '#868e96', py: 2 }}>
+                  טוען עוד מטופלים...
+                </Typography>
+              )}
             </Stack>
           )}
         </Box>

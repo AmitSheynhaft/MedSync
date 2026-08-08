@@ -36,8 +36,19 @@ export class PatientsController {
   getAllPatients(
     @Query('search') searchQuery: string | undefined,
     @User() user: IUser,
-  ): Promise<PatientSummary[]> {
-    return this.patientsService.getAllPatients(searchQuery, user);
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    if (!shouldPaginate) {
+      return this.patientsService.getAllPatients(searchQuery, user);
+    }
+    return this.patientsService.getAllPatients(
+      searchQuery,
+      user,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Get(':id')

@@ -26,6 +26,7 @@ export const PatientDashboard: React.FC = () => {
     patient,
     documents,
     visits,
+    loadingData,
     uploading,
     toast,
     setToast,
@@ -106,15 +107,16 @@ export const PatientDashboard: React.FC = () => {
 
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, md: 7 }}>
-            <AISummaryCard overview={patient?.overview} />
+            <AISummaryCard overview={patient?.overview} loading={loadingData} />
           </Grid>
           <Grid size={{ xs: 12, md: 5 }}>
-            <DocumentsList documents={documents} />
+            <DocumentsList documents={documents} loading={loadingData} />
           </Grid>
         </Grid>
 
         <VisitsList
           visits={visits}
+          loading={loadingData}
           patientId={patientId}
           onDownloadError={(message) =>
             setToast({ severity: "error", message })

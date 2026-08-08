@@ -14,6 +14,11 @@ import { Secretary } from './entities/secretaryEntity';
 import { hashPassword, isHashedPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
 import { ROLE_DOCTOR, ROLE_PATIENT, ROLE_SECRETARY } from '../common/constants/roles';
+import { PaginatedResult } from '../common/pagination/pagination.types';
+import {
+  resolvePagination,
+  toPaginatedResult,
+} from '../common/pagination/pagination.util';
 
 export interface CreateUserInput {
   roleId?: string;
@@ -63,17 +68,37 @@ export class UsersService {
     } as SafeUser;
   }
 
-  async getAllUsers(roleName?: string): Promise<SafeUser[]> {
-    const userEntities = await this.userRepository.find({
+  async getAllUsers(
+    roleName?: string,
+    page?: number,
+    limit?: number,
+  ): Promise<SafeUser[] | PaginatedResult<SafeUser>> {
+    const trimmedRoleName = roleName?.trim();
+    const where = trimmedRoleName ? { role: { name: trimmedRoleName } } : undefined;
+
+    if (page === undefined && limit === undefined) {
+      const userEntities = await this.userRepository.find({
+        where,
+        relations: ['role'],
+        order: { createdAt: 'DESC' },
+      });
+      return userEntities.map((userEntity) =>
+        this.mapUserEntityToSafeUser(userEntity),
+      );
+    }
+
+    const pagination = resolvePagination(page, limit);
+    const [userEntities, total] = await this.userRepository.findAndCount({
+      where,
       relations: ['role'],
-      order: { createdAt: 'DESC' },
+      order: { createdAt: 'DESC', id: 'DESC' },
+      skip: pagination.skip,
+      take: pagination.take,
     });
-    const filteredUsers = roleName
-      ? userEntities.filter((userEntity) => userEntity.role?.name === roleName)
-      : userEntities;
-    return filteredUsers.map((userEntity) =>
+    const items = userEntities.map((userEntity) =>
       this.mapUserEntityToSafeUser(userEntity),
     );
+    return toPaginatedResult(items, total, pagination);
   }
 
   async getUserById(userId: string): Promise<SafeUser> {

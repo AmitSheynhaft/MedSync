@@ -75,32 +75,92 @@ export class SlotsController {
 
   @Roles(ROLE_PATIENT)
   @Get('patient/upcoming')
-  getUpcomingSlotsForPatient(@User() user: IUser) {
-    return this.slotsService.getUpcomingSlotsForPatient(user.id);
+  getUpcomingSlotsForPatient(
+    @User() user: IUser,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    if (!shouldPaginate) {
+      return this.slotsService.getUpcomingSlotsForPatient(user.id);
+    }
+    return this.slotsService.getUpcomingSlotsForPatient(
+      user.id,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Roles(ROLE_PATIENT)
   @Get('patient/past')
-  getPastSlotsForPatient(@User() user: IUser) {
-    return this.slotsService.getPastSlotsForPatient(user.id);
+  getPastSlotsForPatient(
+    @User() user: IUser,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    if (!shouldPaginate) {
+      return this.slotsService.getPastSlotsForPatient(user.id);
+    }
+    return this.slotsService.getPastSlotsForPatient(
+      user.id,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Roles(ROLE_PATIENT)
   @Get('patient/cancelled')
-  getCancelledSlotsForPatient(@User() user: IUser) {
-    return this.slotsService.getCancelledSlotsForPatient(user.id);
+  getCancelledSlotsForPatient(
+    @User() user: IUser,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    if (!shouldPaginate) {
+      return this.slotsService.getCancelledSlotsForPatient(user.id);
+    }
+    return this.slotsService.getCancelledSlotsForPatient(
+      user.id,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Roles(ROLE_SECRETARY)
   @Get('secretary/upcoming')
-  getUpcomingSlotsForSecretary(@User() user: IUser) {
-    return this.slotsService.getUpcomingSlotsForSecretary(user.id);
+  getUpcomingSlotsForSecretary(
+    @User() user: IUser,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    if (!shouldPaginate) {
+      return this.slotsService.getUpcomingSlotsForSecretary(user.id);
+    }
+    return this.slotsService.getUpcomingSlotsForSecretary(
+      user.id,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Roles(ROLE_SECRETARY)
   @Get('secretary/past')
-  getPastSlotsForSecretary(@User() user: IUser) {
-    return this.slotsService.getPastSlotsForSecretary(user.id);
+  getPastSlotsForSecretary(
+    @User() user: IUser,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    if (!shouldPaginate) {
+      return this.slotsService.getPastSlotsForSecretary(user.id);
+    }
+    return this.slotsService.getPastSlotsForSecretary(
+      user.id,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Roles(ROLE_SECRETARY)

@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from './client';
+import { Paginated } from './pagination';
 
 export interface User {
   id: string;
@@ -25,8 +26,25 @@ export interface CreateUserInput {
 
 export interface UpdateUserInput extends Partial<CreateUserInput> {}
 
-export const getUsers = (role?: string) =>
-  apiGet<User[]>(`/api/users${role ? `?role=${encodeURIComponent(role)}` : ''}`);
+export interface UserListQuery {
+  role?: string;
+  page?: number;
+  limit?: number;
+}
+
+export const getUsers = (role?: string) => {
+  const params = new URLSearchParams();
+  if (role) params.set('role', role);
+  const suffix = params.toString();
+  return apiGet<User[]>(`/api/users${suffix ? `?${suffix}` : ''}`);
+};
+export const getUsersPage = ({ role, page = 1, limit = 20 }: UserListQuery = {}) => {
+  const params = new URLSearchParams();
+  if (role) params.set('role', role);
+  params.set('page', String(page));
+  params.set('limit', String(limit));
+  return apiGet<Paginated<User>>(`/api/users?${params.toString()}`);
+};
 export const getUser = (id: string) => apiGet<User>(`/api/users/${id}`);
 /** Fetch the authenticated user's own profile (identity from the token). */
 export const getMe = () => apiGet<User>('/api/users/me');

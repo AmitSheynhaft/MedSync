@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ROLE_ADMIN } from '../common/constants/roles';
@@ -26,8 +27,16 @@ export class AdminController {
 
   // ── Users ──────────────────────────────────────────────
   @Get('users')
-  getAllUsers() {
-    return this.users.getAllUsers();
+  getAllUsers(
+    @Query('role') roleName?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    if (!shouldPaginate) {
+      return this.users.getAllUsers(roleName);
+    }
+    return this.users.getAllUsers(roleName, Number(page), Number(limit));
   }
 
   @Post('users')

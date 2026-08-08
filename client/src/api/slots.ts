@@ -1,4 +1,7 @@
 import { apiDelete, apiGet, apiPost } from './client';
+import { Paginated } from './pagination';
+
+export type { Paginated } from './pagination';
 
 export type SlotStatus = 'scheduled' | 'cancelled';
 
@@ -70,14 +73,6 @@ export interface BookSlotInput {
   hasReferral?: boolean;
 }
 
-/** Page envelope returned by the lazily-loaded dropdown endpoints. */
-export interface Paginated<T> {
-  items: T[];
-  total: number;
-  page: number;
-  hasMore: boolean;
-}
-
 export function bookSlot(input: BookSlotInput): Promise<Slot> {
   return apiPost<Slot>('/api/slots/book', input);
 }
@@ -86,7 +81,7 @@ export function getTherapistOptions(
   search = '',
   page = 1,
 ): Promise<Paginated<TherapistOption>> {
-  const params = new URLSearchParams({ page: String(page) });
+  const params = new URLSearchParams({ page: String(page), limit: '20' });
   if (search) params.set('search', search);
   return apiGet<Paginated<TherapistOption>>(`/api/slots/therapists?${params}`);
 }
@@ -95,7 +90,7 @@ export function getBookablePatients(
   search = '',
   page = 1,
 ): Promise<Paginated<BookablePatient>> {
-  const params = new URLSearchParams({ page: String(page) });
+  const params = new URLSearchParams({ page: String(page), limit: '20' });
   if (search) params.set('search', search);
   return apiGet<Paginated<BookablePatient>>(`/api/slots/patients?${params}`);
 }
@@ -117,20 +112,60 @@ export function getUpcomingPatientSlots(): Promise<Slot[]> {
   return apiGet<Slot[]>('/api/slots/patient/upcoming');
 }
 
+export function getUpcomingPatientSlotsPage(
+  page = 1,
+  limit = 20,
+): Promise<Paginated<Slot>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return apiGet<Paginated<Slot>>(`/api/slots/patient/upcoming?${params.toString()}`);
+}
+
 export function getPastPatientSlots(): Promise<Slot[]> {
   return apiGet<Slot[]>('/api/slots/patient/past');
+}
+
+export function getPastPatientSlotsPage(
+  page = 1,
+  limit = 20,
+): Promise<Paginated<Slot>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return apiGet<Paginated<Slot>>(`/api/slots/patient/past?${params.toString()}`);
 }
 
 export function getCancelledPatientSlots(): Promise<Slot[]> {
   return apiGet<Slot[]>('/api/slots/patient/cancelled');
 }
 
+export function getCancelledPatientSlotsPage(
+  page = 1,
+  limit = 20,
+): Promise<Paginated<Slot>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return apiGet<Paginated<Slot>>(`/api/slots/patient/cancelled?${params.toString()}`);
+}
+
 export function getSecretaryUpcomingSlots(): Promise<Slot[]> {
   return apiGet<Slot[]>('/api/slots/secretary/upcoming');
 }
 
+export function getSecretaryUpcomingSlotsPage(
+  page = 1,
+  limit = 20,
+): Promise<Paginated<Slot>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return apiGet<Paginated<Slot>>(`/api/slots/secretary/upcoming?${params.toString()}`);
+}
+
 export function getSecretaryPastSlots(): Promise<Slot[]> {
   return apiGet<Slot[]>('/api/slots/secretary/past');
+}
+
+export function getSecretaryPastSlotsPage(
+  page = 1,
+  limit = 20,
+): Promise<Paginated<Slot>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return apiGet<Paginated<Slot>>(`/api/slots/secretary/past?${params.toString()}`);
 }
 
 export function deleteSlotAsSecretary(id: string): Promise<void> {

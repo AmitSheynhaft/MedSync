@@ -8,6 +8,11 @@ import { Repository } from 'typeorm';
 import { MedicalDocument } from './entities/medicalDocumentEntity';
 import { DocumentSummary } from '../documents/entities/documentSummaryEntity';
 import { DocumentType, SummaryStatus } from '../common/constants/domain-enums';
+import { PaginatedResult } from '../common/pagination/pagination.types';
+import {
+  resolvePagination,
+  toPaginatedResult,
+} from '../common/pagination/pagination.util';
 
 export interface MedicalDocumentInput {
   patientId: string;
@@ -33,12 +38,34 @@ export class MedicalDocumentsService {
     private readonly documentSummaryRepository: Repository<DocumentSummary>,
   ) {}
 
-  getMedicalDocuments(patientId?: string): Promise<MedicalDocument[]> {
-    return this.medicalDocumentRepository.find({
-      where: patientId ? { patientId } : undefined,
+  async getMedicalDocuments(
+    patientId?: string,
+    page?: number,
+    limit?: number,
+    documentType?: DocumentType,
+  ): Promise<MedicalDocument[] | PaginatedResult<MedicalDocument>> {
+    const where: Record<string, unknown> = {};
+    if (patientId) where.patientId = patientId;
+    if (documentType) where.documentType = documentType;
+    const finalWhere = Object.keys(where).length > 0 ? where : undefined;
+
+    if (page === undefined && limit === undefined) {
+      return this.medicalDocumentRepository.find({
+        where: finalWhere,
+        relations: ['summary'],
+        order: { uploadedAt: 'DESC' },
+      });
+    }
+
+    const pagination = resolvePagination(page, limit);
+    const [items, total] = await this.medicalDocumentRepository.findAndCount({
+      where: finalWhere,
       relations: ['summary'],
-      order: { uploadedAt: 'DESC' },
+      order: { uploadedAt: 'DESC', id: 'DESC' },
+      skip: pagination.skip,
+      take: pagination.take,
     });
+    return toPaginatedResult(items, total, pagination);
   }
 
   async getMedicalDocumentById(documentId: string): Promise<MedicalDocument> {

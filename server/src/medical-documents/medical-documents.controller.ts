@@ -33,6 +33,9 @@ export class MedicalDocumentsController {
   async getMedicalDocuments(
     @User() user: IUser,
     @Query('patientId') patientId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('documentType') documentType?: string,
   ) {
     // A patientId is mandatory: without it the query would return documents
     // across all patients. Ownership is always verified against the acting
@@ -42,7 +45,21 @@ export class MedicalDocumentsController {
       throw new BadRequestException('patientId is required');
     }
     await this.patientsService.assertUserCanAccessPatient(patientId, user);
-    return this.medicalDocumentsService.getMedicalDocuments(patientId);
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    if (!shouldPaginate) {
+      return this.medicalDocumentsService.getMedicalDocuments(
+        patientId,
+        undefined,
+        undefined,
+        documentType as any,
+      );
+    }
+    return this.medicalDocumentsService.getMedicalDocuments(
+      patientId,
+      Number(page),
+      Number(limit),
+      documentType as any,
+    );
   }
 
   @Get(':id')

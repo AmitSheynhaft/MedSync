@@ -10,6 +10,17 @@ import { DocumentsGrid } from './components/DocumentsGrid/DocumentsGrid';
 export const DocumentsPage: React.FC = () => {
   const page = useDocumentsPage();
 
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    if (!page.hasMore || page.loadingMore || page.documentsStatus !== 'done') return;
+
+    const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
+    const isNearBottom = scrollHeight - (scrollTop + clientHeight) < 200;
+
+    if (isNearBottom) {
+      void page.loadMore();
+    }
+  };
+
   return (
     <Box dir="rtl" sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', bgcolor: 'background.default' }}>
       {page.uploading && <LinearProgress sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1300 }} />}
@@ -21,7 +32,7 @@ export const DocumentsPage: React.FC = () => {
         onUpload={page.openUploadModal}
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 3.5 } }}>
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 3.5 } }}>
         {page.uploadError && (
           <Alert severity="error" onClose={() => page.setUploadError(null)} sx={{ mb: 3 }}>
             {page.uploadError}
@@ -29,8 +40,6 @@ export const DocumentsPage: React.FC = () => {
         )}
 
         <DocumentsToolbar
-          query={page.query}
-          onQueryChange={page.setQuery}
           activeFilter={page.filter}
           onFilterChange={page.setFilter}
         />
@@ -40,7 +49,9 @@ export const DocumentsPage: React.FC = () => {
           documentsStatus={page.documentsStatus}
           documents={page.documents}
           filteredDocuments={page.filteredDocuments}
+          loadingMore={page.loadingMore}
           onDocumentClick={document => page.setSummaryModal({ id: document.id, name: document.fileName })}
+          onScroll={handleScroll}
         />
       </Box>
 

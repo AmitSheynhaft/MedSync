@@ -7,6 +7,7 @@ import {
   apiRequest,
   apiBlob,
 } from './client';
+import { Paginated } from './pagination';
 
 export type RecordingStatus =
   | 'PENDING'
@@ -145,6 +146,13 @@ export interface VisitMedicineInput {
   instructions?: string;
 }
 
+export interface VisitListParams {
+  patientId?: string;
+  caregiverId?: string;
+  page?: number;
+  limit?: number;
+}
+
 // ── AI endpoints ──────────────────────────────────
 export interface VisitSummaryObject {
   patientComplaints: string;
@@ -163,11 +171,24 @@ export function transcribeAudio(audioBlob: Blob): Promise<{ transcript: string; 
 
 // ── CRUD endpoints ────────────────────────────────
 export const getVisits = (params: { patientId?: string; caregiverId?: string } = {}) => {
-  const qs = new URLSearchParams();
-  if (params.patientId) qs.set('patientId', params.patientId);
-  if (params.caregiverId) qs.set('caregiverId', params.caregiverId);
-  const s = qs.toString();
-  return apiGet<Visit[]>(`/api/visits-records${s ? `?${s}` : ''}`);
+  return getVisitsPage({
+    patientId: params.patientId,
+    caregiverId: params.caregiverId,
+    page: 1,
+    limit: 20,
+  }).then((response) => response.items);
+};
+
+export const getVisitsPage = ({
+  patientId,
+  caregiverId,
+  page = 1,
+  limit = 20,
+}: VisitListParams = {}) => {
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (patientId) qs.set('patientId', patientId);
+  if (caregiverId) qs.set('caregiverId', caregiverId);
+  return apiGet<Paginated<Visit>>(`/api/visits-records?${qs.toString()}`);
 };
 export const getVisit = (id: string) =>
   apiGet<Visit>(`/api/visits-records/${id}`);

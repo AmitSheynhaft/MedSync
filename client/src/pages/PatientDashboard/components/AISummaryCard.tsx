@@ -4,12 +4,13 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 
 interface AISummaryCardProps {
   overview?: string;
+  loading?: boolean;
 }
 
 const PLACEHOLDER =
   "סיכום בריאות המופק בבינה מלאכותית יופיע כאן עם צבירת מספיק נתונים.";
 
-export const AISummaryCard: React.FC<AISummaryCardProps> = ({ overview }) => {
+export const AISummaryCard: React.FC<AISummaryCardProps> = ({ overview, loading = false }) => {
   return (
     <Paper
       elevation={0}
@@ -30,7 +31,7 @@ export const AISummaryCard: React.FC<AISummaryCardProps> = ({ overview }) => {
       <Typography
         sx={{ fontSize: 14, color: "text.secondary", lineHeight: 1.65 }}
       >
-        {overview || PLACEHOLDER}
+        {loading ? "טוען נתונים..." : overview || PLACEHOLDER}
       </Typography>
     </Paper>
   );
