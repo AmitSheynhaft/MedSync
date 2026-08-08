@@ -4,9 +4,8 @@ import {
   createClinic,
   updateClinic,
   deleteClinic,
-  Clinic,
-  ClinicInput,
-} from '../../../api/clinics';
+} from '../../../api/admin/clinics';
+import { Clinic, ClinicInput } from '../../../api/clinics';
 
 export interface AdminClinicsState {
   clinics: Clinic[];
@@ -18,13 +17,18 @@ export interface AdminClinicsState {
   handleDelete: (id: string) => Promise<void>;
 }
 
-export function useAdminClinics(): AdminClinicsState {
+export function useAdminClinics(enabled = true): AdminClinicsState {
   const [clinics, setClinics] = useState<Clinic[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
+
     let active = true;
     setLoading(true);
     setError(null);
@@ -35,7 +39,7 @@ export function useAdminClinics(): AdminClinicsState {
     return () => {
       active = false;
     };
-  }, [reloadKey]);
+  }, [enabled, reloadKey]);
 
   const refresh = () => setReloadKey(key => key + 1);
 

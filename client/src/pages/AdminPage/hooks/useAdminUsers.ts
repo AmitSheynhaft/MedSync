@@ -1,17 +1,38 @@
 import { useState, useEffect } from 'react';
 import {
-  getUsers,
-  deleteUser,
-  updateUser,
-  createUser,
-  User,
-  CreateUserInput,
-  UpdateUserInput,
-} from '../../../api/users';
-import { getRoles } from '../../../api/roles';
+  getAdminUsers,
+  deleteAdminUser,
+  updateAdminUser,
+  createAdminUser,
+  IAdminUserListItem,
+} from '../../../api/admin/users';
+import { CreateUserInput, UpdateUserInput } from '../../../api/users';
+import { ALL_ROLES } from '../../../constants/roles';
+
+const ADMIN_ROLE_OPTIONS = ALL_ROLES.map((roleName) => ({ id: roleName, name: roleName }));
+let adminUsersCache: IAdminUserListItem[] | null = null;
+let adminUsersInFlight: Promise<IAdminUserListItem[]> | null = null;
+
+function fetchAdminUsers(): Promise<IAdminUserListItem[]> {
+  if (adminUsersCache) {
+    return Promise.resolve(adminUsersCache);
+  }
+  if (adminUsersInFlight) {
+    return adminUsersInFlight;
+  }
+  adminUsersInFlight = getAdminUsers()
+    .then((users) => {
+      adminUsersCache = users;
+      return users;
+    })
+    .finally(() => {
+      adminUsersInFlight = null;
+    });
+  return adminUsersInFlight;
+}
 
 export interface AdminUsersState {
-  users: User[];
+  users: IAdminUserListItem[];
   roles: { id: string; name: string }[];
   loading: boolean;
   error: string | null;
@@ -22,8 +43,7 @@ export interface AdminUsersState {
 }
 
 export function useAdminUsers(): AdminUsersState {
-  const [users, setUsers] = useState<User[]>([]);
-  const [roles, setRoles] = useState<{ id: string; name: string }[]>([]);
+  const [users, setUsers] = useState<IAdminUserListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -32,11 +52,10 @@ export function useAdminUsers(): AdminUsersState {
     let active = true;
     setLoading(true);
     setError(null);
-    Promise.all([getUsers(), getRoles()])
-      .then(([u, r]) => {
+    fetchAdminUsers()
+      .then((u) => {
         if (!active) return;
         setUsers(u);
-        setRoles(r);
       })
       .catch(() => {
         if (!active) return;
@@ -54,7 +73,8 @@ export function useAdminUsers(): AdminUsersState {
 
   const handleCreate = async (input: CreateUserInput) => {
     try {
-      await createUser(input);
+      await createAdminUser(input);
+      adminUsersCache = null;
       refresh();
     } catch (err) {
       setError('יצירת המשתמש נכשלה');
@@ -64,7 +84,8 @@ export function useAdminUsers(): AdminUsersState {
 
   const handleUpdate = async (id: string, input: UpdateUserInput) => {
     try {
-      await updateUser(id, input);
+      await updateAdminUser(id, input);
+      adminUsersCache = null;
       refresh();
     } catch (err) {
       setError('עדכון המשתמש נכשל');
@@ -74,7 +95,8 @@ export function useAdminUsers(): AdminUsersState {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteUser(id);
+      await deleteAdminUser(id);
+      adminUsersCache = null;
       refresh();
     } catch (err) {
       setError('מחיקת המשתמש נכשלה');
@@ -82,5 +104,14 @@ export function useAdminUsers(): AdminUsersState {
     }
   };
 
-  return { users, roles, loading, error, refresh, handleCreate, handleUpdate, handleDelete };
+  return {
+    users,
+    roles: ADMIN_ROLE_OPTIONS,
+    loading,
+    error,
+    refresh,
+    handleCreate,
+    handleUpdate,
+    handleDelete,
+  };
 }

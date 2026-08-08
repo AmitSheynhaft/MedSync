@@ -4,7 +4,8 @@ import {
   Button, TextField, MenuItem, Stack, Typography, InputAdornment, IconButton, Alert,
 } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import { User, UpdateUserInput, CreateUserInput } from '../../../api/users';
+import { UpdateUserInput, CreateUserInput } from '../../../api/users';
+import { IAdminUserListItem } from '../../../api/admin/users';
 import { ROLE_LABELS } from './adminUser.constants';
 import {
   GENDER_OPTIONS,
@@ -26,7 +27,7 @@ import {
 
 interface EditProps {
   mode: 'edit';
-  user: User;
+  user: IAdminUserListItem;
   roles: { id: string; name: string }[];
   clinics: { id: string; name: string }[];
   onClose: () => void;
@@ -55,7 +56,7 @@ const UserFormDialog: React.FC<Props> = (props) => {
   const [password,   setPassword]   = useState('');
   const [gender,     setGender]     = useState(user?.gender ?? '');
   const [birthDate,  setBirthDate]  = useState(user?.birthDate?.slice(0, 10) ?? '');
-  const [roleId,     setRoleId]     = useState('');
+  const [roleName,   setRoleName]   = useState('');
   const [clinicId,   setClinicId]   = useState('');
   const [errors,     setErrors]     = useState<UserFormErrors>({});
   const [saving,     setSaving]     = useState(false);
@@ -71,8 +72,7 @@ const UserFormDialog: React.FC<Props> = (props) => {
     setBirthDate(user?.birthDate?.slice(0, 10) ?? '');
     setErrors({});
     setSaveError(null);
-    const matched = roles.find((r) => r.name === user?.role?.name);
-    setRoleId(matched?.id ?? '');
+    setRoleName(user?.role?.name ?? '');
     setClinicId('');
   }, [open, user, roles]);
 
@@ -95,7 +95,20 @@ const UserFormDialog: React.FC<Props> = (props) => {
     return e;
   };
 
+  const hasEditChanges = !isEdit || (() => {
+    if (!user) return false;
+    return (
+      fullName.trim() !== user.fullName ||
+      email.trim() !== user.email ||
+      (phone || '') !== (user.phone || '') ||
+      (gender || '') !== (user.gender || '') ||
+      (birthDate || '') !== (user.birthDate?.slice(0, 10) || '') ||
+      (roleName || '') !== (user.role?.name || '')
+    );
+  })();
+
   const handleSave = async () => {
+    if (!hasEditChanges) return;
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     setSaving(true);
@@ -108,7 +121,7 @@ const UserFormDialog: React.FC<Props> = (props) => {
           phone:      phone     || undefined,
           gender:     gender    || undefined,
           birthDate:  birthDate || undefined,
-          roleId:     roleId    || undefined,
+          roleName:   roleName  || undefined,
         });
       } else {
         await (props as CreateProps).onSave({
@@ -118,7 +131,7 @@ const UserFormDialog: React.FC<Props> = (props) => {
           phone:     phone     || undefined,
           gender:    gender    || undefined,
           birthDate: birthDate || undefined,
-          roleId:    roleId    || undefined,
+          roleName:  roleName  || undefined,
           clinicId:  clinicId  || undefined,
         });
       }
@@ -231,17 +244,17 @@ const UserFormDialog: React.FC<Props> = (props) => {
             {...fieldSx}
             select
             label="תפקיד"
-            value={roleId}
-            onChange={(e) => setRoleId(e.target.value)}
+            value={roleName}
+            onChange={(e) => setRoleName(e.target.value)}
           >
             <MenuItem value="">— בחר תפקיד —</MenuItem>
             {roles.map((r) => (
-              <MenuItem key={r.id} value={r.id}>{ROLE_LABELS[r.name] ?? r.name}</MenuItem>
+              <MenuItem key={r.id} value={r.name}>{ROLE_LABELS[r.name] ?? r.name}</MenuItem>
             ))}
           </TextField>
 
           {!isEdit && (() => {
-            const selectedRole = roles.find(r => r.id === roleId)?.name;
+            const selectedRole = roleName;
             const needsClinic = selectedRole === 'secretary' || selectedRole === 'doctor';
             return needsClinic ? (
               <TextField {...fieldSx} select label="מרפאה" value={clinicId} onChange={(e) => setClinicId(e.target.value)} required>
@@ -262,7 +275,7 @@ const UserFormDialog: React.FC<Props> = (props) => {
       </DialogContent>
       <DialogActions sx={userFormDialogActionsSx}>
         <Button onClick={onClose} disabled={saving}>ביטול</Button>
-        <Button variant="contained" onClick={handleSave} disabled={saving}>
+        <Button variant="contained" onClick={handleSave} disabled={saving || !hasEditChanges}>
           {saving ? 'שומר...' : 'שמור'}
         </Button>
       </DialogActions>
