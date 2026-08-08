@@ -10,26 +10,6 @@ import { CreateUserInput, UpdateUserInput } from '../../../api/users';
 import { ALL_ROLES } from '../../../constants/roles';
 
 const ADMIN_ROLE_OPTIONS = ALL_ROLES.map((roleName) => ({ id: roleName, name: roleName }));
-let adminUsersCache: IAdminUserListItem[] | null = null;
-let adminUsersInFlight: Promise<IAdminUserListItem[]> | null = null;
-
-function fetchAdminUsers(): Promise<IAdminUserListItem[]> {
-  if (adminUsersCache) {
-    return Promise.resolve(adminUsersCache);
-  }
-  if (adminUsersInFlight) {
-    return adminUsersInFlight;
-  }
-  adminUsersInFlight = getAdminUsers()
-    .then((users) => {
-      adminUsersCache = users;
-      return users;
-    })
-    .finally(() => {
-      adminUsersInFlight = null;
-    });
-  return adminUsersInFlight;
-}
 
 export interface AdminUsersState {
   users: IAdminUserListItem[];
@@ -52,7 +32,7 @@ export function useAdminUsers(): AdminUsersState {
     let active = true;
     setLoading(true);
     setError(null);
-    fetchAdminUsers()
+    getAdminUsers()
       .then((u) => {
         if (!active) return;
         setUsers(u);
@@ -74,7 +54,6 @@ export function useAdminUsers(): AdminUsersState {
   const handleCreate = async (input: CreateUserInput) => {
     try {
       await createAdminUser(input);
-      adminUsersCache = null;
       refresh();
     } catch (err) {
       setError('יצירת המשתמש נכשלה');
@@ -85,7 +64,6 @@ export function useAdminUsers(): AdminUsersState {
   const handleUpdate = async (id: string, input: UpdateUserInput) => {
     try {
       await updateAdminUser(id, input);
-      adminUsersCache = null;
       refresh();
     } catch (err) {
       setError('עדכון המשתמש נכשל');
@@ -96,7 +74,6 @@ export function useAdminUsers(): AdminUsersState {
   const handleDelete = async (id: string) => {
     try {
       await deleteAdminUser(id);
-      adminUsersCache = null;
       refresh();
     } catch (err) {
       setError('מחיקת המשתמש נכשלה');
