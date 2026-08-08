@@ -108,6 +108,9 @@ export const DocumentsList: React.FC<DocumentsListProps> = ({ documents, loading
         borderRadius: 3,
         border: "1px solid #e9ecef",
         height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        maxHeight: 380,
       }}
     >
       <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 2 }}>
@@ -122,7 +125,15 @@ export const DocumentsList: React.FC<DocumentsListProps> = ({ documents, loading
           אין מסמכים עדיין.
         </Typography>
       ) : (
-        <Stack spacing={1}>
+        <Stack
+          spacing={1}
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            pr: 0.5,
+          }}
+        >
           {documents.map((doc) => (
             <DocRow key={doc.id} doc={doc} />
           ))}
