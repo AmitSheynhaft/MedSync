@@ -42,6 +42,7 @@ export const DiagnosesSection: React.FC<IDiagnosesSectionProps> = ({
       <Autocomplete
         size="small"
         options={diagnosisOptions}
+        value={null}
         getOptionLabel={option => `${option.code} — ${option.description}`}
         filterOptions={options => options}
         inputValue={diagnosisSearch}
@@ -49,7 +50,7 @@ export const DiagnosesSection: React.FC<IDiagnosesSectionProps> = ({
         onChange={(_, selectedOption) => {
           if (!selectedOption) return;
           addDiagnosis({ code: selectedOption.code, description: selectedOption.description });
-          setTimeout(() => setDiagnosisSearch(''), 0);
+          setDiagnosisSearch('');
         }}
         renderInput={params => (
           <TextField {...params} placeholder="חפש קוד או תיאור ICD-10..."
