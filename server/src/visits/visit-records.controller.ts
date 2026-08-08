@@ -63,7 +63,13 @@ export class VisitRecordsController {
     @User() user: IUser,
     @Query('patientId') patientId?: string,
     @Query('caregiverId') caregiverId?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    const pageNumber = shouldPaginate ? Number(page) : undefined;
+    const limitNumber = shouldPaginate ? Number(limit) : undefined;
+
     // Patients may only ever read their own visit records; ignore any
     // client-supplied filters that could target another patient's data.
     if (user?.role?.name === ROLE_PATIENT) {
@@ -71,13 +77,31 @@ export class VisitRecordsController {
       if (!ownPatientId) {
         throw new ForbiddenException('No patient profile for this user');
       }
-      return this.visitRecordsService.getVisitRecords(ownPatientId, undefined);
+      if (!shouldPaginate) {
+        return this.visitRecordsService.getVisitRecords(ownPatientId, undefined);
+      }
+      return this.visitRecordsService.getVisitRecords(
+        ownPatientId,
+        undefined,
+        undefined,
+        pageNumber,
+        limitNumber,
+      );
     }
     const actingClinicId = user?.caregiver?.clinicId;
+    if (!shouldPaginate) {
+      return this.visitRecordsService.getVisitRecords(
+        patientId,
+        caregiverId,
+        actingClinicId,
+      );
+    }
     return this.visitRecordsService.getVisitRecords(
       patientId,
       caregiverId,
       actingClinicId,
+      pageNumber,
+      limitNumber,
     );
   }
 

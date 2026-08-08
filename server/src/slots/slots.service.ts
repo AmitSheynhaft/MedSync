@@ -37,6 +37,11 @@ import {
   SlotDto,
   TherapistOptionDto,
 } from './slot.dto';
+import { PaginatedResult } from '../common/pagination/pagination.types';
+import {
+  resolvePagination,
+  toPaginatedResult,
+} from '../common/pagination/pagination.util';
 import {
   assertSlotNotInPast,
   assertValidSlotTime,
@@ -241,7 +246,7 @@ export class SlotsService {
     limit?: number,
   ): Promise<PaginatedDto<TherapistOptionDto>> {
     const clinicId = await this.getClinicIdForSecretaryUser(secretaryUserId);
-    const { pageNumber, take, skip } = resolvePaging(page, limit);
+    const pagination = resolvePagination(page, limit);
 
     const term = search?.trim();
     const like = term ? ILike(`%${term}%`) : undefined;
@@ -255,16 +260,16 @@ export class SlotsService {
     const [caregivers, total] = await this.caregiverRepository.findAndCount({
       where,
       relations: ['user'],
-      order: { user: { fullName: 'ASC' } },
-      skip,
-      take,
+      order: { user: { fullName: 'ASC' }, id: 'ASC' },
+      skip: pagination.skip,
+      take: pagination.take,
     });
     const items = caregivers.map((c) => ({
       caregiverId: c.id,
       fullName: c.user?.fullName ?? '',
       specialization: c.specialization ?? '',
     }));
-    return { items, total, page: pageNumber, hasMore: skip + items.length < total };
+    return toPaginatedResult(items, total, pagination);
   }
 
   async getBookablePatientsForSecretary(
@@ -274,7 +279,7 @@ export class SlotsService {
     limit?: number,
   ): Promise<PaginatedDto<BookablePatientDto>> {
     const clinicId = await this.getClinicIdForSecretaryUser(secretaryUserId);
-    const { pageNumber, take, skip } = resolvePaging(page, limit);
+    const pagination = resolvePagination(page, limit);
 
     const term = search?.trim();
     const like = term ? ILike(`%${term}%`) : undefined;
@@ -292,9 +297,9 @@ export class SlotsService {
     const [users, total] = await this.userRepository.findAndCount({
       where,
       relations: ['role', 'patient', 'patient.patientClinics'],
-      order: { fullName: 'ASC' },
-      skip,
-      take,
+      order: { fullName: 'ASC', id: 'ASC' },
+      skip: pagination.skip,
+      take: pagination.take,
     });
     const items = users.map((user) => ({
       userId: user.id,
@@ -303,39 +308,77 @@ export class SlotsService {
       role: user.role?.name ?? '',
       patientId: user.patient?.id,
     }));
-    return { items, total, page: pageNumber, hasMore: skip + items.length < total };
+    return toPaginatedResult(items, total, pagination);
   }
 
-  async getUpcomingSlotsForSecretary(secretaryUserId: string): Promise<SlotDto[]> {
+  async getUpcomingSlotsForSecretary(
+    secretaryUserId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<SlotDto[] | PaginatedResult<SlotDto>> {
     const clinicId = await this.getClinicIdForSecretaryUser(secretaryUserId);
-    const slots = await this.slotRepository.find({
-      where: {
-        caregiver: { clinicId },
-        status: SlotStatus.SCHEDULED,
-        slotTime: MoreThanOrEqual(new Date()),
-      },
+    const where = {
+      caregiver: { clinicId },
+      status: SlotStatus.SCHEDULED,
+      slotTime: MoreThanOrEqual(new Date()),
+    };
+
+    if (page === undefined && limit === undefined) {
+      const slots = await this.slotRepository.find({
+        where,
+        relations: SLOT_DETAIL_RELATIONS,
+        order: { slotTime: 'ASC' },
+      });
+      return slots.map((slot) => this.mapSlotEntityToDto(slot));
+    }
+
+    const pagination = resolvePagination(page, limit);
+    const [slots, total] = await this.slotRepository.findAndCount({
+      where,
       relations: SLOT_DETAIL_RELATIONS,
-      order: { slotTime: 'ASC' },
+      order: { slotTime: 'ASC', id: 'ASC' },
+      skip: pagination.skip,
+      take: pagination.take,
     });
-    return slots.map((slot) => this.mapSlotEntityToDto(slot));
+    const items = slots.map((slot) => this.mapSlotEntityToDto(slot));
+    return toPaginatedResult(items, total, pagination);
   }
 
-  async getPastSlotsForSecretary(secretaryUserId: string): Promise<SlotDto[]> {
+  async getPastSlotsForSecretary(
+    secretaryUserId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<SlotDto[] | PaginatedResult<SlotDto>> {
     const clinicId = await this.getClinicIdForSecretaryUser(secretaryUserId);
     const now = new Date();
-    const slots = await this.slotRepository.find({
-      where: [
-        { caregiver: { clinicId }, status: SlotStatus.CANCELLED },
-        {
-          caregiver: { clinicId },
-          status: SlotStatus.SCHEDULED,
-          slotTime: LessThan(now),
-        },
-      ],
+    const where = [
+      { caregiver: { clinicId }, status: SlotStatus.CANCELLED },
+      {
+        caregiver: { clinicId },
+        status: SlotStatus.SCHEDULED,
+        slotTime: LessThan(now),
+      },
+    ];
+
+    if (page === undefined && limit === undefined) {
+      const slots = await this.slotRepository.find({
+        where,
+        relations: SLOT_DETAIL_RELATIONS,
+        order: { slotTime: 'DESC' },
+      });
+      return slots.map((slot) => this.mapSlotEntityToDto(slot));
+    }
+
+    const pagination = resolvePagination(page, limit);
+    const [slots, total] = await this.slotRepository.findAndCount({
+      where,
       relations: SLOT_DETAIL_RELATIONS,
-      order: { slotTime: 'DESC' },
+      order: { slotTime: 'DESC', id: 'DESC' },
+      skip: pagination.skip,
+      take: pagination.take,
     });
-    return slots.map((slot) => this.mapSlotEntityToDto(slot));
+    const items = slots.map((slot) => this.mapSlotEntityToDto(slot));
+    return toPaginatedResult(items, total, pagination);
   }
 
   async cancelSlotAsSecretary(
@@ -401,22 +444,36 @@ export class SlotsService {
       .map((slot) => this.mapSlotEntityToDto(slot));
   }
 
-  async getUpcomingSlotsForPatient(userId: string): Promise<SlotDto[]> {
-    return this.getPatientSlotsByScope(userId, 'upcoming');
+  async getUpcomingSlotsForPatient(
+    userId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<SlotDto[] | PaginatedResult<SlotDto>> {
+    return this.getPatientSlotsByScope(userId, 'upcoming', page, limit);
   }
 
-  async getPastSlotsForPatient(userId: string): Promise<SlotDto[]> {
-    return this.getPatientSlotsByScope(userId, 'past');
+  async getPastSlotsForPatient(
+    userId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<SlotDto[] | PaginatedResult<SlotDto>> {
+    return this.getPatientSlotsByScope(userId, 'past', page, limit);
   }
 
-  async getCancelledSlotsForPatient(userId: string): Promise<SlotDto[]> {
-    return this.getPatientSlotsByScope(userId, 'cancelled');
+  async getCancelledSlotsForPatient(
+    userId: string,
+    page?: number,
+    limit?: number,
+  ): Promise<SlotDto[] | PaginatedResult<SlotDto>> {
+    return this.getPatientSlotsByScope(userId, 'cancelled', page, limit);
   }
 
   private async getPatientSlotsByScope(
     userId: string,
     scope: 'upcoming' | 'past' | 'cancelled',
-  ): Promise<SlotDto[]> {
+    page?: number,
+    limit?: number,
+  ): Promise<SlotDto[] | PaginatedResult<SlotDto>> {
     const patient = await this.patientsService
       .ensurePatientProfileForUser(userId)
       .catch(() => null);
@@ -430,12 +487,29 @@ export class SlotsService {
         ? { status: SlotStatus.SCHEDULED, slotTime: LessThan(now) }
         : { status: SlotStatus.CANCELLED };
 
-    const slots = await this.slotRepository.find({
-      where: { patientId: patient.id, ...scopeWhere },
+    const where = { patientId: patient.id, ...scopeWhere };
+    const slotDirection = scope === 'upcoming' ? 'ASC' : 'DESC';
+    const order = { slotTime: slotDirection, id: slotDirection } as const;
+
+    if (page === undefined && limit === undefined) {
+      const slots = await this.slotRepository.find({
+        where,
+        relations: SLOT_DETAIL_RELATIONS,
+        order,
+      });
+      return slots.map((slot) => this.mapSlotEntityToDto(slot));
+    }
+
+    const pagination = resolvePagination(page, limit);
+    const [slots, total] = await this.slotRepository.findAndCount({
+      where,
       relations: SLOT_DETAIL_RELATIONS,
-      order: { slotTime: scope === 'upcoming' ? 'ASC' : 'DESC' },
+      order,
+      skip: pagination.skip,
+      take: pagination.take,
     });
-    return slots.map((slot) => this.mapSlotEntityToDto(slot));
+    const items = slots.map((slot) => this.mapSlotEntityToDto(slot));
+    return toPaginatedResult(items, total, pagination);
   }
 
   private mapSlotEntityToDto(slot: Slot): SlotDto {
@@ -465,17 +539,4 @@ export class SlotsService {
       },
     };
   }
-}
-
-const DEFAULT_PAGE_SIZE = 20;
-const MAX_PAGE_SIZE = 50;
-
-function resolvePaging(
-  page?: number,
-  limit?: number,
-): { pageNumber: number; take: number; skip: number } {
-  const pageNumber = Number.isFinite(page) && (page as number) > 0 ? Math.floor(page as number) : 1;
-  const rawLimit = Number.isFinite(limit) && (limit as number) > 0 ? Math.floor(limit as number) : DEFAULT_PAGE_SIZE;
-  const take = Math.min(rawLimit, MAX_PAGE_SIZE);
-  return { pageNumber, take, skip: (pageNumber - 1) * take };
 }

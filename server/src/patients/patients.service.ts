@@ -12,7 +12,7 @@ import {
 } from '../common/constants/roles';
 import { calcAge as calcAgeYears } from '../common/age.util';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, ILike, Not, Repository } from 'typeorm';
 import { Patient as PatientEntity } from './entities/patientEntity';
 import { User } from '../users/entities/userEntity';
 import { Visit } from '../visits/entities/visitEntity';
@@ -32,6 +32,11 @@ import {
   PatientSummary,
   UpdatePatientInput,
 } from './patient.types';
+import { PaginatedResult } from '../common/pagination/pagination.types';
+import {
+  resolvePagination,
+  toPaginatedResult,
+} from '../common/pagination/pagination.util';
 
 function splitName(fullName: string | undefined): {
   first: string;
@@ -167,40 +172,57 @@ export class PatientsService {
   async getAllPatients(
     searchQuery?: string,
     actingUser?: IUser,
-  ): Promise<PatientSummary[]> {
+    page?: number,
+    limit?: number,
+  ): Promise<PatientSummary[] | PaginatedResult<PatientSummary>> {
     const trimmedSearchQuery = searchQuery?.trim();
     const clinicId = this.getActingClinicId(actingUser);
+    const userWhere: Record<string, unknown> = { role: { name: ROLE_PATIENT } };
+    if (actingUser?.id) {
+      userWhere.id = Not(actingUser.id);
+    }
 
-    const qb = this.patients
-      .createQueryBuilder('patient')
-      .leftJoinAndSelect('patient.user', 'user')
-      .leftJoin('user.role', 'role')
-      .andWhere('role.name = :patientRole', { patientRole: ROLE_PATIENT })
-      .orderBy('patient.createdAt', 'DESC');
-
+    const baseWhere: Record<string, unknown> = { user: userWhere };
     if (clinicId) {
-      qb.innerJoin(
-        'patient_clinics',
-        'pc',
-        'pc.patient_id = patient.id AND pc.clinic_id = :clinicId',
-        { clinicId },
+      baseWhere.patientClinics = { clinicId };
+    }
+
+    const where = trimmedSearchQuery
+      ? [
+          {
+            ...baseWhere,
+            user: { ...userWhere, fullName: ILike(`%${trimmedSearchQuery}%`) },
+          },
+          {
+            ...baseWhere,
+            user: { ...userWhere, email: ILike(`%${trimmedSearchQuery}%`) },
+          },
+        ]
+      : baseWhere;
+
+    const listOptions = {
+      where,
+      relations: ['user', 'user.role'],
+      order: { createdAt: 'DESC' as const, id: 'DESC' as const },
+    };
+
+    if (page === undefined && limit === undefined) {
+      const patientEntities = await this.patients.find(listOptions);
+      return patientEntities.map((patientEntity) =>
+        this.mapPatientEntityToSummary(patientEntity),
       );
     }
 
-    if (actingUser?.id) {
-      qb.andWhere('user.id != :actingUserId', { actingUserId: actingUser.id });
-    }
-
-    if (trimmedSearchQuery) {
-      qb.andWhere('(user.fullName ILIKE :q OR user.email ILIKE :q)', {
-        q: `%${trimmedSearchQuery}%`,
-      });
-    }
-
-    const patientEntities = await qb.getMany();
-    return patientEntities.map((patientEntity) =>
+    const pagination = resolvePagination(page, limit);
+    const [patientEntities, total] = await this.patients.findAndCount({
+      ...listOptions,
+      skip: pagination.skip,
+      take: pagination.take,
+    });
+    const items = patientEntities.map((patientEntity) =>
       this.mapPatientEntityToSummary(patientEntity),
     );
+    return toPaginatedResult(items, total, pagination);
   }
 
   private getActingClinicId(actingUser?: IUser): string | undefined {

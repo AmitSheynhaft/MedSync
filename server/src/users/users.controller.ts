@@ -39,8 +39,16 @@ export class UsersController {
 
   @Roles(ROLE_DOCTOR)
   @Get()
-  getAllUsers(@Query('role') roleName?: string) {
-    return this.usersService.getAllUsers(roleName);
+  getAllUsers(
+    @Query('role') roleName?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const shouldPaginate = page !== undefined || limit !== undefined;
+    if (!shouldPaginate) {
+      return this.usersService.getAllUsers(roleName);
+    }
+    return this.usersService.getAllUsers(roleName, Number(page), Number(limit));
   }
 
   @Roles(ROLE_DOCTOR)
