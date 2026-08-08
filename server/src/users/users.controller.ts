@@ -12,10 +12,9 @@ import {
   Query,
 } from '@nestjs/common';
 import {
-  CreateUserInput,
-  UpdateUserInput,
   UsersService,
 } from './users.service';
+import { CreateUserInput, UpdateUserInput } from './types/user.types';
 import { User } from '../common/decorators/user.decorator';
 import { IUser } from '../common/types/entity-interfaces';
 import { Roles } from '../common/decorators/roles.decorator';

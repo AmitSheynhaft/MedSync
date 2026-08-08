@@ -11,7 +11,8 @@ import DeleteIcon    from '@mui/icons-material/Delete';
 import SearchIcon    from '@mui/icons-material/Search';
 import ClearIcon     from '@mui/icons-material/Clear';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import { User, UpdateUserInput, CreateUserInput } from '../../../api/users';
+import { UpdateUserInput, CreateUserInput } from '../../../api/users';
+import { IAdminUserListItem } from '../../../api/admin/users';
 import { TablePaper } from '../styled';
 import UserFormDialog from './UserFormDialog';
 import { GENDER_LABELS, ROLE_CHIP, ROLE_LABELS } from './adminUser.constants';
@@ -50,7 +51,7 @@ import {
 } from './UsersTable.styles';
 
 interface Props {
-  users: User[];
+  users: IAdminUserListItem[];
   roles: { id: string; name: string }[];
   clinics: { id: string; name: string }[];
   onCreate: (input: CreateUserInput) => Promise<void>;
@@ -61,7 +62,7 @@ interface Props {
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
 const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate, onDelete }) => {
-  const [editing, setEditing]   = useState<User | null>(null);
+  const [editing, setEditing]   = useState<IAdminUserListItem | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [search, setSearch]     = useState('');

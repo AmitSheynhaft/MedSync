@@ -1,8 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { verifySession, RoleMismatchError } from '../../auth/verifySession';
 import { clearUserDataSession } from '../../auth/userDataSessionStore';
-import { getEffectiveRole, homeForRole, isRoleViewTampered } from '../../auth/viewAs';
+import {
+  getEffectiveRole,
+  getViewAs,
+  homeForRole,
+  isRoleViewTampered,
+  subscribeViewAs,
+} from '../../auth/viewAs';
 import type { RoleName } from '../../auth/types';
 import { useCurrentUser } from '../../atoms/useCurrentUser';
 import { RoleMismatchDialog } from '../RoleMismatchDialog/RoleMismatchDialog';
@@ -15,6 +21,9 @@ export const RequireRole: React.FC<IRequireRoleProps> = ({ allow }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const currentUser = useCurrentUser();
+  // Re-render whenever the "view as" role changes so route access is re-checked
+  // immediately, without waiting for a navigation event.
+  useSyncExternalStore(subscribeViewAs, getViewAs, () => null);
   // Gate rendering only on the first verification; later navigations re-verify
   // in the background so the page subtree isn't unmounted and refetched.
   const [hasVerifiedOnce, setHasVerifiedOnce] = useState(false);

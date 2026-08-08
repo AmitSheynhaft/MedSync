@@ -14,7 +14,7 @@ export interface IRoleGuide {
   steps: ITourStep[];
 }
 
-export type TGuideRole = "patient" | "doctor" | "secretary";
+export type TGuideRole = "patient" | "doctor" | "secretary" | "admin";
 
 export interface ISystemInfoModalProps {
   role?: RoleName;

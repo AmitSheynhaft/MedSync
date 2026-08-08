@@ -13,7 +13,8 @@ import {
 } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ROLE_ADMIN } from '../common/constants/roles';
-import { UsersService, CreateUserInput, UpdateUserInput } from '../users/users.service';
+import { UsersService } from '../users/users.service';
+import { CreateUserInput, UpdateUserInput } from '../users/types/user.types';
 import { ClinicsService } from '../clinics/clinics.service';
 import { ClinicInput } from '../clinics/types/clinic.types';
 
@@ -34,9 +35,9 @@ export class AdminController {
   ) {
     const shouldPaginate = page !== undefined || limit !== undefined;
     if (!shouldPaginate) {
-      return this.users.getAllUsers(roleName);
+      return this.users.getAdminUsers(roleName);
     }
-    return this.users.getAllUsers(roleName, Number(page), Number(limit));
+    return this.users.getAdminUsers(roleName, Number(page), Number(limit));
   }
 
   @Post('users')
