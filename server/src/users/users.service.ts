@@ -232,7 +232,7 @@ export class UsersService {
       return role.id;
     }
     const roleName = createUserInput.roleName?.trim() || 'patient';
-    const role = await this.rolesService.getOrCreateRoleByName(roleName);
+    const role = await this.rolesService.getRoleByName(roleName);
     return role.id;
   }
 
@@ -262,7 +262,7 @@ export class UsersService {
       if (!roleName) {
         throw new BadRequestException('roleName must not be empty');
       }
-      const role = await this.rolesService.getOrCreateRoleByName(roleName);
+      const role = await this.rolesService.getRoleByName(roleName);
       user.roleId = role.id;
     } else if (userUpdates.roleId !== undefined) {
       user.roleId = userUpdates.roleId;
