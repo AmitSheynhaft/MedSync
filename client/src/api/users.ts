@@ -15,6 +15,7 @@ export interface User {
 
 export interface CreateUserInput {
   roleId?: string;
+  roleName?: string;
   fullName: string;
   email: string;
   password: string;

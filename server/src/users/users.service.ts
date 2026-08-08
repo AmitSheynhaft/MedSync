@@ -19,30 +19,12 @@ import {
   resolvePagination,
   toPaginatedResult,
 } from '../common/pagination/pagination.util';
-
-export interface CreateUserInput {
-  roleId?: string;
-  roleName?: string;
-  fullName: string;
-  email: string;
-  password: string;
-  phone?: string;
-  birthDate?: string | Date;
-  gender?: string;
-  clinicId?: string;
-}
-
-export interface UpdateUserInput {
-  roleId?: string;
-  fullName?: string;
-  email?: string;
-  password?: string;
-  phone?: string;
-  birthDate?: string | Date;
-  gender?: string;
-}
-
-export type SafeUser = Omit<User, 'password'>;
+import {
+  AdminUserListItem,
+  CreateUserInput,
+  SafeUser,
+  UpdateUserInput,
+} from './types/user.types';
 
 @Injectable()
 export class UsersService {
@@ -99,6 +81,62 @@ export class UsersService {
       this.mapUserEntityToSafeUser(userEntity),
     );
     return toPaginatedResult(items, total, pagination);
+  }
+
+  /**
+   * Lean listing for the admin users table. Selects only the columns the UI
+   * displays (name, email, phone, birth date, gender) plus the role name.
+   * Avoids fetching the password hash, timestamps, and profile relations.
+   */
+  async getAdminUsers(
+    roleName?: string,
+    page?: number,
+    limit?: number,
+  ): Promise<AdminUserListItem[] | PaginatedResult<AdminUserListItem>> {
+    const trimmedRoleName = roleName?.trim();
+
+    const baseQuery = () => {
+      const qb = this.userRepository
+        .createQueryBuilder('user')
+        .leftJoin('user.role', 'role')
+        .select([
+          'user.id',
+          'user.fullName',
+          'user.email',
+          'user.phone',
+          'user.birthDate',
+          'user.gender',
+          'role.name',
+        ])
+        .orderBy('user.createdAt', 'DESC')
+        .addOrderBy('user.id', 'DESC');
+      if (trimmedRoleName) {
+        qb.where('role.name = :roleName', { roleName: trimmedRoleName });
+      }
+      return qb;
+    };
+
+    const toItem = (user: User): AdminUserListItem => ({
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone ?? null,
+      birthDate: user.birthDate ?? null,
+      gender: user.gender ?? null,
+      role: user.role ? { name: user.role.name } : null,
+    });
+
+    if (page === undefined && limit === undefined) {
+      const rows = await baseQuery().getMany();
+      return rows.map(toItem);
+    }
+
+    const pagination = resolvePagination(page, limit);
+    const [rows, total] = await baseQuery()
+      .skip(pagination.skip)
+      .take(pagination.take)
+      .getManyAndCount();
+    return toPaginatedResult(rows.map(toItem), total, pagination);
   }
 
   async getUserById(userId: string): Promise<SafeUser> {
@@ -219,7 +257,16 @@ export class UsersService {
       user.birthDate = userUpdates.birthDate
         ? new Date(userUpdates.birthDate)
         : null;
-    if (userUpdates.roleId !== undefined) user.roleId = userUpdates.roleId;
+    if (userUpdates.roleName !== undefined) {
+      const roleName = userUpdates.roleName.trim();
+      if (!roleName) {
+        throw new BadRequestException('roleName must not be empty');
+      }
+      const role = await this.rolesService.getOrCreateRoleByName(roleName);
+      user.roleId = role.id;
+    } else if (userUpdates.roleId !== undefined) {
+      user.roleId = userUpdates.roleId;
+    }
     if (userUpdates.password) user.password = hashPassword(userUpdates.password);
 
     const savedUser = await this.userRepository.save(user);
