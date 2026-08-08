@@ -15,6 +15,33 @@ import type { RoleName } from "../../../auth/types";
 import type { TGuideRole, IRoleGuide } from "../types";
 
 const ROLE_GUIDES_CONFIG: Record<TGuideRole, IRoleGuide> = {
+  admin: {
+    color: "#fa5252",
+    accent: "#fff5f5",
+    steps: [
+      {
+        icon: <SupportAgentIcon />,
+        title: "ברוך הבא ל-MedSync",
+        description:
+          "כמנהל מערכת, כאן תוכל לנהל משתמשים ומרפאות בצורה מרוכזת ובטוחה.",
+        tip: "אפשר לפתוח את המדריך מחדש בכל עת מהתפריט הצדדי.",
+      },
+      {
+        icon: <PeopleIcon />,
+        title: "ניהול משתמשים",
+        description:
+          "במסך הניהול ניתן ליצור משתמשים, לעדכן פרטים ולשייך תפקידים בהתאם לצורך.",
+        tip: "ניתן לסנן ולחפש משתמשים לפי שם, אימייל ותפקיד.",
+      },
+      {
+        icon: <MedicalServicesIcon />,
+        title: "ניהול מרפאות",
+        description:
+          "לשונית המרפאות מאפשרת להוסיף, לערוך ולמחוק מרפאות כדי לשמור על מבנה ארגוני מעודכן.",
+        tip: "הנתונים נטענים בעת מעבר ללשונית המרפאות.",
+      },
+    ],
+  },
   patient: {
     color: "#0ca678",
     accent: "#e6f7f1",
@@ -147,6 +174,7 @@ const ROLE_GUIDES_CONFIG: Record<TGuideRole, IRoleGuide> = {
 };
 
 export function useRoleGuide(role?: RoleName): IRoleGuide {
+  if (role === "admin") return ROLE_GUIDES_CONFIG.admin;
   if (role === "doctor") return ROLE_GUIDES_CONFIG.doctor;
   if (role === "secretary") return ROLE_GUIDES_CONFIG.secretary;
   return ROLE_GUIDES_CONFIG.patient;
