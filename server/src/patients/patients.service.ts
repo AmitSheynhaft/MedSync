@@ -88,7 +88,9 @@ export class PatientsService {
     private readonly clinicalAlertsService: ClinicalAlertsService,
   ) {}
 
-  private mapPatientEntityToSummary(patientEntity: PatientEntity): PatientSummary {
+  private mapPatientEntityToSummary(
+    patientEntity: PatientEntity,
+  ): PatientSummary {
     const { first, last } = splitName(patientEntity.user?.fullName);
     return {
       id: patientEntity.id,
@@ -313,11 +315,10 @@ export class PatientsService {
     const existingUserWithEmail = await this.users.findOne({
       where: { email: normalizedEmail },
     });
-    if (existingUserWithEmail) throw new ConflictException('Email already in use');
+    if (existingUserWithEmail)
+      throw new ConflictException('Email already in use');
 
-    const role = await this.roles.getRoleByName(
-      'patient',
-    );
+    const role = await this.roles.getRoleByName('patient');
 
     const newId = await this.dataSource.transaction(async (manager) => {
       const user = manager.getRepository(User).create({
