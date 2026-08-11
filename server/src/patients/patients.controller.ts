@@ -86,8 +86,9 @@ export class PatientsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   deletePatientById(
     @Param('id', new ParseUUIDPipe()) patientId: string,
+    @User() user: IUser,
   ): Promise<void> {
-    return this.patientsService.deletePatientById(patientId);
+    return this.patientsService.deletePatientById(patientId, user);
   }
 
   @Post(':id/medical-summary/refresh')

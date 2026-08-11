@@ -422,7 +422,11 @@ export class PatientsService {
     return this.getPatientById(patientId, actingUser);
   }
 
-  async deletePatientById(patientId: string): Promise<void> {
+  async deletePatientById(
+    patientId: string,
+    actingUser?: IUser,
+  ): Promise<void> {
+    await this.assertActingUserCanAccessPatient(patientId, actingUser);
     const patient = await this.patients.findOne({ where: { id: patientId } });
     if (!patient) throw new NotFoundException(`Patient ${patientId} not found`);
     await this.users.delete(patient.userId);
