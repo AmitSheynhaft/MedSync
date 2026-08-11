@@ -1,12 +1,11 @@
-import type { RegisterFormState } from './hooks/useRegisterForm';
-import { Role } from '../../constants/roles';
+import type { RegisterFormState } from "./hooks/useRegisterForm";
+import { Role } from "../../constants/roles";
 
-export type RegisterRole = Role.Doctor | Role.Patient | Role.Secretary | Role.Admin;
+export type RegisterRole = Role.Doctor | Role.Patient | Role.Secretary;
 
 export function parseRegisterRole(role?: string): RegisterRole {
   if (role === Role.Doctor) return Role.Doctor;
   if (role === Role.Secretary) return Role.Secretary;
-  if (role === Role.Admin) return Role.Admin;
   return Role.Patient;
 }
 

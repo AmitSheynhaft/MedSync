@@ -4,11 +4,21 @@ import { Box, Typography, Chip, Alert } from "@mui/material";
 import { resolveLoginRole } from "./roleConfig";
 import { useLoginForm } from "./hooks/useLoginForm";
 import { LoginForm } from "./components/LoginForm";
+import { Role } from "../../constants/roles";
 
 export const LoginPage: React.FC = () => {
   const { role } = useParams<{ role: string }>();
   const config = resolveLoginRole(role);
-  const { email, setEmail, password, setPassword, submitting, error, handleSubmit } = useLoginForm(role);
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    submitting,
+    error,
+    handleSubmit,
+  } = useLoginForm(role);
+  const canSelfRegister = role !== Role.Admin;
 
   return (
     <Box sx={{ width: "100%", maxWidth: 420, p: { xs: 1, sm: 4 } }}>
@@ -33,11 +43,17 @@ export const LoginPage: React.FC = () => {
       >
         {config.heading}
       </Typography>
-      <Typography sx={{ fontSize: 14, color: "text.secondary", mb: 2.5, width: "100%" }}>
+      <Typography
+        sx={{ fontSize: 14, color: "text.secondary", mb: 2.5, width: "100%" }}
+      >
         {config.subtitle}
       </Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       <LoginForm
         email={email}
@@ -49,22 +65,47 @@ export const LoginPage: React.FC = () => {
         onSubmit={handleSubmit}
       />
 
-      <Typography sx={{ textAlign: "center", mt: 2, fontSize: 14, color: "text.secondary" }}>
-        אין לך חשבון?{" "}
+      {canSelfRegister && (
         <Typography
-          component={Link}
-          to={`/register/${role}`}
-          sx={{ color: config.color, fontWeight: 600, textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
+          sx={{
+            textAlign: "center",
+            mt: 2,
+            fontSize: 14,
+            color: "text.secondary",
+          }}
         >
-          הרשמה
+          אין לך חשבון?{" "}
+          <Typography
+            component={Link}
+            to={`/register/${role}`}
+            sx={{
+              color: config.color,
+              fontWeight: 600,
+              textDecoration: "none",
+              "&:hover": { textDecoration: "underline" },
+            }}
+          >
+            הרשמה
+          </Typography>
         </Typography>
-      </Typography>
+      )}
 
-      <Typography sx={{ textAlign: "center", mt: 1.5, fontSize: 13, color: "text.secondary" }}>
+      <Typography
+        sx={{
+          textAlign: "center",
+          mt: 1.5,
+          fontSize: 13,
+          color: "text.secondary",
+        }}
+      >
         <Typography
           component={Link}
           to="/login"
-          sx={{ color: "text.secondary", textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
+          sx={{
+            color: "text.secondary",
+            textDecoration: "none",
+            "&:hover": { textDecoration: "underline" },
+          }}
         >
           החלף תפקיד ↩
         </Typography>

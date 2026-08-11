@@ -1,4 +1,4 @@
-import { Role } from '../constants/roles';
+import { Role } from "../constants/roles";
 
 export type RoleName = `${Role}` | string;
 
@@ -51,12 +51,4 @@ export interface RegisterSecretaryInput {
   phone?: string;
   birthDate?: string;
   gender?: string;
-}
-
-export interface RegisterAdminInput {
-  role?: RoleName;
-  fullName: string;
-  email: string;
-  password: string;
-  phone?: string;
 }
