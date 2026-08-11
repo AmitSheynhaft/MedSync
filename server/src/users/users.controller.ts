@@ -11,9 +11,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import {
-  UsersService,
-} from './users.service';
+import { UsersService } from './users.service';
 import { CreateUserInput, UpdateUserInput } from './types/user.types';
 import { User } from '../common/decorators/user.decorator';
 import { IUser } from '../common/types/entity-interfaces';
