@@ -40,7 +40,7 @@ export const MedicinesSection: React.FC<IMedicinesSectionProps> = ({
     <Stack sx={medicinesSectionListSx}>
       {medicinesList.map((medicine, index) => (
         <ListItemRow
-          key={index}
+          key={`${medicine.name}|${medicine.dosage}|${medicine.frequency}|${medicine.duration}`}
           primaryText={medicine.name}
           primaryColor="#e8590c"
           secondaryText={`${medicine.dosage} · ${medicine.frequency} · ${medicine.duration}`}
