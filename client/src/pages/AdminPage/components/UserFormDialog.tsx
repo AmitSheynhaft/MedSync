@@ -50,17 +50,20 @@ const UserFormDialog: React.FC<Props> = (props) => {
   const isEdit = mode === 'edit';
   const user = isEdit ? (props as EditProps).user : null;
 
-  const [fullName,   setFullName]   = useState(user?.fullName ?? '');
-  const [email,      setEmail]      = useState(user?.email ?? '');
-  const [phone,      setPhone]      = useState(user?.phone ?? '');
-  const [password,   setPassword]   = useState('');
-  const [gender,     setGender]     = useState(user?.gender ?? '');
-  const [birthDate,  setBirthDate]  = useState(user?.birthDate?.slice(0, 10) ?? '');
-  const [roleName,   setRoleName]   = useState('');
-  const [clinicId,   setClinicId]   = useState('');
-  const [errors,     setErrors]     = useState<UserFormErrors>({});
-  const [saving,     setSaving]     = useState(false);
-  const [saveError,  setSaveError]  = useState<string | null>(null);
+  const [fullName,        setFullName]        = useState(user?.fullName ?? '');
+  const [email,           setEmail]           = useState(user?.email ?? '');
+  const [phone,           setPhone]           = useState(user?.phone ?? '');
+  const [password,        setPassword]        = useState('');
+  const [gender,          setGender]          = useState(user?.gender ?? '');
+  const [birthDate,       setBirthDate]       = useState(user?.birthDate?.slice(0, 10) ?? '');
+  const [roleName,        setRoleName]        = useState('');
+  const [clinicId,        setClinicId]        = useState('');
+  const [licenseNumber,   setLicenseNumber]   = useState('');
+  const [specialization,  setSpecialization]  = useState('');
+  const [idNumber,        setIdNumber]        = useState('');
+  const [errors,          setErrors]          = useState<UserFormErrors>({});
+  const [saving,          setSaving]          = useState(false);
+  const [saveError,       setSaveError]       = useState<string | null>(null);
   const birthDateRef = useRef<DateInputElement | null>(null);
   useEffect(() => {
     if (!open) return;
@@ -74,6 +77,9 @@ const UserFormDialog: React.FC<Props> = (props) => {
     setSaveError(null);
     setRoleName(user?.role?.name ?? '');
     setClinicId('');
+    setLicenseNumber('');
+    setSpecialization('');
+    setIdNumber('');
   }, [open, user, roles]);
 
   const validate = (): UserFormErrors => {
@@ -92,8 +98,13 @@ const UserFormDialog: React.FC<Props> = (props) => {
       e.phone = 'מספר טלפון לא תקין (לדוגמה: 050-1234567)';
     if (birthDate && !isValidDate(birthDate))
       e.birthDate = 'תאריך לידה אינו תקין';
-    if (!isEdit && roleName === 'patient' && !clinicId)
-      e.clinicId = 'יש לבחור מרפאה למטופל';
+    const needsClinic = !isEdit && ['patient', 'doctor', 'secretary'].includes(roleName);
+    if (needsClinic && !clinicId)
+      e.clinicId = 'יש לבחור מרפאה';
+    if (!isEdit && roleName === 'doctor') {
+      if (!licenseNumber.trim()) e.licenseNumber = 'מספר רישיון הוא שדה חובה';
+      if (!specialization.trim()) e.specialization = 'התמחות היא שדה חובה';
+    }
     return e;
   };
 
@@ -122,21 +133,29 @@ const UserFormDialog: React.FC<Props> = (props) => {
         await (props as EditProps).onSave({
           fullName: fullName.trim(),
           email: email.trim(),
-          phone:      phone     || undefined,
-          gender:     gender    || undefined,
-          birthDate:  birthDate || undefined,
-          roleName:   roleName  || undefined,
+          phone:           phone           || undefined,
+          gender:          gender          || undefined,
+          birthDate:       birthDate       || undefined,
+          roleName:        roleName        || undefined,
+          // Role-specific profile fields — only sent when non-empty.
+          licenseNumber:   licenseNumber   || undefined,
+          specialization:  specialization  || undefined,
+          clinicId:        clinicId        || undefined,
+          idNumber:        idNumber        || undefined,
         });
       } else {
         await (props as CreateProps).onSave({
           fullName: fullName.trim(),
           email:    email.trim(),
           password,
-          phone:     phone     || undefined,
-          gender:    gender    || undefined,
-          birthDate: birthDate || undefined,
-          roleName:  roleName  || undefined,
-          clinicId:  roleName === 'patient' ? (clinicId || undefined) : undefined,
+          phone:          phone           || undefined,
+          gender:         gender          || undefined,
+          birthDate:      birthDate       || undefined,
+          roleName:       roleName        || undefined,
+          clinicId:       clinicId        || undefined,
+          licenseNumber:  licenseNumber   || undefined,
+          specialization: specialization  || undefined,
+          idNumber:       idNumber        || undefined,
         });
       }
     } catch (err) {
@@ -258,8 +277,7 @@ const UserFormDialog: React.FC<Props> = (props) => {
           </TextField>
 
           {!isEdit && (() => {
-            const selectedRole = roleName;
-            const needsClinic = selectedRole === 'patient';
+            const needsClinic = ['patient', 'doctor', 'secretary'].includes(roleName);
             return needsClinic ? (
               <TextField
                 {...fieldSx}
@@ -281,6 +299,56 @@ const UserFormDialog: React.FC<Props> = (props) => {
               </TextField>
             ) : null;
           })()}
+
+          {isEdit && ['doctor', 'secretary'].includes(roleName) && (
+            <TextField
+              {...fieldSx}
+              select
+              label="מרפאה (שינוי)"
+              value={clinicId}
+              onChange={(e) => setClinicId(e.target.value)}
+              helperText="השאר ריק לאי-שינוי"
+            >
+              <MenuItem value="">— ללא שינוי —</MenuItem>
+              {clinics.map((c) => (
+                <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+              ))}
+            </TextField>
+          )}
+
+          {['doctor'].includes(roleName) && (
+            <TextField
+              {...fieldSx}
+              label="מספר רישיון"
+              value={licenseNumber}
+              onChange={(e) => { setLicenseNumber(e.target.value); setErrors((p) => ({ ...p, licenseNumber: undefined })); }}
+              required={!isEdit}
+              error={!!errors.licenseNumber}
+              helperText={errors.licenseNumber ?? (isEdit ? 'השאר ריק לאי-שינוי' : undefined)}
+            />
+          )}
+
+          {['doctor'].includes(roleName) && (
+            <TextField
+              {...fieldSx}
+              label="התמחות"
+              value={specialization}
+              onChange={(e) => { setSpecialization(e.target.value); setErrors((p) => ({ ...p, specialization: undefined })); }}
+              required={!isEdit}
+              error={!!errors.specialization}
+              helperText={errors.specialization ?? (isEdit ? 'השאר ריק לאי-שינוי' : undefined)}
+            />
+          )}
+
+          {['secretary'].includes(roleName) && (
+            <TextField
+              {...fieldSx}
+              label="תעודת זהות (מזכירה)"
+              value={idNumber}
+              onChange={(e) => setIdNumber(e.target.value)}
+              helperText={isEdit ? 'השאר ריק לאי-שינוי' : 'אופציונלי'}
+            />
+          )}
 
           {hasValidationErrors && (
             <Typography sx={userFormValidationTextSx}>

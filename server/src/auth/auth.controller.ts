@@ -3,10 +3,6 @@ import type { Request, Response } from 'express';
 import {
   AuthService,
   AuthResult,
-  LoginInput,
-  RegisterDoctorInput,
-  RegisterPatientInput,
-  RegisterSecretaryInput,
 } from './auth.service';
 import { Public } from '../common/decorators/public.decorator';
 import { User } from '../common/decorators/user.decorator';
@@ -18,6 +14,10 @@ import {
   setAuthCookies,
 } from './auth-cookie.util';
 import { IUser } from '../common/types/entity-interfaces';
+import { RegisterPatientDto } from './dto/register-patient.dto';
+import { RegisterDoctorDto } from './dto/register-doctor.dto';
+import { RegisterSecretaryDto } from './dto/register-secretary.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('api/auth')
 export class AuthController {
@@ -33,7 +33,7 @@ export class AuthController {
   @Public()
   @Post('register/patient')
   async registerPatient(
-    @Body() body: RegisterPatientInput,
+    @Body() body: RegisterPatientDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.issueSession(res, await this.service.registerPatient(body));
@@ -42,7 +42,7 @@ export class AuthController {
   @Public()
   @Post('register/doctor')
   async registerDoctor(
-    @Body() body: RegisterDoctorInput,
+    @Body() body: RegisterDoctorDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.issueSession(res, await this.service.registerDoctor(body));
@@ -51,7 +51,7 @@ export class AuthController {
   @Public()
   @Post('register/secretary')
   async registerSecretary(
-    @Body() body: RegisterSecretaryInput,
+    @Body() body: RegisterSecretaryDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.issueSession(res, await this.service.registerSecretary(body));
@@ -60,7 +60,7 @@ export class AuthController {
   @Public()
   @Post('login')
   async login(
-    @Body() body: LoginInput,
+    @Body() body: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.issueSession(res, await this.service.login(body));

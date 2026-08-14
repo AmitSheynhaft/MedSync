@@ -277,6 +277,21 @@ export class PatientsService {
     await this.assertActingUserCanAccessPatient(patientId, actingUser);
   }
 
+  /** Resolves the clinic the acting user is responsible for, or undefined for admins. */
+  async resolveActingClinicId(actingUser?: IUser): Promise<string | undefined> {
+    if (!actingUser) return undefined;
+    if (actingUser.role?.name === ROLE_DOCTOR) {
+      return actingUser.caregiver?.clinicId ?? undefined;
+    }
+    if (actingUser.role?.name === ROLE_SECRETARY) {
+      const secretary = await this.secretaries.findOne({
+        where: { userId: actingUser.id },
+      });
+      return secretary?.clinicId ?? undefined;
+    }
+    return undefined;
+  }
+
   private async getSecretaryClinicId(userId: string): Promise<string> {
     const secretary = await this.secretaries.findOne({ where: { userId } });
     if (!secretary?.clinicId) {
