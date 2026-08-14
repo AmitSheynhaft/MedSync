@@ -86,15 +86,18 @@ export class PatientsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   deletePatientById(
     @Param('id', new ParseUUIDPipe()) patientId: string,
+    @User() user: IUser,
   ): Promise<void> {
-    return this.patientsService.deletePatientById(patientId);
+    return this.patientsService.deletePatientById(patientId, user);
   }
 
+  @Roles(ROLE_DOCTOR)
   @Post(':id/medical-summary/refresh')
   async refreshMedicalSummary(
     @Param('id', new ParseUUIDPipe()) patientId: string,
     @User() user: IUser,
   ): Promise<Patient> {
+    await this.patientsService.getPatientById(patientId, user);
     await this.medicalSummaryService.generateAndSavePatientMedicalSummary(
       patientId,
     );

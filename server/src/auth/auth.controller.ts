@@ -7,7 +7,6 @@ import {
   RegisterDoctorInput,
   RegisterPatientInput,
   RegisterSecretaryInput,
-  RegisterAdminInput,
 } from './auth.service';
 import { Public } from '../common/decorators/public.decorator';
 import { User } from '../common/decorators/user.decorator';
@@ -59,15 +58,6 @@ export class AuthController {
   }
 
   @Public()
-  @Post('register/admin')
-  async registerAdmin(
-    @Body() body: RegisterAdminInput,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return this.issueSession(res, await this.service.registerAdmin(body));
-  }
-
-  @Public()
   @Post('login')
   async login(
     @Body() body: LoginInput,
@@ -82,7 +72,9 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const tokens = await this.service.refresh(getRefreshTokenFromRequest(req) ?? '');
+    const tokens = await this.service.refresh(
+      getRefreshTokenFromRequest(req) ?? '',
+    );
     setAuthCookies(res, tokens);
     return { ok: true };
   }

@@ -35,7 +35,7 @@ export const VisitDetailsSection: React.FC<IVisitDetailsSectionProps> = ({
         ))}
       </TextField>
       <TextField type="date" size="small" fullWidth label="תאריך מעקב" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)}
-        disabled={isReadOnly} slotProps={{ inputLabel: { shrink: true } }} />
+        disabled slotProps={{ inputLabel: { shrink: true } }} />
     </Box>
     <TextField multiline rows={2} size="small" fullWidth label="הערות הפניה" placeholder="הערות הפניה..." value={referralNotes}
       onChange={e => setReferralNotes(e.target.value)} disabled={isReadOnly}

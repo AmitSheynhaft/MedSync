@@ -17,6 +17,14 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+// Local YYYY-MM-DD for the current day (avoids UTC off-by-one from toISOString).
+function todayIso(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 export function useVisitForm() {
   const navigate = useNavigate();
   const { id: patientId, visitId } = useParams<{ id: string; visitId: string }>();
@@ -28,8 +36,7 @@ export function useVisitForm() {
   const [diagnosis, setDiagnosis] = useState('');
   const [plan, setPlan] = useState('');
   const [saving, setSaving] = useState(false);
-  const [visitDateObj, setVisitDateObj] = useState<Date | null>(null);
-  const isReadOnly = useVisitReadOnlyMode(visitDateObj);
+  const isReadOnly = useVisitReadOnlyMode(!!visitId);
   const [visitDate, setVisitDate] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
 
@@ -49,7 +56,8 @@ export function useVisitForm() {
   const [oxygenSat, setOxygenSat] = useState('');
   // Visit metadata
   const [visitType, setVisitType] = useState('');
-  const [followUpDate, setFollowUpDate] = useState('');
+  // Follow-up date is locked to the day the visit is created.
+  const [followUpDate, setFollowUpDate] = useState(todayIso());
   const [referralNotes, setReferralNotes] = useState('');
   // Tracks codes/keys of items already persisted to avoid re-POSTing on subsequent saves
   const persistedDiagnosisCodesRef = useRef<Set<string>>(new Set());
@@ -81,7 +89,6 @@ export function useVisitForm() {
     getVisit(visitId).then(visitData => {
       if (!active) return;
       const visitDateObj = visitData.visitDate ? new Date(visitData.visitDate) : null;
-      setVisitDateObj(visitDateObj);
       setVisitDate(visitDateObj ? visitDateObj.toLocaleDateString() : null);
 
       const { subjective: patientComplaints, diagnosis: diagnosisText, recommendations } = parseSummaryText(visitData.summary?.summaryText ?? '');

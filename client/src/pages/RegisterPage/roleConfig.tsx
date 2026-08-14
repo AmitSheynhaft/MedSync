@@ -1,10 +1,9 @@
-import React from 'react';
-import PersonIcon from '@mui/icons-material/Person';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import { Role } from '../../constants/roles';
-import { parseRegisterRole, type RegisterRole } from './types';
+import React from "react";
+import PersonIcon from "@mui/icons-material/Person";
+import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import { Role } from "../../constants/roles";
+import { parseRegisterRole, type RegisterRole } from "./types";
 
 export interface RegisterRoleConfig {
   label: string;
@@ -16,36 +15,29 @@ export interface RegisterRoleConfig {
 
 export const roleConfig: Record<RegisterRole, RegisterRoleConfig> = {
   [Role.Patient]: {
-    label: 'מטופל',
+    label: "מטופל",
     icon: <PersonIcon sx={{ fontSize: 16 }} />,
-    color: '#0ca678',
-    heading: 'יצירת חשבון מטופל',
-    subtitle: 'נהל את הרשומות הרפואיות שלך במקום אחד.',
+    color: "#0ca678",
+    heading: "יצירת חשבון מטופל",
+    subtitle: "נהל את הרשומות הרפואיות שלך במקום אחד.",
   },
   [Role.Doctor]: {
-    label: 'מטפל',
+    label: "מטפל",
     icon: <LocalHospitalIcon sx={{ fontSize: 16 }} />,
-    color: '#7048e8',
-    heading: 'יצירת חשבון מטפל',
-    subtitle: 'נהל מטופלים, ביקורים ותיעוד רפואי במקום אחד.',
+    color: "#7048e8",
+    heading: "יצירת חשבון מטפל",
+    subtitle: "נהל מטופלים, ביקורים ותיעוד רפואי במקום אחד.",
   },
   [Role.Secretary]: {
-    label: 'מזכירות',
+    label: "מזכירות",
     icon: <SupportAgentIcon sx={{ fontSize: 16 }} />,
-    color: '#1971c2',
-    heading: 'יצירת חשבון מזכירות',
-    subtitle: 'תאם תורים בין מטפלים למטופלים ונהל מסמכים.',
-  },
-  [Role.Admin]: {
-    label: 'מנהל מערכת',
-    icon: <AdminPanelSettingsIcon sx={{ fontSize: 16 }} />,
-    color: '#e03131',
-    heading: 'יצירת חשבון מנהל',
-    subtitle: 'נהל משתמשים, מרפאות והגדרות המערכת.',
+    color: "#1971c2",
+    heading: "יצירת חשבון מזכירות",
+    subtitle: "תאם תורים בין מטפלים למטופלים ונהל מסמכים.",
   },
 };
 
-export const STEPS = ['פרטי חשבון', 'פרטים אישיים'];
+export const STEPS = ["פרטי חשבון", "פרטים אישיים"];
 
 export const resolveRegisterRole = (role?: string): RegisterRoleConfig =>
   roleConfig[parseRegisterRole(role)];

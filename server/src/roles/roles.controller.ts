@@ -11,6 +11,8 @@ import {
   Post,
 } from '@nestjs/common';
 import { RoleInput, RolesService } from './roles.service';
+import { Roles } from '../common/decorators/roles.decorator';
+import { ROLE_ADMIN } from '../common/constants/roles';
 
 @Controller('api/roles')
 export class RolesController {
@@ -26,11 +28,13 @@ export class RolesController {
     return this.rolesService.getRoleById(roleId);
   }
 
+  @Roles(ROLE_ADMIN)
   @Post()
   createRole(@Body() roleInput: RoleInput) {
     return this.rolesService.createRole(roleInput);
   }
 
+  @Roles(ROLE_ADMIN)
   @Patch(':id')
   updateRoleById(
     @Param('id', new ParseUUIDPipe()) roleId: string,
@@ -39,6 +43,7 @@ export class RolesController {
     return this.rolesService.updateRoleById(roleId, roleUpdates);
   }
 
+  @Roles(ROLE_ADMIN)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteRoleById(@Param('id', new ParseUUIDPipe()) roleId: string) {

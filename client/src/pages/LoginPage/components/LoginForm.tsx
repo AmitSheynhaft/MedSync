@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, TextField, Button } from '@mui/material';
+import { Box, TextField, Button } from '@mui/material';
 
 interface LoginFormProps {
   email: string;
@@ -31,15 +31,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       value={password}
       onChange={e => setPassword(e.target.value)}
     />
-    <Box sx={{ textAlign: "start" }}>
-      <Typography
-        component="a"
-        href="#"
-        sx={{ fontSize: 13, color, fontWeight: 500, textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
-      >
-        שכחתי סיסמה
-      </Typography>
-    </Box>
     <Button
       type="submit"
       variant="contained"

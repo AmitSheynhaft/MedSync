@@ -33,7 +33,10 @@ import { ROLE_DOCTOR, ROLE_PATIENT } from '../common/constants/roles';
 export class VisitRecordsController {
   constructor(private readonly visitRecordsService: VisitRecordsService) {}
 
-  private assertPatientCanAccessVisit(visit: { patientId: string }, user: IUser): void {
+  private assertPatientCanAccessVisit(
+    visit: { patientId: string },
+    user: IUser,
+  ): void {
     if (
       user?.role?.name === ROLE_PATIENT &&
       visit.patientId !== user.patient?.id
@@ -78,7 +81,10 @@ export class VisitRecordsController {
         throw new ForbiddenException('No patient profile for this user');
       }
       if (!shouldPaginate) {
-        return this.visitRecordsService.getVisitRecords(ownPatientId, undefined);
+        return this.visitRecordsService.getVisitRecords(
+          ownPatientId,
+          undefined,
+        );
       }
       return this.visitRecordsService.getVisitRecords(
         ownPatientId,
@@ -112,6 +118,7 @@ export class VisitRecordsController {
   ) {
     const visit = await this.visitRecordsService.getVisitRecordById(visitId);
     this.assertPatientCanAccessVisit(visit, user);
+    await this.assertClinicAccessForVisit(visitId, user);
     return visit;
   }
 
@@ -123,6 +130,7 @@ export class VisitRecordsController {
   ) {
     const visit = await this.visitRecordsService.getVisitRecordById(visitId);
     this.assertPatientCanAccessVisit(visit, user);
+    await this.assertClinicAccessForVisit(visitId, user);
 
     const dateSuffix = new Date(visit.visitDate)
       .toISOString()
@@ -130,7 +138,9 @@ export class VisitRecordsController {
       .replace(/-/g, '');
     const filename = `medsync-visit-summary-${dateSuffix}.pdf`;
 
-    const file = await this.visitRecordsService.generateVisitSummaryPdf(visitId);
+    const file = await this.visitRecordsService.generateVisitSummaryPdf(
+      visitId,
+    );
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
@@ -162,7 +172,10 @@ export class VisitRecordsController {
     @Body() visitUpdates: Partial<VisitInput>,
   ) {
     await this.assertClinicAccessForVisit(visitId, user);
-    return this.visitRecordsService.updateVisitRecordById(visitId, visitUpdates);
+    return this.visitRecordsService.updateVisitRecordById(
+      visitId,
+      visitUpdates,
+    );
   }
 
   @Roles(ROLE_DOCTOR)
@@ -256,6 +269,9 @@ export class VisitRecordsController {
     @Param('medicineId', new ParseUUIDPipe()) medicineId: string,
   ) {
     await this.assertClinicAccessForVisit(visitId, user);
-    return this.visitRecordsService.removeMedicineFromVisit(visitId, medicineId);
+    return this.visitRecordsService.removeMedicineFromVisit(
+      visitId,
+      medicineId,
+    );
   }
 }

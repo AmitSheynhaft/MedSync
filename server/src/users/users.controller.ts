@@ -11,9 +11,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import {
-  UsersService,
-} from './users.service';
+import { UsersService } from './users.service';
 import { CreateUserInput, UpdateUserInput } from './types/user.types';
 import { User } from '../common/decorators/user.decorator';
 import { IUser } from '../common/types/entity-interfaces';
@@ -69,7 +67,9 @@ export class UsersController {
     @Param('id', new ParseUUIDPipe()) userId: string,
     @Body() userUpdates: UpdateUserInput,
   ) {
-    return this.usersService.updateUserById(userId, userUpdates);
+    // Strip roleId to prevent privilege escalation; role changes are admin-only (C1)
+    const { roleId: _stripped, ...safeUserUpdates } = userUpdates;
+    return this.usersService.updateUserById(userId, safeUserUpdates);
   }
 
   @Roles(ROLE_DOCTOR)
