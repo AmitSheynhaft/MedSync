@@ -2,38 +2,22 @@ import { useEffect, useState } from 'react';
 import { getEffectiveRole } from '../../../auth/viewAs';
 import { Role } from '../../../constants/roles';
 
-function isDateInPast(dateString: string | null): boolean {
-  if (!dateString) return false;
-
-  try {
-    const visitDate = new Date(dateString);
-    visitDate.setHours(0, 0, 0, 0);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return visitDate < today;
-  } catch {
-    return false;
-  }
-}
-
-export function useVisitReadOnlyMode(visitDateObj: Date | null): boolean {
+export function useVisitReadOnlyMode(isExistingVisit: boolean): boolean {
   const [isReadOnly, setIsReadOnly] = useState(
-    () => getEffectiveRole() !== Role.Doctor,
+    () => getEffectiveRole() !== Role.Doctor || isExistingVisit,
   );
 
   useEffect(() => {
     const compute = () => {
       const userIsDoctor = getEffectiveRole() === Role.Doctor;
-      const visitIsPast =
-        visitDateObj && isDateInPast(visitDateObj.toISOString());
-      setIsReadOnly(!userIsDoctor || !!visitIsPast);
+      // A visit can only be edited while it is being created. Once it exists,
+      // it is view-only for everyone.
+      setIsReadOnly(!userIsDoctor || isExistingVisit);
     };
     compute();
     window.addEventListener('medsync:viewAsChange', compute);
     return () => window.removeEventListener('medsync:viewAsChange', compute);
-  }, [visitDateObj]);
+  }, [isExistingVisit]);
 
   return isReadOnly;
 }
