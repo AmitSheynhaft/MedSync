@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { User } from './entities/userEntity';
 import { Patient } from '../patients/entities/patientEntity';
+import { PatientClinic } from '../patients/entities/patientClinicEntity';
 import { Caregiver } from '../caregivers/entities/caregiverEntity';
 import { Secretary } from './entities/secretaryEntity';
 import { hashPassword, isHashedPassword } from '../common/password.util';
@@ -36,6 +37,8 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Patient)
     private readonly patientRepository: Repository<Patient>,
+    @InjectRepository(PatientClinic)
+    private readonly patientClinicRepository: Repository<PatientClinic>,
     @InjectRepository(Caregiver)
     private readonly caregiverRepository: Repository<Caregiver>,
     @InjectRepository(Secretary)
@@ -276,6 +279,38 @@ export class UsersService {
     return this.mapUserEntityToSafeUser(savedUser);
   }
 
+  async updateUserByIdAsAdmin(
+    userId: string,
+    userUpdates: UpdateUserInput,
+    actingUser?: IUser,
+  ): Promise<SafeUser> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: [
+        'caregiver',
+        'secretary',
+        'patient',
+        'patient.patientClinics',
+      ],
+    });
+    if (!user) {
+      throw new NotFoundException(`User ${userId} not found`);
+    }
+
+    if (actingUser?.role?.name === ROLE_ADMIN) {
+      const adminClinicId =
+        actingUser.caregiver?.clinicId ?? actingUser.secretary?.clinicId;
+
+      // If admin has clinic assignment, restrict updates to same-clinic users.
+      // If no clinic assignment, allow editing.
+      if (adminClinicId && !this.isUserInClinic(user, adminClinicId)) {
+        throw new ForbiddenException('Cannot update users outside your clinic');
+      }
+    }
+
+    return this.updateUserById(userId, userUpdates);
+  }
+
   private isUserInClinic(user: User, clinicId: string): boolean {
     if (user.caregiver?.clinicId === clinicId) return true;
     if (user.secretary?.clinicId === clinicId) return true;
@@ -302,12 +337,46 @@ export class UsersService {
       const adminClinicId =
         actingUser.caregiver?.clinicId ?? actingUser.secretary?.clinicId;
 
-      if (!adminClinicId) {
-        throw new ForbiddenException('Admin is not assigned to a clinic');
-      }
-      if (!this.isUserInClinic(user, adminClinicId)) {
+      if (adminClinicId && !this.isUserInClinic(user, adminClinicId)) {
         throw new ForbiddenException('Cannot delete users outside your clinic');
       }
+
+      // Admin delete is clinic-scoped: detach user from clinic assignment(s),
+      // but keep the user record in `users` table.
+      if (user.caregiver?.id) {
+        const shouldDetachCaregiver =
+          !adminClinicId || user.caregiver.clinicId === adminClinicId;
+        if (shouldDetachCaregiver) {
+          user.caregiver.clinicId = null;
+          user.caregiver.clinicName = null;
+          await this.caregiverRepository.save(user.caregiver);
+        }
+      }
+
+      if (user.secretary?.id) {
+        const shouldDetachSecretary =
+          !adminClinicId || user.secretary.clinicId === adminClinicId;
+        if (shouldDetachSecretary) {
+          // secretary.clinicId is non-nullable, so detaching means removing
+          // the secretary profile while keeping the base user record.
+          await this.secretaryRepository.delete({ id: user.secretary.id });
+        }
+      }
+
+      if (user.patient?.id) {
+        if (adminClinicId) {
+          await this.patientClinicRepository.delete({
+            patientId: user.patient.id,
+            clinicId: adminClinicId,
+          });
+        } else {
+          await this.patientClinicRepository.delete({
+            patientId: user.patient.id,
+          });
+        }
+      }
+
+      return;
     }
 
     const deleteResult = await this.userRepository.delete(userId);

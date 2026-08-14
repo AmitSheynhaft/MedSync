@@ -92,6 +92,8 @@ const UserFormDialog: React.FC<Props> = (props) => {
       e.phone = 'מספר טלפון לא תקין (לדוגמה: 050-1234567)';
     if (birthDate && !isValidDate(birthDate))
       e.birthDate = 'תאריך לידה אינו תקין';
+    if (!isEdit && roleName === 'patient' && !clinicId)
+      e.clinicId = 'יש לבחור מרפאה למטופל';
     return e;
   };
 
@@ -132,7 +134,7 @@ const UserFormDialog: React.FC<Props> = (props) => {
           gender:    gender    || undefined,
           birthDate: birthDate || undefined,
           roleName:  roleName  || undefined,
-          clinicId:  clinicId  || undefined,
+          clinicId:  roleName === 'patient' ? (clinicId || undefined) : undefined,
         });
       }
     } catch (err) {
@@ -255,9 +257,21 @@ const UserFormDialog: React.FC<Props> = (props) => {
 
           {!isEdit && (() => {
             const selectedRole = roleName;
-            const needsClinic = selectedRole === 'secretary' || selectedRole === 'doctor';
+            const needsClinic = selectedRole === 'patient';
             return needsClinic ? (
-              <TextField {...fieldSx} select label="מרפאה" value={clinicId} onChange={(e) => setClinicId(e.target.value)} required>
+              <TextField
+                {...fieldSx}
+                select
+                label="מרפאה"
+                value={clinicId}
+                onChange={(e) => {
+                  setClinicId(e.target.value);
+                  setErrors((p) => ({ ...p, clinicId: undefined }));
+                }}
+                required
+                error={!!errors.clinicId}
+                helperText={errors.clinicId}
+              >
                 <MenuItem value="">— בחר מרפאה —</MenuItem>
                 {clinics.map((c) => (
                   <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>

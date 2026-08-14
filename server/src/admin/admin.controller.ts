@@ -52,8 +52,9 @@ export class AdminController {
   updateUser(
     @Param('id', new ParseUUIDPipe()) userId: string,
     @Body() userUpdates: UpdateUserInput,
+    @User() actingUser: IUser,
   ) {
-    return this.users.updateUserById(userId, userUpdates);
+    return this.users.updateUserByIdAsAdmin(userId, userUpdates, actingUser);
   }
 
   @Delete('users/:id')

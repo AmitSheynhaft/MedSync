@@ -11,7 +11,7 @@ const AdminPage: React.FC = () => {
   const [tab, setTab] = useState(0);
 
   const usersState = useAdminUsers();
-  const clinicsState = useAdminClinics(tab === 1);
+  const clinicsState = useAdminClinics(true);
 
   return (
     <PageWrapper>
