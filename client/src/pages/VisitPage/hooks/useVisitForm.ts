@@ -45,6 +45,7 @@ export function useVisitForm() {
   // instead of creating a duplicate (the page no longer navigates away on save).
   const [createdVisitId, setCreatedVisitId] = useState<string | null>(null);
   const isSavingRef = useRef(false);
+  const navigateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null);
 
   // Vitals
@@ -149,6 +150,11 @@ export function useVisitForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visitId]);
 
+  // Cancel the post-save navigation if the hook unmounts before it fires.
+  useEffect(() => () => {
+    if (navigateTimeoutRef.current) clearTimeout(navigateTimeoutRef.current);
+  }, []);
+
   const handleRecord = () => {
     if (isStarting) return;
     return isRecording ? stop() : start();
@@ -243,7 +249,7 @@ export function useVisitForm() {
       }
 
       setToast({ severity: 'success', message: 'ביקור נשמר.' });
-      window.setTimeout(() => navigate('/patients'), 700);
+      navigateTimeoutRef.current = setTimeout(() => navigate('/patients'), 700);
     } catch (err: unknown) {
       setToast({ severity: 'error', message: getErrorMessage(err, 'שמירת ביקור נכשלה.') });
     } finally {
