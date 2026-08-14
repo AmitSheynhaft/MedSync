@@ -354,7 +354,7 @@ export class UsersService {
       }
     }
 
-    // Update secretary profile fields
+    // Update secretary profile fields, or recreate a removed profile for reassignment.
     if (user.secretary) {
       let secretaryDirty = false;
       if (userUpdates.idNumber !== undefined && userUpdates.idNumber.trim()) {
@@ -368,6 +368,28 @@ export class UsersService {
       if (secretaryDirty) {
         await this.secretaryRepository.save(user.secretary);
       }
+    } else if (!user.secretary && userUpdates.clinicId?.trim() && user.role?.name === ROLE_SECRETARY) {
+      // Secretary profile was removed during clinic detach — recreate it for reassignment.
+      await this.secretaryRepository.save(
+        this.secretaryRepository.create({
+          userId: user.id,
+          idNumber: userUpdates.idNumber?.trim() || randomUUID(),
+          clinicId: userUpdates.clinicId.trim(),
+        }),
+      );
+    }
+
+    // Add patient to new clinic (upsert — preserves existing memberships and history).
+    if (user.patient && userUpdates.clinicId?.trim()) {
+      const newClinicId = userUpdates.clinicId.trim();
+      const existing = await this.patientClinicRepository.findOne({
+        where: { patientId: user.patient.id, clinicId: newClinicId },
+      });
+      if (!existing) {
+        await this.patientClinicRepository.save(
+          this.patientClinicRepository.create({ patientId: user.patient.id, clinicId: newClinicId }),
+        );
+      }
     }
 
     return this.getUserById(userId);
@@ -376,9 +398,14 @@ export class UsersService {
   private isUserInClinic(user: User, clinicId: string): boolean {
     if (user.caregiver?.clinicId === clinicId) return true;
     if (user.secretary?.clinicId === clinicId) return true;
-    return (user.patient?.patientClinics ?? []).some(
-      (patientClinic) => patientClinic.clinicId === clinicId,
-    );
+    if ((user.patient?.patientClinics ?? []).some((pc) => pc.clinicId === clinicId)) return true;
+    // A user with no clinic assignment at all (detached) can be managed by any admin
+    // so they can be reassigned without first requiring them to re-register.
+    const hasNoClinic =
+      !user.caregiver?.clinicId &&
+      !user.secretary?.clinicId &&
+      (user.patient?.patientClinics ?? []).length === 0;
+    return hasNoClinic;
   }
 
   async deleteUserById(userId: string, actingUser?: IUser): Promise<void> {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   registerDoctor,
@@ -11,6 +11,13 @@ import { markWelcomePending } from "../../../components/SystemInfoModal/welcomeF
 import { homeForRole } from "../../../auth/viewAs";
 import { Role } from "../../../constants/roles";
 import type { RegisterRole } from "../types";
+
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+const isValidPassword = (v: string) =>
+  v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v);
+const isValidPhone = (v: string) =>
+  /^0[0-9]{1,2}[-\s]?[0-9]{3}[-\s]?[0-9]{4}$/.test(v.trim());
+const isValidIsraeliId = (v: string) => /^\d{9}$/.test(v.trim());
 
 export function useRegisterForm(role: RegisterRole) {
   const navigate = useNavigate();
@@ -44,8 +51,28 @@ export function useRegisterForm(role: RegisterRole) {
 
   const handleNext = () => {
     setError(null);
-    if (!fullName || !email || !password) {
-      setError("שם מלא, אימייל וסיסמה הם שדות חובה");
+    if (!fullName.trim()) {
+      setError("׳©׳ ׳׳׳ ׳”׳•׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+      return;
+    }
+    if (fullName.trim().length < 2) {
+      setError("׳©׳ ׳׳׳ ׳—׳™׳™׳‘ ׳׳”׳›׳™׳ ׳׳₪׳—׳•׳× 2 ׳×׳•׳•׳™׳");
+      return;
+    }
+    if (!email.trim()) {
+      setError("׳׳™׳׳™׳™׳ ׳”׳•׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError("׳›׳×׳•׳‘׳× ׳”׳׳™׳׳™׳™׳ ׳׳™׳ ׳” ׳×׳§׳™׳ ׳”");
+      return;
+    }
+    if (!password) {
+      setError("׳¡׳™׳¡׳׳” ׳”׳™׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+      return;
+    }
+    if (!isValidPassword(password)) {
+      setError("׳”׳¡׳™׳¡׳׳” ׳—׳™׳™׳‘׳× ׳׳”׳›׳™׳ ׳׳₪׳—׳•׳× 8 ׳×׳•׳•׳™׳, ׳׳•׳× ׳’׳“׳•׳׳” ׳׳—׳× ׳•׳׳¡׳₪׳¨ ׳׳—׳“");
       return;
     }
     setStep(1);
@@ -60,35 +87,49 @@ export function useRegisterForm(role: RegisterRole) {
     e.preventDefault();
     setError(null);
     if (!agreed) {
-      setError("יש לאשר את תנאי השימוש ומדיניות הפרטיות");
+      setError("׳™׳© ׳׳׳©׳¨ ׳׳× ׳×׳ ׳׳™ ׳”׳©׳™׳׳•׳© ׳•׳׳“׳™׳ ׳™׳•׳× ׳”׳₪׳¨׳˜׳™׳•׳×");
       return;
     }
     if (isDoctor && !specialization.trim()) {
-      setError("התמחות היא שדה חובה");
+      setError("׳”׳×׳׳—׳•׳× ׳”׳™׳ ׳©׳“׳” ׳—׳•׳‘׳”");
       return;
     }
     if (isDoctor && !idOrLicense.trim()) {
-      setError("מספר רישיון הוא שדה חובה");
+      setError("׳׳¡׳₪׳¨ ׳¨׳™׳©׳™׳•׳ ׳”׳•׳ ׳©׳“׳” ׳—׳•׳‘׳”");
       return;
     }
-    if (isSecretary && !idOrLicense.trim()) {
-      setError("תעודת זהות היא שדה חובה");
+    if (isSecretary) {
+      if (!idOrLicense.trim()) {
+        setError("׳×׳¢׳•׳“׳× ׳–׳”׳•׳× ׳”׳™׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+        return;
+      }
+      if (!isValidIsraeliId(idOrLicense)) {
+        setError("׳×׳¢׳•׳“׳× ׳”׳–׳”׳•׳× ׳—׳™׳™׳‘׳× ׳׳”׳›׳™׳ 9 ׳¡׳₪׳¨׳•׳×");
+        return;
+      }
+    }
+    if (isPatient && idOrLicense.trim() && !isValidIsraeliId(idOrLicense)) {
+      setError("׳×׳¢׳•׳“׳× ׳”׳–׳”׳•׳× ׳—׳™׳™׳‘׳× ׳׳”׳›׳™׳ 9 ׳¡׳₪׳¨׳•׳×");
       return;
     }
     if (!phone.trim()) {
-      setError("טלפון הוא שדה חובה");
+      setError("׳˜׳׳₪׳•׳ ׳”׳•׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+      return;
+    }
+    if (!isValidPhone(phone)) {
+      setError("׳׳¡׳₪׳¨ ׳”׳˜׳׳₪׳•׳ ׳׳™׳ ׳• ׳×׳§׳™׳ (׳׳“׳•׳’׳׳”: 050-1234567)");
       return;
     }
     if (isPatient && !hmo.trim()) {
-      setError("קופת חולים היא שדה חובה");
+      setError("׳§׳•׳₪׳× ׳—׳•׳׳™׳ ׳”׳™׳ ׳©׳“׳” ׳—׳•׳‘׳”");
       return;
     }
     if (isPatient && !address.trim()) {
-      setError("כתובת היא שדה חובה");
+      setError("׳›׳×׳•׳‘׳× ׳”׳™׳ ׳©׳“׳” ׳—׳•׳‘׳”");
       return;
     }
     if (!clinicId) {
-      setError("יש לבחור מרפאה");
+      setError("׳™׳© ׳׳‘׳—׳•׳¨ ׳׳¨׳₪׳׳”");
       return;
     }
     setSubmitting(true);
@@ -111,8 +152,8 @@ export function useRegisterForm(role: RegisterRole) {
               fullName,
               email,
               password,
-              licenseNumber: idOrLicense || "TBD",
-              specialization: specialization || "General",
+              licenseNumber: idOrLicense.trim(),
+              specialization: specialization.trim(),
               phone: phone || undefined,
               birthDate: birthDate || undefined,
               gender: gender || undefined,
@@ -123,7 +164,7 @@ export function useRegisterForm(role: RegisterRole) {
               fullName,
               email,
               password,
-              idNumber: idOrLicense || undefined,
+              idNumber: idOrLicense.trim() || undefined,
               address: address || "",
               hmo: hmo || undefined,
               phone: phone || undefined,
@@ -135,7 +176,7 @@ export function useRegisterForm(role: RegisterRole) {
       markWelcomePending();
       navigate(homeForRole(result.role));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "הרשמה נכשלה");
+      setError(err instanceof Error ? err.message : "׳”׳¨׳©׳׳” ׳ ׳›׳©׳׳”");
     } finally {
       setSubmitting(false);
     }

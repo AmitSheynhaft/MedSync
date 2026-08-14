@@ -484,6 +484,22 @@ export class VisitRecordsService {
         'patientId, caregiverId and visitDate are required',
       );
     }
+
+    // Reject visits that carry no clinical data at all.
+    const hasContent =
+      input.bloodPressure?.trim() ||
+      input.pulse?.trim() ||
+      input.bodyTemp?.trim() ||
+      input.weight?.trim() ||
+      input.height?.trim() ||
+      input.oxygenSat?.trim() ||
+      input.chiefComplaint?.trim() ||
+      input.visitType ||
+      input.followUpDate ||
+      input.referralNotes?.trim();
+    if (!hasContent) {
+      throw new BadRequestException('לא ניתן לשמור ביקור ריק — יש להזין לפחות שדה אחד');
+    }
     if (input.actingUserId) {
       const patient = await this.patientsRepo.findOne({
         where: { id: input.patientId },
@@ -575,8 +591,7 @@ export class VisitRecordsService {
     if (input.followUpDate !== undefined) visit.followUpDate = input.followUpDate;
     if (input.referralNotes !== undefined) visit.referralNotes = input.referralNotes;
     if (input.slotId !== undefined) visit.slotId = input.slotId;
-    if (input.patientId !== undefined) visit.patientId = input.patientId;
-    if (input.caregiverId !== undefined) visit.caregiverId = input.caregiverId;
+    // patientId and caregiverId are intentionally not updatable after creation.
     await this.visits.save(visit);
     return this.getVisitRecordById(visitId);
   }
