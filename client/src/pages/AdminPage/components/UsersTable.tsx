@@ -53,6 +53,7 @@ import {
 interface Props {
   users: IAdminUserListItem[];
   roles: { id: string; name: string }[];
+  clinics: { id: string; name: string }[];
   onCreate: (input: CreateUserInput) => Promise<void>;
   onUpdate: (id: string, input: UpdateUserInput) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -60,7 +61,7 @@ interface Props {
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
-const UsersTable: React.FC<Props> = ({ users, roles, onCreate, onUpdate, onDelete }) => {
+const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate, onDelete }) => {
   const [editing, setEditing]   = useState<IAdminUserListItem | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -266,12 +267,12 @@ const UsersTable: React.FC<Props> = ({ users, roles, onCreate, onUpdate, onDelet
       </Dialog>
 
       {editing && (
-        <UserFormDialog open mode="edit" user={editing} roles={roles}
+        <UserFormDialog open mode="edit" user={editing} roles={roles} clinics={clinics}
           onClose={() => setEditing(null)}
           onSave={async (input) => { await onUpdate(editing.id, input); setEditing(null); }}
         />
       )}
-      <UserFormDialog open={creating} mode="create" roles={roles}
+      <UserFormDialog open={creating} mode="create" roles={roles} clinics={clinics}
         onClose={() => setCreating(false)}
         onSave={async (input) => { await onCreate(input); setCreating(false); }}
       />

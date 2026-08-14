@@ -43,14 +43,8 @@ export class AdminController {
   }
 
   @Post('users')
-  async createUser(
-    @Body() createUserInput: CreateUserInput,
-    @User() actingUser: IUser,
-  ) {
-    const createdUser = await this.users.createUserAsAdmin(
-      createUserInput,
-      actingUser,
-    );
+  async createUser(@Body() createUserInput: CreateUserInput) {
+    const createdUser = await this.users.createUser(createUserInput);
     return this.users.getUserById(createdUser.id);
   }
 
@@ -58,9 +52,8 @@ export class AdminController {
   updateUser(
     @Param('id', new ParseUUIDPipe()) userId: string,
     @Body() userUpdates: UpdateUserInput,
-    @User() actingUser: IUser,
   ) {
-    return this.users.updateUserByIdAsAdmin(userId, userUpdates, actingUser);
+    return this.users.updateUserById(userId, userUpdates);
   }
 
   @Delete('users/:id')
@@ -79,21 +72,16 @@ export class AdminController {
   }
 
   @Post('clinics')
-  createClinic(@Body() clinicInput: ClinicInput, @User() actingUser: IUser) {
-    return this.clinics.createClinicAsAdmin(clinicInput, actingUser);
+  createClinic(@Body() clinicInput: ClinicInput) {
+    return this.clinics.createClinic(clinicInput);
   }
 
   @Patch('clinics/:id')
   updateClinic(
     @Param('id', new ParseUUIDPipe()) clinicId: string,
     @Body() clinicUpdates: Partial<ClinicInput>,
-    @User() actingUser: IUser,
   ) {
-    return this.clinics.updateClinicByIdAsAdmin(
-      clinicId,
-      clinicUpdates,
-      actingUser,
-    );
+    return this.clinics.updateClinicById(clinicId, clinicUpdates);
   }
 
   @Delete('clinics/:id')

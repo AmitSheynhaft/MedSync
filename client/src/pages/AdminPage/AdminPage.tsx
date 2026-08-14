@@ -35,6 +35,7 @@ const AdminPage: React.FC = () => {
               <UsersTable
                 users={usersState.users}
                 roles={usersState.roles}
+                clinics={clinicsState.clinics}
                 onCreate={usersState.handleCreate}
                 onUpdate={usersState.handleUpdate}
                 onDelete={usersState.handleDelete}
