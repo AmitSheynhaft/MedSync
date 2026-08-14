@@ -276,6 +276,38 @@ export class UsersService {
     return this.mapUserEntityToSafeUser(savedUser);
   }
 
+  async updateUserByIdAsAdmin(
+    userId: string,
+    userUpdates: UpdateUserInput,
+    actingUser?: IUser,
+  ): Promise<SafeUser> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: [
+        'caregiver',
+        'secretary',
+        'patient',
+        'patient.patientClinics',
+      ],
+    });
+    if (!user) {
+      throw new NotFoundException(`User ${userId} not found`);
+    }
+
+    if (actingUser?.role?.name === ROLE_ADMIN) {
+      const adminClinicId =
+        actingUser.caregiver?.clinicId ?? actingUser.secretary?.clinicId;
+
+      // If admin has clinic assignment, restrict updates to same-clinic users.
+      // If no clinic assignment, allow editing.
+      if (adminClinicId && !this.isUserInClinic(user, adminClinicId)) {
+        throw new ForbiddenException('Cannot update users outside your clinic');
+      }
+    }
+
+    return this.updateUserById(userId, userUpdates);
+  }
+
   private isUserInClinic(user: User, clinicId: string): boolean {
     if (user.caregiver?.clinicId === clinicId) return true;
     if (user.secretary?.clinicId === clinicId) return true;
@@ -302,10 +334,7 @@ export class UsersService {
       const adminClinicId =
         actingUser.caregiver?.clinicId ?? actingUser.secretary?.clinicId;
 
-      if (!adminClinicId) {
-        throw new ForbiddenException('Admin is not assigned to a clinic');
-      }
-      if (!this.isUserInClinic(user, adminClinicId)) {
+      if (adminClinicId && !this.isUserInClinic(user, adminClinicId)) {
         throw new ForbiddenException('Cannot delete users outside your clinic');
       }
     }
