@@ -389,9 +389,10 @@ export class VisitRecordsService {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
+    let page: Awaited<ReturnType<typeof browser.newPage>> | null = null;
 
     try {
-      const page = await browser.newPage();
+      page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'load' });
       const pdfBuffer = await page.pdf({
         format: 'A4',
@@ -405,7 +406,13 @@ export class VisitRecordsService {
       });
       return Buffer.from(pdfBuffer);
     } finally {
-      await browser.close();
+      try {
+        if (page) {
+          await page.close().catch(() => undefined);
+        }
+      } finally {
+        await browser.close().catch(() => undefined);
+      }
     }
   }
 

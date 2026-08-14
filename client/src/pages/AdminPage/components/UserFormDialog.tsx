@@ -109,6 +109,8 @@ const UserFormDialog: React.FC<Props> = (props) => {
     );
   })();
 
+  const hasValidationErrors = Object.values(errors).some(Boolean);
+
   const handleSave = async () => {
     if (!hasEditChanges) return;
     const e = validate();
@@ -280,7 +282,7 @@ const UserFormDialog: React.FC<Props> = (props) => {
             ) : null;
           })()}
 
-          {Object.keys(errors).length > 0 && (
+          {hasValidationErrors && (
             <Typography sx={userFormValidationTextSx}>
               יש לתקן את השגיאות המסומנות לפני השמירה
             </Typography>
