@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { User } from './entities/userEntity';
 import { Patient } from '../patients/entities/patientEntity';
+import { PatientClinic } from '../patients/entities/patientClinicEntity';
 import { Caregiver } from '../caregivers/entities/caregiverEntity';
 import { Secretary } from './entities/secretaryEntity';
 import { hashPassword, isHashedPassword } from '../common/password.util';
@@ -36,6 +37,8 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Patient)
     private readonly patientRepository: Repository<Patient>,
+    @InjectRepository(PatientClinic)
+    private readonly patientClinicRepository: Repository<PatientClinic>,
     @InjectRepository(Caregiver)
     private readonly caregiverRepository: Repository<Caregiver>,
     @InjectRepository(Secretary)
@@ -316,6 +319,30 @@ export class UsersService {
       });
     }
 
+    if (roleName === ROLE_PATIENT) {
+      const createdUser = await this.createUser({
+        ...createUserInput,
+        roleId,
+      });
+      const patient = await this.patientRepository.findOne({
+        where: { userId: createdUser.id },
+      });
+      if (patient) {
+        const existingMembership = await this.patientClinicRepository.findOne({
+          where: { patientId: patient.id, clinicId: adminClinicId },
+        });
+        if (!existingMembership) {
+          await this.patientClinicRepository.save(
+            this.patientClinicRepository.create({
+              patientId: patient.id,
+              clinicId: adminClinicId,
+            }),
+          );
+        }
+      }
+      return createdUser;
+    }
+
     return this.createUser({
       ...createUserInput,
       roleId,
@@ -366,6 +393,27 @@ export class UsersService {
       if (!this.isUserInClinic(user, adminClinicId)) {
         throw new ForbiddenException('Cannot delete users outside your clinic');
       }
+
+      // Admin delete is clinic-scoped: remove assignment/membership from clinic,
+      // but keep the user account in the system.
+      if (user.caregiver?.clinicId === adminClinicId) {
+        user.caregiver.clinicId = null;
+        user.caregiver.clinicName = null;
+        await this.caregiverRepository.save(user.caregiver);
+      }
+
+      if (user.secretary?.clinicId === adminClinicId) {
+        await this.secretaryRepository.delete({ id: user.secretary.id });
+      }
+
+      if (user.patient?.id) {
+        await this.patientClinicRepository.delete({
+          patientId: user.patient.id,
+          clinicId: adminClinicId,
+        });
+      }
+
+      return;
     }
 
     const deleteResult = await this.userRepository.delete(userId);
