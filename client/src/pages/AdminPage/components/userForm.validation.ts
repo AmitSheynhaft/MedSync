@@ -4,7 +4,7 @@ export const GENDER_OPTIONS = [
 ];
 
 export type UserFormErrors = Partial<
-  Record<'fullName' | 'email' | 'password' | 'phone' | 'birthDate' | 'clinicId', string>
+  Record<'fullName' | 'email' | 'password' | 'phone' | 'birthDate' | 'clinicId' | 'licenseNumber' | 'specialization', string>
 >;
 
 export function isValidEmail(value: string): boolean {

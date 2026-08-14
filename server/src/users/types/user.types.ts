@@ -10,6 +10,11 @@ export interface CreateUserInput {
   birthDate?: string | Date;
   gender?: string;
   clinicId?: string;
+  /** Doctor-specific */
+  licenseNumber?: string;
+  specialization?: string;
+  /** Secretary-specific */
+  idNumber?: string;
 }
 
 export interface UpdateUserInput {
@@ -21,6 +26,11 @@ export interface UpdateUserInput {
   phone?: string;
   birthDate?: string | Date;
   gender?: string;
+  /** Role-specific profile fields (admin only) */
+  licenseNumber?: string;
+  specialization?: string;
+  clinicId?: string;
+  idNumber?: string;
 }
 
 export type SafeUser = Omit<User, 'password'>;

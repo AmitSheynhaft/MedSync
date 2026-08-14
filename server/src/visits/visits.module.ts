@@ -20,6 +20,7 @@ import { Slot } from '../slots/entities/slotEntity';
 import { DiagnosesModule } from '../diagnoses/diagnoses.module';
 import { MedicinesModule } from '../medicines/medicines.module';
 import { PatientMedicalSummaryModule } from '../patient-medical-summary/patient-medical-summary.module';
+import { PatientsModule } from '../patients/patients.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { PatientMedicalSummaryModule } from '../patient-medical-summary/patient-
     DiagnosesModule,
     MedicinesModule,
     PatientMedicalSummaryModule,
+    PatientsModule,
   ],
   controllers: [VisitsController, VisitRecordsController],
   providers: [VisitsService, SpeechService, SummaryService, VisitRecordsService],

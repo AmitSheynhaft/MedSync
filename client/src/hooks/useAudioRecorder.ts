@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { transcribeAudio, VisitSummaryObject } from '../api/visits';
 
 type Status = 'idle' | 'recording' | 'processing' | 'done';
@@ -64,6 +64,16 @@ export function useAudioRecorder() {
     setTranscript('');
     setSummary(null);
   };
+
+  // Release mic on unmount regardless of recording state.
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      mediaRecorderRef.current?.stop();
+      releaseStream();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleStop = async () => {
     const blob = new Blob(chunksRef.current, { type: 'audio/webm' });

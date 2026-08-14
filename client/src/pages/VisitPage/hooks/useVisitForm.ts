@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAudioRecorder } from '../../../hooks/useAudioRecorder';
 import {
   createVisit, upsertVisitSummary,
-  addVisitDiagnosis, addVisitMedicine, updateVisit, getVisit,
+  addVisitDiagnosis, addVisitMedicine, removeVisitDiagnosis, removeVisitMedicine, updateVisit, getVisit,
   VisitDiagnosisEntry, VisitMedicineEntry,
 } from '../../../api/visits';
 import { ToastState, DiagnosisItem, MedicineItem, PatientInfo } from '../constants';
@@ -30,7 +30,7 @@ export function useVisitForm() {
   const { id: patientId, visitId } = useParams<{ id: string; visitId: string }>();
   const [searchParams] = useSearchParams();
   const slotId = searchParams.get('slotId') ?? undefined;
-  const { status, isStarting, transcript, summary, timer, start, stop } = useAudioRecorder();
+  const { status, isStarting, transcript, summary, timer, start, stop, cancel } = useAudioRecorder();
 
   const [subjective, setSubjective] = useState('');
   const [diagnosis, setDiagnosis] = useState('');
@@ -63,6 +63,9 @@ export function useVisitForm() {
   // Tracks codes/keys of items already persisted to avoid re-POSTing on subsequent saves
   const persistedDiagnosisCodesRef = useRef<Set<string>>(new Set());
   const persistedMedicineKeysRef = useRef<Set<string>>(new Set());
+  // Tracks persisted items that the user removed, so the save can delete them.
+  const removedDiagnosisIdsRef = useRef<Set<string>>(new Set());
+  const removedMedicineIdsRef = useRef<Set<string>>(new Set());
   const {
     diagnosisSearch,
     setDiagnosisSearch,
@@ -120,6 +123,7 @@ export function useVisitForm() {
         const loadedDiagnoses = visitData.diagnoses.map((diagEntry: VisitDiagnosisEntry) => ({
           code: diagEntry.diagnosis?.code ?? '',
           description: diagEntry.diagnosis?.description ?? '',
+          diagnosisId: diagEntry.diagnosis?.id,
         }));
         setDiagnosesList(loadedDiagnoses);
         persistedDiagnosisCodesRef.current = new Set(loadedDiagnoses.map(d => d.code));
@@ -131,6 +135,7 @@ export function useVisitForm() {
           frequency: medEntry.frequency ?? '',
           duration: medEntry.duration ?? '',
           instructions: medEntry.instructions,
+          medicineId: medEntry.medicine?.id,
         }));
         setMedicinesList(loadedMedicines);
         persistedMedicineKeysRef.current = new Set(
@@ -170,11 +175,19 @@ export function useVisitForm() {
   };
 
   const removeDiagnosis = (index: number) =>
-    setDiagnosesList(prev => prev.filter((_, idx) => idx !== index));
+    setDiagnosesList(prev => {
+      const item = prev[index];
+      if (item?.diagnosisId) removedDiagnosisIdsRef.current.add(item.diagnosisId);
+      return prev.filter((_, idx) => idx !== index);
+    });
   const addDiagnosis = (item: DiagnosisItem) =>
     setDiagnosesList(prev => (prev.some(d => d.code === item.code) ? prev : [...prev, item]));
   const removeMedicine = (index: number) =>
-    setMedicinesList(prev => prev.filter((_, idx) => idx !== index));
+    setMedicinesList(prev => {
+      const item = prev[index];
+      if (item?.medicineId) removedMedicineIdsRef.current.add(item.medicineId);
+      return prev.filter((_, idx) => idx !== index);
+    });
 
   const handleSave = async () => {
     // Guard against re-entrancy (fast double-clicks) and read-only callers.
@@ -247,6 +260,15 @@ export function useVisitForm() {
         });
         persistedMedicineKeysRef.current.add(key);
       }
+      // Delete items the user removed from the list.
+      for (const diagnosisId of removedDiagnosisIdsRef.current) {
+        await removeVisitDiagnosis(targetId, diagnosisId);
+      }
+      removedDiagnosisIdsRef.current.clear();
+      for (const medicineId of removedMedicineIdsRef.current) {
+        await removeVisitMedicine(targetId, medicineId);
+      }
+      removedMedicineIdsRef.current.clear();
 
       setToast({ severity: 'success', message: 'ביקור נשמר.' });
       navigateTimeoutRef.current = setTimeout(() => navigate('/patients'), 700);
@@ -300,7 +322,7 @@ export function useVisitForm() {
     medicineDosage, setMedicineDosage, medicineFrequency, setMedicineFrequency,
     medicineDuration, setMedicineDuration, handleAddMedicine, removeMedicine,
     // actions
-    handleRecord, handleSave,
+    handleRecord, handleSave, cancel,
   };
 }
 

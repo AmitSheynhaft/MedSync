@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   Delete,
@@ -28,10 +28,14 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { User } from '../common/decorators/user.decorator';
 import { IUser } from '../common/types/entity-interfaces';
 import { ROLE_DOCTOR, ROLE_PATIENT } from '../common/constants/roles';
+import { PatientsService } from '../patients/patients.service';
 
 @Controller('api/visits-records')
 export class VisitRecordsController {
-  constructor(private readonly visitRecordsService: VisitRecordsService) {}
+  constructor(
+    private readonly visitRecordsService: VisitRecordsService,
+    private readonly patientsService: PatientsService,
+  ) {}
 
   private assertPatientCanAccessVisit(
     visit: { patientId: string },
@@ -45,13 +49,17 @@ export class VisitRecordsController {
     }
   }
 
-  /** Throws ForbiddenException if the visit belongs to a different clinic. */
+  /**
+   * Resolves the clinic the acting user is scoped to, then verifies the visit
+   * belongs to that clinic. Throws ForbiddenException on mismatch.
+   * Returns without error if the user is an admin (no clinic restriction).
+   */
   private async assertClinicAccessForVisit(
     visitId: string,
     user: IUser,
   ): Promise<void> {
     const visit = await this.visitRecordsService.getVisitRecordById(visitId);
-    const actingClinicId = user?.caregiver?.clinicId;
+    const actingClinicId = await this.patientsService.resolveActingClinicId(user);
     if (
       actingClinicId &&
       visit.caregiver?.clinicId &&
@@ -62,7 +70,7 @@ export class VisitRecordsController {
   }
 
   @Get()
-  getVisitRecords(
+  async getVisitRecords(
     @User() user: IUser,
     @Query('patientId') patientId?: string,
     @Query('caregiverId') caregiverId?: string,
@@ -73,18 +81,13 @@ export class VisitRecordsController {
     const pageNumber = shouldPaginate ? Number(page) : undefined;
     const limitNumber = shouldPaginate ? Number(limit) : undefined;
 
-    // Patients may only ever read their own visit records; ignore any
-    // client-supplied filters that could target another patient's data.
     if (user?.role?.name === ROLE_PATIENT) {
       const ownPatientId = user.patient?.id;
       if (!ownPatientId) {
         throw new ForbiddenException('No patient profile for this user');
       }
       if (!shouldPaginate) {
-        return this.visitRecordsService.getVisitRecords(
-          ownPatientId,
-          undefined,
-        );
+        return this.visitRecordsService.getVisitRecords(ownPatientId, undefined);
       }
       return this.visitRecordsService.getVisitRecords(
         ownPatientId,
@@ -94,13 +97,11 @@ export class VisitRecordsController {
         limitNumber,
       );
     }
-    const actingClinicId = user?.caregiver?.clinicId;
+
+    // For doctors and secretaries resolve acting clinic; admins get undefined (unrestricted).
+    const actingClinicId = await this.patientsService.resolveActingClinicId(user);
     if (!shouldPaginate) {
-      return this.visitRecordsService.getVisitRecords(
-        patientId,
-        caregiverId,
-        actingClinicId,
-      );
+      return this.visitRecordsService.getVisitRecords(patientId, caregiverId, actingClinicId);
     }
     return this.visitRecordsService.getVisitRecords(
       patientId,
@@ -138,9 +139,7 @@ export class VisitRecordsController {
       .replace(/-/g, '');
     const filename = `medsync-visit-summary-${dateSuffix}.pdf`;
 
-    const file = await this.visitRecordsService.generateVisitSummaryPdf(
-      visitId,
-    );
+    const file = await this.visitRecordsService.generateVisitSummaryPdf(visitId);
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
@@ -150,11 +149,13 @@ export class VisitRecordsController {
 
   @Roles(ROLE_DOCTOR)
   @Post()
-  createVisitRecord(@User() user: IUser, @Body() visitInput: VisitInput) {
+  async createVisitRecord(@User() user: IUser, @Body() visitInput: VisitInput) {
     const caregiverId = user?.caregiver?.id;
     if (!caregiverId) {
       throw new ForbiddenException('No caregiver profile for this user');
     }
+    // Verify the doctor is allowed to access this patient before creating the visit.
+    await this.patientsService.assertUserCanAccessPatient(visitInput.patientId, user);
     const actingClinicId = user?.caregiver?.clinicId;
     return this.visitRecordsService.createVisitRecord({
       ...visitInput,
@@ -172,10 +173,7 @@ export class VisitRecordsController {
     @Body() visitUpdates: Partial<VisitInput>,
   ) {
     await this.assertClinicAccessForVisit(visitId, user);
-    return this.visitRecordsService.updateVisitRecordById(
-      visitId,
-      visitUpdates,
-    );
+    return this.visitRecordsService.updateVisitRecordById(visitId, visitUpdates);
   }
 
   @Roles(ROLE_DOCTOR)
@@ -197,10 +195,7 @@ export class VisitRecordsController {
     @Body() visitRecordingInput: VisitRecordingInput,
   ) {
     await this.assertClinicAccessForVisit(visitId, user);
-    return this.visitRecordsService.upsertVisitRecordingByVisitId(
-      visitId,
-      visitRecordingInput,
-    );
+    return this.visitRecordsService.upsertVisitRecordingByVisitId(visitId, visitRecordingInput);
   }
 
   @Roles(ROLE_DOCTOR)
@@ -211,10 +206,7 @@ export class VisitRecordsController {
     @Body() visitSummaryInput: VisitSummaryInput,
   ) {
     await this.assertClinicAccessForVisit(visitId, user);
-    return this.visitRecordsService.upsertVisitSummaryByVisitId(
-      visitId,
-      visitSummaryInput,
-    );
+    return this.visitRecordsService.upsertVisitSummaryByVisitId(visitId, visitSummaryInput);
   }
 
   @Roles(ROLE_DOCTOR)
@@ -225,10 +217,7 @@ export class VisitRecordsController {
     @Body() visitDiagnosisInput: VisitDiagnosisInput,
   ) {
     await this.assertClinicAccessForVisit(visitId, user);
-    return this.visitRecordsService.addDiagnosisToVisit(
-      visitId,
-      visitDiagnosisInput,
-    );
+    return this.visitRecordsService.addDiagnosisToVisit(visitId, visitDiagnosisInput);
   }
 
   @Roles(ROLE_DOCTOR)
@@ -240,10 +229,7 @@ export class VisitRecordsController {
     @Param('diagnosisId', new ParseUUIDPipe()) diagnosisId: string,
   ) {
     await this.assertClinicAccessForVisit(visitId, user);
-    return this.visitRecordsService.removeDiagnosisFromVisit(
-      visitId,
-      diagnosisId,
-    );
+    return this.visitRecordsService.removeDiagnosisFromVisit(visitId, diagnosisId);
   }
 
   @Roles(ROLE_DOCTOR)
@@ -254,10 +240,7 @@ export class VisitRecordsController {
     @Body() visitMedicineInput: VisitMedicineInput,
   ) {
     await this.assertClinicAccessForVisit(visitId, user);
-    return this.visitRecordsService.addMedicineToVisit(
-      visitId,
-      visitMedicineInput,
-    );
+    return this.visitRecordsService.addMedicineToVisit(visitId, visitMedicineInput);
   }
 
   @Roles(ROLE_DOCTOR)
@@ -269,9 +252,6 @@ export class VisitRecordsController {
     @Param('medicineId', new ParseUUIDPipe()) medicineId: string,
   ) {
     await this.assertClinicAccessForVisit(visitId, user);
-    return this.visitRecordsService.removeMedicineFromVisit(
-      visitId,
-      medicineId,
-    );
+    return this.visitRecordsService.removeMedicineFromVisit(visitId, medicineId);
   }
 }

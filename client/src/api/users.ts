@@ -23,6 +23,11 @@ export interface CreateUserInput {
   birthDate?: string;
   gender?: string;
   clinicId?: string;
+  /** Doctor-specific */
+  licenseNumber?: string;
+  specialization?: string;
+  /** Secretary-specific */
+  idNumber?: string;
 }
 
 export interface UpdateUserInput extends Partial<CreateUserInput> {}

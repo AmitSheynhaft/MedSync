@@ -1,18 +1,14 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
-  HttpCode,
-  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
-  Post,
   Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserInput, UpdateUserInput } from './types/user.types';
+import { UpdateUserInput } from './types/user.types';
 import { User } from '../common/decorators/user.decorator';
 import { IUser } from '../common/types/entity-interfaces';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -29,9 +25,9 @@ export class UsersController {
 
   @Patch('me')
   updateCurrentUser(@User() user: IUser, @Body() userUpdates: UpdateUserInput) {
-    // Strip roleId to prevent self-elevation (C1)
-    const { roleId: _stripped, ...safeUserUpdates } = userUpdates;
-    return this.usersService.updateUserById(user.id, safeUserUpdates);
+    // Strip role fields: self-elevation is not permitted.
+    const { roleId: _r1, roleName: _r2, licenseNumber: _r3, specialization: _r4, clinicId: _r5, idNumber: _r6, ...safeUpdates } = userUpdates;
+    return this.usersService.updateUserById(user.id, safeUpdates);
   }
 
   @Roles(ROLE_DOCTOR)
@@ -52,30 +48,5 @@ export class UsersController {
   @Get(':id')
   getUserById(@Param('id', new ParseUUIDPipe()) userId: string) {
     return this.usersService.getUserById(userId);
-  }
-
-  @Roles(ROLE_DOCTOR)
-  @Post()
-  async createUser(@Body() createUserInput: CreateUserInput) {
-    const createdUser = await this.usersService.createUser(createUserInput);
-    return this.usersService.getUserById(createdUser.id);
-  }
-
-  @Roles(ROLE_DOCTOR)
-  @Patch(':id')
-  updateUserById(
-    @Param('id', new ParseUUIDPipe()) userId: string,
-    @Body() userUpdates: UpdateUserInput,
-  ) {
-    // Strip roleId to prevent privilege escalation; role changes are admin-only (C1)
-    const { roleId: _stripped, ...safeUserUpdates } = userUpdates;
-    return this.usersService.updateUserById(userId, safeUserUpdates);
-  }
-
-  @Roles(ROLE_DOCTOR)
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  deleteUserById(@Param('id', new ParseUUIDPipe()) userId: string) {
-    return this.usersService.deleteUserById(userId);
   }
 }
