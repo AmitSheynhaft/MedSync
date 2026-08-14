@@ -60,7 +60,7 @@ export const MedicinesSection: React.FC<IMedicinesSectionProps> = ({
           onInputChange={(_, value, reason) => { if (reason !== 'reset') setMedicineSearch(value); }}
           onChange={(_, selectedOption) => {
             if (!selectedOption) return;
-            setTimeout(() => setMedicineSearch(selectedOption.name), 0);
+            setMedicineSearch(selectedOption.name);
           }}
           renderInput={params => (
             <TextField {...params} placeholder="חפש שם תרופה..."
