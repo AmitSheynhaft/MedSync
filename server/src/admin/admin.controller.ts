@@ -17,6 +17,8 @@ import { UsersService } from '../users/users.service';
 import { CreateUserInput, UpdateUserInput } from '../users/types/user.types';
 import { ClinicsService } from '../clinics/clinics.service';
 import { ClinicInput } from '../clinics/types/clinic.types';
+import { User } from '../common/decorators/user.decorator';
+import { IUser } from '../common/types/entity-interfaces';
 
 @Roles(ROLE_ADMIN)
 @Controller('api/admin')
@@ -56,8 +58,11 @@ export class AdminController {
 
   @Delete('users/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  removeUser(@Param('id', new ParseUUIDPipe()) userId: string) {
-    return this.users.deleteUserById(userId);
+  removeUser(
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    @User() actingUser: IUser,
+  ) {
+    return this.users.deleteUserById(userId, actingUser);
   }
 
   // ── Clinics ────────────────────────────────────────────

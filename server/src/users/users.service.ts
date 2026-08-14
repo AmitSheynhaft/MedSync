@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -14,6 +15,7 @@ import { Secretary } from './entities/secretaryEntity';
 import { hashPassword, isHashedPassword } from '../common/password.util';
 import { RolesService } from '../roles/roles.service';
 import { ROLE_DOCTOR, ROLE_PATIENT, ROLE_SECRETARY } from '../common/constants/roles';
+import { ROLE_ADMIN } from '../common/constants/roles';
 import { PaginatedResult } from '../common/pagination/pagination.types';
 import {
   resolvePagination,
@@ -25,6 +27,7 @@ import {
   SafeUser,
   UpdateUserInput,
 } from './types/user.types';
+import { IUser } from '../common/types/entity-interfaces';
 
 @Injectable()
 export class UsersService {
@@ -148,10 +151,10 @@ export class UsersService {
     return this.mapUserEntityToSafeUser(userEntity);
   }
 
- async getUserByIdWithRole(userId: string): Promise<SafeUser | null> {
+  async getUserByIdWithRole(userId: string): Promise<SafeUser | null> {
     const userEntity = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['role', 'patient', 'caregiver'],
+      relations: ['role', 'patient', 'caregiver', 'secretary'],
     });
     return userEntity ? this.mapUserEntityToSafeUser(userEntity) : null;
   }
@@ -273,7 +276,40 @@ export class UsersService {
     return this.mapUserEntityToSafeUser(savedUser);
   }
 
-  async deleteUserById(userId: string): Promise<void> {
+  private isUserInClinic(user: User, clinicId: string): boolean {
+    if (user.caregiver?.clinicId === clinicId) return true;
+    if (user.secretary?.clinicId === clinicId) return true;
+    return (user.patient?.patientClinics ?? []).some(
+      (patientClinic) => patientClinic.clinicId === clinicId,
+    );
+  }
+
+  async deleteUserById(userId: string, actingUser?: IUser): Promise<void> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: [
+        'caregiver',
+        'secretary',
+        'patient',
+        'patient.patientClinics',
+      ],
+    });
+    if (!user) {
+      throw new NotFoundException(`User ${userId} not found`);
+    }
+
+    if (actingUser?.role?.name === ROLE_ADMIN) {
+      const adminClinicId =
+        actingUser.caregiver?.clinicId ?? actingUser.secretary?.clinicId;
+
+      if (!adminClinicId) {
+        throw new ForbiddenException('Admin is not assigned to a clinic');
+      }
+      if (!this.isUserInClinic(user, adminClinicId)) {
+        throw new ForbiddenException('Cannot delete users outside your clinic');
+      }
+    }
+
     const deleteResult = await this.userRepository.delete(userId);
     if (!deleteResult.affected)
       throw new NotFoundException(`User ${userId} not found`);
