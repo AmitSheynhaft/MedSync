@@ -29,7 +29,6 @@ interface EditProps {
   mode: 'edit';
   user: IAdminUserListItem;
   roles: { id: string; name: string }[];
-  clinics: { id: string; name: string }[];
   onClose: () => void;
   onSave: (input: UpdateUserInput) => Promise<void>;
 }
@@ -37,7 +36,6 @@ interface EditProps {
 interface CreateProps {
   mode: 'create';
   roles: { id: string; name: string }[];
-  clinics: { id: string; name: string }[];
   onClose: () => void;
   onSave: (input: CreateUserInput) => Promise<void>;
 }
@@ -46,7 +44,7 @@ type Props = (EditProps | CreateProps) & { open: boolean };
 type DateInputElement = HTMLInputElement & { showPicker?: () => void };
 
 const UserFormDialog: React.FC<Props> = (props) => {
-  const { open, mode, roles, clinics, onClose } = props;
+  const { open, mode, roles, onClose } = props;
   const isEdit = mode === 'edit';
   const user = isEdit ? (props as EditProps).user : null;
 
@@ -57,7 +55,6 @@ const UserFormDialog: React.FC<Props> = (props) => {
   const [gender,     setGender]     = useState(user?.gender ?? '');
   const [birthDate,  setBirthDate]  = useState(user?.birthDate?.slice(0, 10) ?? '');
   const [roleName,   setRoleName]   = useState('');
-  const [clinicId,   setClinicId]   = useState('');
   const [errors,     setErrors]     = useState<UserFormErrors>({});
   const [saving,     setSaving]     = useState(false);
   const [saveError,  setSaveError]  = useState<string | null>(null);
@@ -73,7 +70,6 @@ const UserFormDialog: React.FC<Props> = (props) => {
     setErrors({});
     setSaveError(null);
     setRoleName(user?.role?.name ?? '');
-    setClinicId('');
   }, [open, user, roles]);
 
   const validate = (): UserFormErrors => {
@@ -132,7 +128,6 @@ const UserFormDialog: React.FC<Props> = (props) => {
           gender:    gender    || undefined,
           birthDate: birthDate || undefined,
           roleName:  roleName  || undefined,
-          clinicId:  clinicId  || undefined,
         });
       }
     } catch (err) {
@@ -252,19 +247,6 @@ const UserFormDialog: React.FC<Props> = (props) => {
               <MenuItem key={r.id} value={r.name}>{ROLE_LABELS[r.name] ?? r.name}</MenuItem>
             ))}
           </TextField>
-
-          {!isEdit && (() => {
-            const selectedRole = roleName;
-            const needsClinic = selectedRole === 'secretary' || selectedRole === 'doctor';
-            return needsClinic ? (
-              <TextField {...fieldSx} select label="מרפאה" value={clinicId} onChange={(e) => setClinicId(e.target.value)} required>
-                <MenuItem value="">— בחר מרפאה —</MenuItem>
-                {clinics.map((c) => (
-                  <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
-                ))}
-              </TextField>
-            ) : null;
-          })()}
 
           {Object.keys(errors).length > 0 && (
             <Typography sx={userFormValidationTextSx}>

@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { User } from './entities/userEntity';
 import { Patient } from '../patients/entities/patientEntity';
+import { PatientClinic } from '../patients/entities/patientClinicEntity';
 import { Caregiver } from '../caregivers/entities/caregiverEntity';
 import { Secretary } from './entities/secretaryEntity';
 import { hashPassword, isHashedPassword } from '../common/password.util';
@@ -36,6 +37,8 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Patient)
     private readonly patientRepository: Repository<Patient>,
+    @InjectRepository(PatientClinic)
+    private readonly patientClinicRepository: Repository<PatientClinic>,
     @InjectRepository(Caregiver)
     private readonly caregiverRepository: Repository<Caregiver>,
     @InjectRepository(Secretary)
@@ -284,6 +287,93 @@ export class UsersService {
     );
   }
 
+  private getAdminClinicIdOrThrow(actingUser: IUser): string {
+    if (actingUser?.role?.name !== ROLE_ADMIN) {
+      throw new ForbiddenException('Only admin can perform this action');
+    }
+    const clinicId = actingUser.caregiver?.clinicId ?? actingUser.secretary?.clinicId;
+    if (!clinicId) {
+      throw new ForbiddenException('Admin is not assigned to a clinic');
+    }
+    return clinicId;
+  }
+
+  async createUserAsAdmin(
+    createUserInput: CreateUserInput,
+    actingUser: IUser,
+  ): Promise<User> {
+    const adminClinicId = this.getAdminClinicIdOrThrow(actingUser);
+    const requestedClinicId = createUserInput.clinicId;
+    if (requestedClinicId && requestedClinicId !== adminClinicId) {
+      throw new ForbiddenException('Cannot create users outside your clinic');
+    }
+
+    const roleId = await this.resolveRoleIdForCreateUser(createUserInput);
+    const roleName = (await this.rolesService.getRoleById(roleId)).name;
+
+    if (roleName === ROLE_DOCTOR || roleName === ROLE_SECRETARY) {
+      return this.createUser({
+        ...createUserInput,
+        roleId,
+        clinicId: adminClinicId,
+      });
+    }
+
+    if (roleName === ROLE_PATIENT) {
+      const createdUser = await this.createUser({
+        ...createUserInput,
+        roleId,
+      });
+      const patient = await this.patientRepository.findOne({
+        where: { userId: createdUser.id },
+      });
+      if (patient) {
+        const existingMembership = await this.patientClinicRepository.findOne({
+          where: { patientId: patient.id, clinicId: adminClinicId },
+        });
+        if (!existingMembership) {
+          await this.patientClinicRepository.save(
+            this.patientClinicRepository.create({
+              patientId: patient.id,
+              clinicId: adminClinicId,
+            }),
+          );
+        }
+      }
+      return createdUser;
+    }
+
+    return this.createUser({
+      ...createUserInput,
+      roleId,
+    });
+  }
+
+  async updateUserByIdAsAdmin(
+    userId: string,
+    userUpdates: UpdateUserInput,
+    actingUser: IUser,
+  ): Promise<SafeUser> {
+    const adminClinicId = this.getAdminClinicIdOrThrow(actingUser);
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: [
+        'caregiver',
+        'secretary',
+        'patient',
+        'patient.patientClinics',
+      ],
+    });
+    if (!user) {
+      throw new NotFoundException(`User ${userId} not found`);
+    }
+    if (!this.isUserInClinic(user, adminClinicId)) {
+      throw new ForbiddenException('Cannot update users outside your clinic');
+    }
+
+    return this.updateUserById(userId, userUpdates);
+  }
+
   async deleteUserById(userId: string, actingUser?: IUser): Promise<void> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
@@ -299,15 +389,31 @@ export class UsersService {
     }
 
     if (actingUser?.role?.name === ROLE_ADMIN) {
-      const adminClinicId =
-        actingUser.caregiver?.clinicId ?? actingUser.secretary?.clinicId;
-
-      if (!adminClinicId) {
-        throw new ForbiddenException('Admin is not assigned to a clinic');
-      }
+      const adminClinicId = this.getAdminClinicIdOrThrow(actingUser);
       if (!this.isUserInClinic(user, adminClinicId)) {
         throw new ForbiddenException('Cannot delete users outside your clinic');
       }
+
+      // Admin delete is clinic-scoped: remove assignment/membership from clinic,
+      // but keep the user account in the system.
+      if (user.caregiver?.clinicId === adminClinicId) {
+        user.caregiver.clinicId = null;
+        user.caregiver.clinicName = null;
+        await this.caregiverRepository.save(user.caregiver);
+      }
+
+      if (user.secretary?.clinicId === adminClinicId) {
+        await this.secretaryRepository.delete({ id: user.secretary.id });
+      }
+
+      if (user.patient?.id) {
+        await this.patientClinicRepository.delete({
+          patientId: user.patient.id,
+          clinicId: adminClinicId,
+        });
+      }
+
+      return;
     }
 
     const deleteResult = await this.userRepository.delete(userId);
