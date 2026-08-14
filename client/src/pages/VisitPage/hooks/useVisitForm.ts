@@ -12,17 +12,8 @@ import { useVisitReadOnlyMode } from './useVisitReadOnlyMode';
 import { useVisitCatalogOptions } from './useVisitCatalogOptions';
 
 
-function getErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message) return error.message;
+function getErrorMessage(error: unknown, fallback: string): string {  if (error instanceof Error && error.message) return error.message;
   return fallback;
-}
-
-// Local YYYY-MM-DD for the current day (avoids UTC off-by-one from toISOString).
-function todayIso(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
 }
 
 export function useVisitForm() {
@@ -57,8 +48,8 @@ export function useVisitForm() {
   const [oxygenSat, setOxygenSat] = useState('');
   // Visit metadata
   const [visitType, setVisitType] = useState('');
-  // Follow-up date is locked to the day the visit is created.
-  const [followUpDate, setFollowUpDate] = useState(todayIso());
+  // Follow-up date starts empty; pre-filling today would bypass the empty-visit guard.
+  const [followUpDate, setFollowUpDate] = useState('');
   const [referralNotes, setReferralNotes] = useState('');
   // Tracks codes/keys of items already persisted to avoid re-POSTing on subsequent saves
   const persistedDiagnosisCodesRef = useRef<Set<string>>(new Set());
@@ -211,11 +202,16 @@ export function useVisitForm() {
 
     const summaryText = buildSummaryText(subjective, diagnosis, plan);
 
-    // Refuse to create an empty record: require at least a summary, some
-    // vitals/metadata, a diagnosis or a medicine.
+    // visitType and followUpDate are scheduling metadata — not clinical content.
     const hasContent =
       !!summaryText ||
-      Object.values(vitalsAndMeta).some(v => v !== undefined) ||
+      !!bloodPressure.trim() ||
+      !!pulse.trim() ||
+      !!bodyTemp.trim() ||
+      !!weight.trim() ||
+      !!height.trim() ||
+      !!oxygenSat.trim() ||
+      !!referralNotes.trim() ||
       diagnosesList.length > 0 ||
       medicinesList.length > 0;
     if (!hasContent) {

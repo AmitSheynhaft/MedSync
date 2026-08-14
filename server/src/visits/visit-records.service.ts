@@ -485,7 +485,7 @@ export class VisitRecordsService {
       );
     }
 
-    // Reject visits that carry no clinical data at all.
+    // visitType and followUpDate are scheduling metadata — not clinical content.
     const hasContent =
       input.bloodPressure?.trim() ||
       input.pulse?.trim() ||
@@ -494,8 +494,6 @@ export class VisitRecordsService {
       input.height?.trim() ||
       input.oxygenSat?.trim() ||
       input.chiefComplaint?.trim() ||
-      input.visitType ||
-      input.followUpDate ||
       input.referralNotes?.trim();
     if (!hasContent) {
       throw new BadRequestException('לא ניתן לשמור ביקור ריק — יש להזין לפחות שדה אחד');
