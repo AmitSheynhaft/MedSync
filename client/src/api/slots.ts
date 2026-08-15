@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost } from './client';
+import { ApiError, apiDelete, apiGet, apiPost } from './client';
 import { Paginated } from './pagination';
 
 export type { Paginated } from './pagination';
@@ -73,8 +73,19 @@ export interface BookSlotInput {
   hasReferral?: boolean;
 }
 
-export function bookSlot(input: BookSlotInput): Promise<Slot> {
-  return apiPost<Slot>('/api/slots/book', input);
+export async function bookSlot(input: BookSlotInput): Promise<Slot> {
+  try {
+    return await apiPost<Slot>('/api/slots/book', input);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error as ApiError).status === 409 &&
+      error.message === 'This slot is already booked'
+    ) {
+      throw new Error('התור הזה כבר תפוס');
+    }
+    throw error;
+  }
 }
 
 export function getTherapistOptions(

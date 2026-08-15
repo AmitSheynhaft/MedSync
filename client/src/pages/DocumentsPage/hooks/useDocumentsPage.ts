@@ -10,6 +10,8 @@ import { isSupportedUploadFile, SUPPORTED_FORMATS_LABEL } from '../../PatientDas
 import { TFilterKey } from '../utils';
 
 const PAGE_SIZE = 20;
+const PROCESSING_POLL_INTERVAL_MS = 3000;
+const MAX_PROCESSING_POLLS = 40;
 
 export function useDocumentsPage() {
   const navigate = useNavigate();
@@ -37,6 +39,7 @@ export function useDocumentsPage() {
   const pageRef = useRef(1);
   const hasMoreRef = useRef(true);
   const loadingMoreRef = useRef(false);
+  const processingPollCountRef = useRef(0);
 
   const { data: patient } = useAsyncData<Patient | null>(
     () => (patientId ? getPatientById(patientId) : Promise.resolve(null)),
@@ -118,14 +121,23 @@ export function useDocumentsPage() {
   // Poll while any document is still processing, but only on page 1.
   const hasProcessingDocuments = (documents ?? []).some(doc => doc.summaryStatus === 'PROCESSING');
   useEffect(() => {
-    if (!hasProcessingDocuments || pageRef.current !== 1) return;
+    if (!hasProcessingDocuments || pageRef.current !== 1) {
+      processingPollCountRef.current = 0;
+      return;
+    }
 
     const pollInterval = setInterval(() => {
+      if (documentsStatus === 'loading') return;
+      if (processingPollCountRef.current >= MAX_PROCESSING_POLLS) {
+        clearInterval(pollInterval);
+        return;
+      }
+      processingPollCountRef.current += 1;
       setRefreshKey((key) => key + 1);
-    }, 3000);
+    }, PROCESSING_POLL_INTERVAL_MS);
 
     return () => clearInterval(pollInterval);
-  }, [hasProcessingDocuments]);
+  }, [hasProcessingDocuments, documentsStatus]);
 
   const cameraStream = useCameraStream();
 
