@@ -6,6 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import {
+  ROLE_ADMIN,
   ROLE_DOCTOR,
   ROLE_SECRETARY,
 } from '../common/constants/roles';
@@ -178,7 +179,7 @@ export class PatientsService {
   ): Promise<PatientSummary[] | PaginatedResult<PatientSummary>> {
     const trimmedSearchQuery = searchQuery?.trim();
     const clinicId = this.getActingClinicId(actingUser);
-    const userWhere: Record<string, unknown> = {};
+    const userWhere: Record<string, unknown> = { role: { name: Not(ROLE_ADMIN) } };
     if (actingUser?.id) {
       userWhere.id = Not(actingUser.id);
     }

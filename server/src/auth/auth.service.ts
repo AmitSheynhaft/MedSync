@@ -299,6 +299,19 @@ export class AuthService {
           .getRepository(Caregiver)
           .save(caregiver);
 
+        const patient = manager.getRepository(Patient).create({
+          userId: savedUser.id,
+          address: '',
+        });
+        const savedPatient = await manager.getRepository(Patient).save(patient);
+
+        await manager.getRepository(PatientClinic).save(
+          manager.getRepository(PatientClinic).create({
+            patientId: savedPatient.id,
+            clinicId,
+          }),
+        );
+
         return {
           userId: savedUser.id,
           email: savedUser.email,
@@ -306,6 +319,7 @@ export class AuthService {
           role: role.name,
           accessToken: this.issueAccessToken(savedUser.id),
           refreshToken: this.issueRefreshToken(savedUser.id),
+          patientId: savedPatient.id,
           caregiverId: savedCaregiver.id,
           clinicId: savedCaregiver.clinicId,
         };
@@ -366,6 +380,20 @@ export class AuthService {
           .getRepository(Secretary)
           .save(secretary);
 
+        const patient = manager.getRepository(Patient).create({
+          userId: savedUser.id,
+          idNumber,
+          address: '',
+        });
+        const savedPatient = await manager.getRepository(Patient).save(patient);
+
+        await manager.getRepository(PatientClinic).save(
+          manager.getRepository(PatientClinic).create({
+            patientId: savedPatient.id,
+            clinicId,
+          }),
+        );
+
         return {
           userId: savedUser.id,
           email: savedUser.email,
@@ -373,6 +401,7 @@ export class AuthService {
           role: role.name,
           accessToken: this.issueAccessToken(savedUser.id),
           refreshToken: this.issueRefreshToken(savedUser.id),
+          patientId: savedPatient.id,
           secretaryId: savedSecretary.id,
           clinicId: savedSecretary.clinicId,
         };
