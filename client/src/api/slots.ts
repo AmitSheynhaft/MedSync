@@ -79,10 +79,14 @@ export async function bookSlot(input: BookSlotInput): Promise<Slot> {
   } catch (error) {
     if (
       error instanceof Error &&
-      (error as ApiError).status === 409 &&
-      error.message === 'This slot is already booked'
+      (error as ApiError).status === 409
     ) {
-      throw new Error('התור הזה כבר תפוס');
+      if (error.message === 'This slot is already booked') {
+        throw new Error('התור הזה כבר תפוס');
+      }
+      if (error.message === 'Patient already has an appointment at this time') {
+        throw new Error('לא ניתן לקבוע שני תורים באותה שעה לאותו מטופל');
+      }
     }
     throw error;
   }

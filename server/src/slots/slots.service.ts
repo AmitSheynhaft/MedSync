@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import {
   Between,
   DataSource,
+  EntityManager,
   ILike,
   LessThan,
   MoreThanOrEqual,
@@ -85,15 +86,121 @@ export class SlotsService {
     return secretary.clinicId;
   }
 
-  async bookSlotForSecretary(
-    input: BookSlotInput,
-    secretaryUserId: string,
-  ): Promise<SlotDto> {
+  private validateBookSlotInput(input: BookSlotInput): void {
     if (!input?.caregiverId || !input?.patientUserId) {
       throw new BadRequestException(
         'caregiverId and patientUserId are required',
       );
     }
+  }
+
+  private async getCaregiverForSecretaryBooking(
+    caregiverId: string,
+    secretaryClinicId: string,
+  ): Promise<Caregiver> {
+    const caregiver = await this.caregiverRepository.findOne({
+      where: { id: caregiverId },
+      relations: ['user'],
+    });
+    if (!caregiver) {
+      throw new NotFoundException('Therapist not found');
+    }
+    if (caregiver.clinicId !== secretaryClinicId) {
+      throw new ForbiddenException('המטפל אינו שייך למרפאה שלך');
+    }
+    return caregiver;
+  }
+
+  private async getPatientUserForSecretaryBooking(
+    patientUserId: string,
+    caregiverUserId: string,
+    secretaryUserId: string,
+  ): Promise<User> {
+    const patientUser = await this.userRepository.findOne({
+      where: { id: patientUserId },
+    });
+    if (!patientUser) {
+      throw new NotFoundException('Patient user not found');
+    }
+    if (patientUser.id === caregiverUserId) {
+      throw new BadRequestException(
+        'A therapist cannot be scheduled as their own patient',
+      );
+    }
+    if (patientUser.id === secretaryUserId) {
+      throw new BadRequestException('לא ניתן לקבוע תור עבור עצמך');
+    }
+    return patientUser;
+  }
+
+  private async ensurePatientClinicMembership(
+    manager: EntityManager,
+    patientId: string,
+    clinicId: string,
+  ): Promise<void> {
+    const clinicRepo = manager.getRepository(PatientClinic);
+    const membership = await clinicRepo.findOne({
+      where: { patientId, clinicId },
+    });
+    if (!membership) {
+      await clinicRepo.save(
+        clinicRepo.create({
+          patientId,
+          clinicId,
+        }),
+      );
+    }
+  }
+
+  private async assertNoSlotConflicts(
+    slotRepo: Repository<Slot>,
+    caregiverId: string,
+    patientId: string,
+    slotTime: Date,
+  ): Promise<void> {
+    const caregiverClash = await slotRepo.findOne({
+      where: {
+        caregiverId,
+        slotTime,
+        status: SlotStatus.SCHEDULED,
+      },
+    });
+    if (caregiverClash) {
+      throw new ConflictException('This slot is already booked');
+    }
+
+    const patientClashingSlot = await slotRepo.findOne({
+      where: {
+        patientId,
+        slotTime,
+        status: SlotStatus.SCHEDULED,
+      },
+    });
+    if (patientClashingSlot) {
+      throw new ConflictException(
+        'Patient already has an appointment at this time',
+      );
+    }
+  }
+
+  private mapSlotSaveError(err: unknown): never {
+    if (err instanceof QueryFailedError) {
+      const constraint = (err as { constraint?: string }).constraint;
+      if (constraint === 'UQ_slots_patient_time_active') {
+        throw new ConflictException(
+          'Patient already has an appointment at this time',
+        );
+      }
+      throw new ConflictException('This slot is already booked');
+    }
+    throw err;
+  }
+
+  async bookSlotForSecretary(
+    input: BookSlotInput,
+    secretaryUserId: string,
+  ): Promise<SlotDto> {
+    this.validateBookSlotInput(input);
 
     const secretaryClinicId = await this.getClinicIdForSecretaryUser(
       secretaryUserId,
@@ -103,35 +210,16 @@ export class SlotsService {
     assertValidSlotTime(slotTime);
     assertSlotNotInPast(slotTime);
 
-    const caregiver = await this.caregiverRepository.findOne({
-      where: { id: input.caregiverId },
-      relations: ['user'],
-    });
-    if (!caregiver) {
-      throw new NotFoundException('Therapist not found');
-    }
-    if (caregiver.clinicId !== secretaryClinicId) {
-      throw new ForbiddenException(
-        'המטפל אינו שייך למרפאה שלך',
-      );
-    }
+    const caregiver = await this.getCaregiverForSecretaryBooking(
+      input.caregiverId,
+      secretaryClinicId,
+    );
 
-    const patientUser = await this.userRepository.findOne({
-      where: { id: input.patientUserId },
-    });
-    if (!patientUser) {
-      throw new NotFoundException('Patient user not found');
-    }
-    if (patientUser.id === caregiver.userId) {
-      throw new BadRequestException(
-        'A therapist cannot be scheduled as their own patient',
-      );
-    }
-    if (patientUser.id === secretaryUserId) {
-      throw new BadRequestException(
-        'לא ניתן לקבוע תור עבור עצמך',
-      );
-    }
+    const patientUser = await this.getPatientUserForSecretaryBooking(
+      input.patientUserId,
+      caregiver.userId,
+      secretaryUserId,
+    );
 
     await this.assertUserBelongsToSecretaryClinic(
       patientUser.id,
@@ -144,30 +232,19 @@ export class SlotsService {
         manager,
       );
 
-      const clinicRepo = manager.getRepository(PatientClinic);
-      const membership = await clinicRepo.findOne({
-        where: { patientId: patient.id, clinicId: secretaryClinicId },
-      });
-      if (!membership) {
-        await clinicRepo.save(
-          clinicRepo.create({
-            patientId: patient.id,
-            clinicId: secretaryClinicId,
-          }),
-        );
-      }
+      await this.ensurePatientClinicMembership(
+        manager,
+        patient.id,
+        secretaryClinicId,
+      );
 
       const slotRepo = manager.getRepository(Slot);
-      const clashing = await slotRepo.findOne({
-        where: {
-          caregiverId: caregiver.id,
-          slotTime,
-          status: SlotStatus.SCHEDULED,
-        },
-      });
-      if (clashing) {
-        throw new ConflictException('This slot is already booked');
-      }
+      await this.assertNoSlotConflicts(
+        slotRepo,
+        caregiver.id,
+        patient.id,
+        slotTime,
+      );
 
       try {
         return await slotRepo.save(
@@ -182,10 +259,7 @@ export class SlotsService {
           }),
         );
       } catch (err) {
-        if (err instanceof QueryFailedError) {
-          throw new ConflictException('This slot is already booked');
-        }
-        throw err;
+        this.mapSlotSaveError(err);
       }
     });
 
