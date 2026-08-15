@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import {
   ROLE_DOCTOR,
-  ROLE_PATIENT,
   ROLE_SECRETARY,
 } from '../common/constants/roles';
 import { calcAge as calcAgeYears } from '../common/age.util';
@@ -179,7 +178,7 @@ export class PatientsService {
   ): Promise<PatientSummary[] | PaginatedResult<PatientSummary>> {
     const trimmedSearchQuery = searchQuery?.trim();
     const clinicId = this.getActingClinicId(actingUser);
-    const userWhere: Record<string, unknown> = { role: { name: ROLE_PATIENT } };
+    const userWhere: Record<string, unknown> = {};
     if (actingUser?.id) {
       userWhere.id = Not(actingUser.id);
     }

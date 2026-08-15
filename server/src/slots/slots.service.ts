@@ -24,6 +24,7 @@ import { Secretary } from '../users/entities/secretaryEntity';
 import { User } from '../users/entities/userEntity';
 import { PatientClinic } from '../patients/entities/patientClinicEntity';
 import {
+  ROLE_ADMIN,
   ROLE_DOCTOR,
   ROLE_PATIENT,
   ROLE_SECRETARY,
@@ -357,20 +358,31 @@ export class SlotsService {
 
     const term = search?.trim();
     const like = term ? ILike(`%${term}%`) : undefined;
-    const searchBranches = like
-      ? [{ fullName: like }, { email: like }]
-      : [{}];
+    const searchBranches = like ? [{ fullName: like }, { email: like }] : [{}];
+    const clinicBranches = [
+      { patient: { patientClinics: { clinicId } } },
+      { caregiver: { clinicId } },
+      { secretary: { clinicId } },
+    ];
 
-    const where = searchBranches.map((searchBranch) => ({
-      ...searchBranch,
-      id: Not(secretaryUserId),
-      role: { name: ROLE_PATIENT },
-      patient: { patientClinics: { clinicId } },
-    }));
+    const where = searchBranches.flatMap((searchBranch) =>
+      clinicBranches.map((clinicBranch) => ({
+        ...searchBranch,
+        ...clinicBranch,
+        id: Not(secretaryUserId),
+        role: { name: Not(ROLE_ADMIN) },
+      })),
+    );
 
     const [users, total] = await this.userRepository.findAndCount({
       where,
-      relations: ['role', 'patient', 'patient.patientClinics'],
+      relations: [
+        'role',
+        'patient',
+        'patient.patientClinics',
+        'caregiver',
+        'secretary',
+      ],
       order: { fullName: 'ASC', id: 'ASC' },
       skip: pagination.skip,
       take: pagination.take,
