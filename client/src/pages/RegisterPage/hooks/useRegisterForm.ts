@@ -52,27 +52,27 @@ export function useRegisterForm(role: RegisterRole) {
   const handleNext = () => {
     setError(null);
     if (!fullName.trim()) {
-      setError("׳©׳ ׳׳׳ ׳”׳•׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+      setError("שם מלא הוא שדה חובה");
       return;
     }
     if (fullName.trim().length < 2) {
-      setError("׳©׳ ׳׳׳ ׳—׳™׳™׳‘ ׳׳”׳›׳™׳ ׳׳₪׳—׳•׳× 2 ׳×׳•׳•׳™׳");
+      setError("שם מלא חייב להכיל לפחות 2 תווים");
       return;
     }
     if (!email.trim()) {
-      setError("׳׳™׳׳™׳™׳ ׳”׳•׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+      setError("אימייל הוא שדה חובה");
       return;
     }
     if (!isValidEmail(email)) {
-      setError("׳›׳×׳•׳‘׳× ׳”׳׳™׳׳™׳™׳ ׳׳™׳ ׳” ׳×׳§׳™׳ ׳”");
+      setError("כתובת האימייל אינה תקינה");
       return;
     }
     if (!password) {
-      setError("׳¡׳™׳¡׳׳” ׳”׳™׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+      setError("סיסמה היא שדה חובה");
       return;
     }
     if (!isValidPassword(password)) {
-      setError("׳”׳¡׳™׳¡׳׳” ׳—׳™׳™׳‘׳× ׳׳”׳›׳™׳ ׳׳₪׳—׳•׳× 8 ׳×׳•׳•׳™׳, ׳׳•׳× ׳’׳“׳•׳׳” ׳׳—׳× ׳•׳׳¡׳₪׳¨ ׳׳—׳“");
+      setError("הסיסמה חייבת להכיל לפחות 8 תווים, אות גדולה אחת ומספר אחד");
       return;
     }
     setStep(1);
@@ -87,49 +87,49 @@ export function useRegisterForm(role: RegisterRole) {
     e.preventDefault();
     setError(null);
     if (!agreed) {
-      setError("׳™׳© ׳׳׳©׳¨ ׳׳× ׳×׳ ׳׳™ ׳”׳©׳™׳׳•׳© ׳•׳׳“׳™׳ ׳™׳•׳× ׳”׳₪׳¨׳˜׳™׳•׳×");
+      setError("יש לאשר את תנאי השימוש ומדיניות הפרטיות");
       return;
     }
     if (isDoctor && !specialization.trim()) {
-      setError("׳”׳×׳׳—׳•׳× ׳”׳™׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+      setError("התמחות היא שדה חובה");
       return;
     }
     if (isDoctor && !idOrLicense.trim()) {
-      setError("׳׳¡׳₪׳¨ ׳¨׳™׳©׳™׳•׳ ׳”׳•׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+      setError("מספר רישיון הוא שדה חובה");
       return;
     }
     if (isSecretary) {
       if (!idOrLicense.trim()) {
-        setError("׳×׳¢׳•׳“׳× ׳–׳”׳•׳× ׳”׳™׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+        setError("תעודת זהות היא שדה חובה");
         return;
       }
       if (!isValidIsraeliId(idOrLicense)) {
-        setError("׳×׳¢׳•׳“׳× ׳”׳–׳”׳•׳× ׳—׳™׳™׳‘׳× ׳׳”׳›׳™׳ 9 ׳¡׳₪׳¨׳•׳×");
+        setError("תעודת הזהות חייבת להכיל 9 ספרות");
         return;
       }
     }
     if (isPatient && idOrLicense.trim() && !isValidIsraeliId(idOrLicense)) {
-      setError("׳×׳¢׳•׳“׳× ׳”׳–׳”׳•׳× ׳—׳™׳™׳‘׳× ׳׳”׳›׳™׳ 9 ׳¡׳₪׳¨׳•׳×");
+      setError("תעודת הזהות חייבת להכיל 9 ספרות");
       return;
     }
     if (!phone.trim()) {
-      setError("׳˜׳׳₪׳•׳ ׳”׳•׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+      setError("טלפון הוא שדה חובה");
       return;
     }
     if (!isValidPhone(phone)) {
-      setError("׳׳¡׳₪׳¨ ׳”׳˜׳׳₪׳•׳ ׳׳™׳ ׳• ׳×׳§׳™׳ (׳׳“׳•׳’׳׳”: 050-1234567)");
+      setError("מספר הטלפון אינו תקין (לדוגמה: 050-1234567)");
       return;
     }
     if (isPatient && !hmo.trim()) {
-      setError("׳§׳•׳₪׳× ׳—׳•׳׳™׳ ׳”׳™׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+      setError("קופת חולים היא שדה חובה");
       return;
     }
     if (isPatient && !address.trim()) {
-      setError("׳›׳×׳•׳‘׳× ׳”׳™׳ ׳©׳“׳” ׳—׳•׳‘׳”");
+      setError("כתובת היא שדה חובה");
       return;
     }
     if (!clinicId) {
-      setError("׳™׳© ׳׳‘׳—׳•׳¨ ׳׳¨׳₪׳׳”");
+      setError("יש לבחור מרפאה");
       return;
     }
     setSubmitting(true);
@@ -176,7 +176,7 @@ export function useRegisterForm(role: RegisterRole) {
       markWelcomePending();
       navigate(homeForRole(result.role));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "׳”׳¨׳©׳׳” ׳ ׳›׳©׳׳”");
+      setError(err instanceof Error ? err.message : "הרשמה נכשלה");
     } finally {
       setSubmitting(false);
     }
