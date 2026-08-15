@@ -85,7 +85,7 @@ export async function bookSlot(input: BookSlotInput): Promise<Slot> {
         throw new Error('התור הזה כבר תפוס');
       }
       if (error.message === 'Patient already has an appointment at this time') {
-        throw new Error('לא ניתן לקבוע שני תורים באותה שעה לאותו מטופל');
+        throw new Error('למטופל כבר קיים תור בשעה זו');
       }
     }
     throw error;
