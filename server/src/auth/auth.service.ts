@@ -119,6 +119,49 @@ export class AuthService {
     );
   }
 
+  private async ensurePatientProfileForPatientLogin(user: User): Promise<Patient> {
+    if (user.patient) return user.patient;
+
+    const clinicId = user.secretary?.clinicId ?? user.caregiver?.clinicId;
+    if (!clinicId) {
+      throw new UnauthorizedException('אין פרופיל מטופל עבור המשתמש');
+    }
+
+    const existingPatient = await this.patients.findOne({
+      where: { userId: user.id },
+    });
+    if (existingPatient) return existingPatient;
+
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const patientRepo = manager.getRepository(Patient);
+        const patient = patientRepo.create({
+          userId: user.id,
+          idNumber: user.secretary?.idNumber,
+          address: '',
+        });
+        const savedPatient = await patientRepo.save(patient);
+
+        await manager.getRepository(PatientClinic).save(
+          manager.getRepository(PatientClinic).create({
+            patientId: savedPatient.id,
+            clinicId,
+          }),
+        );
+
+        return savedPatient;
+      });
+    } catch (err) {
+      if (this.isUniqueViolation(err)) {
+        const patient = await this.patients.findOne({
+          where: { userId: user.id },
+        });
+        if (patient) return patient;
+      }
+      throw err;
+    }
+  }
+
   async refresh(refreshToken: string): Promise<TokenPair> {
     if (!refreshToken) {
       throw new UnauthorizedException('Missing refresh token');
@@ -365,17 +408,6 @@ export class AuthService {
 
     this.assertRoleMatchesLoginInterface(roleName, input.expectedRole);
 
-    // A secretary may sign in through the patient interface only if she also
-    // exists as a patient (has a patient profile in a clinic). Without this the
-    // patient screens would have no record to show.
-    if (
-      roleName === ROLE_SECRETARY &&
-      input.expectedRole === ROLE_PATIENT &&
-      !user.patient
-    ) {
-      throw new UnauthorizedException('אינך רשומה כמטופלת במרפאה');
-    }
-
     // The effective role the user is signing in as. Determines which id/clinic
     // context is surfaced so a secretary logging in as a patient gets patient
     // context rather than secretary context.
@@ -384,6 +416,11 @@ export class AuthService {
       getEffectiveRoles(roleName).includes(input.expectedRole)
         ? input.expectedRole
         : roleName;
+
+    let patientProfile = user.patient;
+    if (effectiveRole === ROLE_PATIENT && roleName !== ROLE_PATIENT) {
+      patientProfile = await this.ensurePatientProfileForPatientLogin(user);
+    }
 
     return {
       userId: user.id,
@@ -394,7 +431,7 @@ export class AuthService {
       refreshToken: this.issueRefreshToken(user.id),
       // Expose the patient id whenever the user has a patient profile so that
       // doctors/secretaries acting as patients get their own patient context.
-      patientId: user.patient?.id,
+      patientId: patientProfile?.id,
       caregiverId: roleName === ROLE_DOCTOR ? user.caregiver?.id : undefined,
       secretaryId: roleName === ROLE_SECRETARY ? user.secretary?.id : undefined,
       clinicId:

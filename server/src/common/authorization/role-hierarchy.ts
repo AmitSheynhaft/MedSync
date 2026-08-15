@@ -13,9 +13,8 @@ export const ROLE_HIERARCHY: Record<string, TRoleName[]> = {
   [ROLE_ADMIN]: [ROLE_ADMIN, ROLE_PATIENT],
   [ROLE_DOCTOR]: [ROLE_DOCTOR, ROLE_PATIENT],
   [ROLE_PATIENT]: [ROLE_PATIENT],
-  // A secretary may also act as a patient when she has a patient profile in a
-  // clinic. Login enforces the "has a patient profile" condition; the patient
-  // endpoints are self-scoped by the acting user's id.
+  // A secretary may also act as a patient. Login resolves patient context for
+  // patient-interface sign-in based on the acting user's available clinic scope.
   [ROLE_SECRETARY]: [ROLE_SECRETARY, ROLE_PATIENT],
 };
 
