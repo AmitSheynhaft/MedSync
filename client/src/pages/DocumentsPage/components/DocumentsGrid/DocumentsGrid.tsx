@@ -12,6 +12,8 @@ interface IDocumentsGridProps {
   filteredDocuments: MedicalDocument[];
   loadingMore?: boolean;
   onDocumentClick: (document: MedicalDocument) => void;
+  onEditDocument: (document: MedicalDocument) => void;
+  onDeleteDocument: (document: MedicalDocument) => void;
   onScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
 }
 
@@ -35,7 +37,7 @@ const resolveEmptyMessage = (
 };
 
 export const DocumentsGrid: React.FC<IDocumentsGridProps> = ({
-  patientId, documentsStatus, documents, filteredDocuments, loadingMore, onDocumentClick, onScroll,
+  patientId, documentsStatus, documents, filteredDocuments, loadingMore, onDocumentClick, onEditDocument, onDeleteDocument, onScroll,
 }) => {
   const emptyMessage = resolveEmptyMessage(patientId, documentsStatus, documents, filteredDocuments.length);
 
@@ -51,6 +53,8 @@ export const DocumentsGrid: React.FC<IDocumentsGridProps> = ({
             key={document.id}
             document={document}
             onClick={() => onDocumentClick(document)}
+            onEdit={() => onEditDocument(document)}
+            onDelete={() => onDeleteDocument(document)}
           />
         ))}
       </Box>
