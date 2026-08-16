@@ -281,14 +281,16 @@ export class VisitRecordsService {
       .split('\n')
       .map((line) => {
         if (!/[\u0590-\u05FF]/.test(line)) return line;
-        // Match contiguous non-Hebrew, non-space, non-parentheses runs and reverse them.
-        // Parentheses stay in place as they are neutral characters positioned by
-        // the surrounding Hebrew RTL context.
+        // Match contiguous LTR tokens: letters, digits, and tightly-bound
+        // punctuation (. / - %) that forms part of a number or word.
         const fixed = line.replace(
-          /[^\u0590-\u05FF\s()]+/g,
+          /[A-Za-z0-9][A-Za-z0-9.,/\-%]*/g,
           (token) => token.split('').reverse().join(''),
         );
-        return fixed.replace(/ /g, '\u00A0');
+        // Swap parentheses: in RTL context fontkit mirrors them, so we
+        // pre-swap to get the correct visual output.
+        const swapped = fixed.replace(/[()]/g, (ch) => ch === '(' ? ')' : '(');
+        return swapped.replace(/ /g, '\u00A0');
       })
       .join('\n');
   }
