@@ -13,6 +13,7 @@
   Put,
   Query,
   Res,
+  StreamableFile,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { VisitRecordsService } from './visit-records.service';
@@ -126,7 +127,7 @@ export class VisitRecordsController {
   async downloadVisitSummaryPdf(
     @User() user: IUser,
     @Param('id', new ParseUUIDPipe()) visitId: string,
-    @Res() res: Response,
+    @Res({ passthrough: true }) res: Response,
   ) {
     const visit = await this.visitRecordsService.getVisitRecordById(visitId);
     this.assertPatientCanAccessVisit(visit, user);
@@ -139,13 +140,11 @@ export class VisitRecordsController {
     const filename = `medsync-visit-summary-${dateSuffix}.pdf`;
 
     const file = await this.visitRecordsService.generateVisitSummaryPdf(visit);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Length', file.length);
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${encodeURIComponent(filename)}"`,
-    );
-    res.send(file);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    return new StreamableFile(file);
   }
 
   @Roles(ROLE_DOCTOR)
