@@ -1,5 +1,7 @@
 import type { MedicalDocument, DocumentTypeEnum, SummaryStatus } from '../../api/medical-documents';
 
+export { DOC_TYPE_LABELS, DOC_TYPE_OPTIONS } from '../../api/medical-documents';
+
 export type TFilterKey = 'all' | DocumentTypeEnum;
 
 export type TFilterOption = { key: TFilterKey; label: string };
@@ -9,15 +11,6 @@ export const FILTERS: TFilterOption[] = [
   { key: 'LAB_RESULT', label: 'בדיקות דם' },
   { key: 'DISCHARGE_SUMMARY', label: 'סיכומי ביקור' },
 ];
-
-export const DOC_TYPE_LABELS: Record<DocumentTypeEnum, string> = {
-  LAB_RESULT: 'בדיקת דם',
-  REFERRAL: 'הפניה',
-  DISCHARGE_SUMMARY: 'סיכום ביקור',
-  IMAGING: 'דימות',
-  PRESCRIPTION: 'מרשם',
-  OTHER: 'אחר',
-};
 
 export const getFileBadge = (document: MedicalDocument): { label: string; color: string; bg: string } => {
   const format = (document.fileFormat || document.fileName.split('.').pop() || '').toLowerCase();

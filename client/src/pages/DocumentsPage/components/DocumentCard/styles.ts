@@ -12,7 +12,7 @@ export const documentCardRootSx = {
   },
 };
 
-export const documentCardBadgeWrapSx = { mb: 2.25 };
+export const documentCardBadgeWrapSx = { mb: 2.25, display: 'flex', alignItems: 'center', gap: 1 };
 
 export const documentCardFileTypeChipSx = (color: string, bg: string) => ({
   fontWeight: 800,

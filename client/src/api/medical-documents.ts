@@ -10,6 +10,15 @@ export type DocumentTypeEnum =
   | 'PRESCRIPTION'
   | 'OTHER';
 
+export const DOC_TYPE_LABELS: Partial<Record<DocumentTypeEnum, string>> = {
+  LAB_RESULT: 'בדיקת דם',
+  DISCHARGE_SUMMARY: 'סיכום ביקור',
+};
+
+export const DOC_TYPE_OPTIONS = (Object.keys(DOC_TYPE_LABELS) as DocumentTypeEnum[]).map(
+  value => ({ value, label: DOC_TYPE_LABELS[value] as string }),
+);
+
 export interface DocumentSummary {
   id: string;
   documentId: string;

@@ -6,7 +6,7 @@ import { usePatientSearch } from './hooks/usePatientSearch';
 import { PatientListItem } from './components/PatientListItem';
 
 export const PatientsListPage: React.FC = () => {
-  const { query, setQuery, status, patients, hasMore, loadingMore, loadMore } = usePatientSearch();
+  const { query, setQuery, status, patients, hasMore, loadingMore, loadMore, handleDelete } = usePatientSearch();
 
   const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
     if (!hasMore || loadingMore || status !== 'done') return;
@@ -70,7 +70,7 @@ export const PatientsListPage: React.FC = () => {
           ) : (
             <Stack spacing={1.25}>
               {patients.map(patient => (
-                <PatientListItem key={patient.id} patient={patient} />
+                <PatientListItem key={patient.id} patient={patient} onDelete={handleDelete} />
               ))}
               {loadingMore && (
                 <Typography sx={{ textAlign: 'center', color: '#868e96', py: 2 }}>

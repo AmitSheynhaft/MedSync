@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Box, Typography } from '@mui/material';
 import { getPatientById, Patient, refreshMedicalSummary, ClinicalAlert } from '../../api/patients';
+import { deleteVisit } from '../../api/visits';
 import { useAsyncData } from '../../hooks/useAsyncData';
 import { getGenderLabel } from '../../utils/format';
 import PageHeader from '../../components/PageHeader/PageHeader';
@@ -45,6 +46,15 @@ export const PatientDashboardPage: React.FC = () => {
     } finally {
       setRefreshing(false);
     }
+  }
+
+  async function handleDeleteEncounter(encounterId: string) {
+    if (!displayPatient) return;
+    await deleteVisit(encounterId);
+    setPatientOverride({
+      ...displayPatient,
+      encounters: displayPatient.encounters.filter(encounter => encounter.id !== encounterId),
+    });
   }
 
   if (status !== 'done' || !displayPatient) {
@@ -97,7 +107,7 @@ export const PatientDashboardPage: React.FC = () => {
         />
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: { xs: 2, sm: 3 } }}>
-          <EncountersList encounters={displayPatient.encounters} patientId={displayPatient.id} />
+          <EncountersList encounters={displayPatient.encounters} patientId={displayPatient.id} onDeleteEncounter={handleDeleteEncounter} />
           <DocumentsList
             documents={displayPatient.documents}
             onUpload={() => navigate(`/patients/${displayPatient.id}/documents`)}

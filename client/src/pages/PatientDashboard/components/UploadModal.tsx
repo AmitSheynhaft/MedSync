@@ -17,7 +17,7 @@ import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloseIcon from "@mui/icons-material/Close";
 import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
-import { DocumentTypeEnum } from "../../../api/medical-documents";
+import { DocumentTypeEnum, DOC_TYPE_OPTIONS } from "../../../api/medical-documents";
 
 const ALLOWED_UPLOAD_EXTENSIONS = [
   "pdf",
@@ -48,11 +48,6 @@ export function isSupportedUploadFile(file: File): boolean {
     ALLOWED_UPLOAD_EXTENSIONS.includes(ext)
   );
 }
-
-const DOC_TYPE_OPTIONS: { value: DocumentTypeEnum; label: string }[] = [
-  { value: "LAB_RESULT", label: "בדיקות דם" },
-  { value: "DISCHARGE_SUMMARY", label: "סיכומי ביקור" },
-];
 
 interface UploadModalProps {
   open: boolean;

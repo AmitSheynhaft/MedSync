@@ -6,6 +6,8 @@ import { useDocumentsPage } from './hooks/useDocumentsPage';
 import { DocumentsHeader } from './components/DocumentsHeader/DocumentsHeader';
 import { DocumentsToolbar } from './components/DocumentsToolbar/DocumentsToolbar';
 import { DocumentsGrid } from './components/DocumentsGrid/DocumentsGrid';
+import { DocumentDeleteDialog } from './components/DocumentDeleteDialog/DocumentDeleteDialog';
+import { DocumentEditTypeDialog } from './components/DocumentEditTypeDialog/DocumentEditTypeDialog';
 
 export const DocumentsPage: React.FC = () => {
   const page = useDocumentsPage();
@@ -39,6 +41,12 @@ export const DocumentsPage: React.FC = () => {
           </Alert>
         )}
 
+        {page.actionError && (
+          <Alert severity="error" onClose={() => page.setActionError(null)} sx={{ mb: 3 }}>
+            {page.actionError}
+          </Alert>
+        )}
+
         <DocumentsToolbar
           activeFilter={page.filter}
           onFilterChange={page.setFilter}
@@ -51,6 +59,8 @@ export const DocumentsPage: React.FC = () => {
           filteredDocuments={page.filteredDocuments}
           loadingMore={page.loadingMore}
           onDocumentClick={document => page.setSummaryModal({ id: document.id, name: document.fileName })}
+          onEditDocument={document => page.setEditingDocument(document)}
+          onDeleteDocument={document => page.setDeletingDocument(document)}
           onScroll={handleScroll}
         />
       </Box>
@@ -88,6 +98,20 @@ export const DocumentsPage: React.FC = () => {
           onClose={() => page.setSummaryModal(null)}
         />
       )}
+
+      <DocumentDeleteDialog
+        document={page.deletingDocument}
+        busy={page.actionBusy}
+        onClose={() => page.setDeletingDocument(null)}
+        onConfirm={page.handleConfirmDelete}
+      />
+
+      <DocumentEditTypeDialog
+        document={page.editingDocument}
+        busy={page.actionBusy}
+        onClose={() => page.setEditingDocument(null)}
+        onConfirm={page.handleConfirmEditType}
+      />
     </Box>
   );
 };
