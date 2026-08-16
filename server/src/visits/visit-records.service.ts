@@ -158,13 +158,23 @@ export class VisitRecordsService {
   }
 
   private resolvePdfFontPath(): string | undefined {
+    // 1. Prefer the full TTF committed under assets/fonts (copied to dist/ by nest build).
+    const bundledCandidates = [
+      path.join(__dirname, 'assets', 'fonts', 'NotoSansHebrew.ttf'),
+      path.join(__dirname, '..', 'assets', 'fonts', 'NotoSansHebrew.ttf'),
+      path.join(process.cwd(), 'dist', 'assets', 'fonts', 'NotoSansHebrew.ttf'),
+      path.join(process.cwd(), 'src', 'assets', 'fonts', 'NotoSansHebrew.ttf'),
+    ];
+    for (const candidate of bundledCandidates) {
+      if (existsSync(candidate)) return candidate;
+    }
+
+    // 2. Fallback to @fontsource subsets (latin subset for partial coverage).
     const fontFiles = [
+      'noto-sans-hebrew-latin-400-normal.woff',
       'noto-sans-hebrew-hebrew-400-normal.woff2',
       'noto-sans-hebrew-hebrew-400-normal.woff',
     ];
-
-    // Resolve through the package itself so it works regardless of the process
-    // working directory (dist/, docker workdir, pm2, systemd, etc.).
     const packageRoots: string[] = [];
     try {
       packageRoots.push(
@@ -176,7 +186,6 @@ export class VisitRecordsService {
     packageRoots.push(
       path.join(process.cwd(), 'node_modules', '@fontsource', 'noto-sans-hebrew'),
     );
-
     for (const root of packageRoots) {
       for (const fontFile of fontFiles) {
         const fontPath = path.join(root, 'files', fontFile);
