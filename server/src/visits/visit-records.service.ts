@@ -8,9 +8,10 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { existsSync } from 'fs';
+import * as path from 'path';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import PDFDocument from 'pdfkit';
+import pdfmake = require('pdfmake');
 import { Visit } from './entities/visitEntity';
 import { VisitRecording } from './entities/visitRecordingEntity';
 import { VisitSummary } from './entities/visitSummaryEntity';
@@ -158,14 +159,14 @@ export class VisitRecordsService {
 
   private resolvePdfFontPath(): string | undefined {
     const candidateFontPaths = [
-      'C:\\Windows\\Fonts\\arial.ttf',
-      'C:\\Windows\\Fonts\\tahoma.ttf',
-      'C:\\Windows\\Fonts\\segoeui.ttf',
-      '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-      '/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf',
-      '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
-      '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
-      '/System/Library/Fonts/Supplemental/Arial Hebrew.ttf',
+      path.join(
+        process.cwd(),
+        'node_modules',
+        '@fontsource',
+        'noto-sans-hebrew',
+        'files',
+        'noto-sans-hebrew-hebrew-400-normal.woff2',
+      ),
     ];
 
     return candidateFontPaths.find((fontPath) => existsSync(fontPath));
@@ -249,135 +250,113 @@ export class VisitRecordsService {
       );
     }
 
-    const doc = new PDFDocument({
-      size: 'A4',
-      margin: 36,
-      bufferPages: false,
-      autoFirstPage: true,
-      layout: 'portrait',
-    });
-
-    const chunks: Buffer[] = [];
-    const pdfBufferPromise = new Promise<Buffer>((resolve, reject) => {
-      doc.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', reject);
-    });
-
-    const pageWidth = doc.page.width;
-    const pageHeight = doc.page.height;
-    const marginLeft = doc.page.margins.left;
-    const marginRight = doc.page.margins.right;
-    const marginTop = doc.page.margins.top;
-    const marginBottom = doc.page.margins.bottom;
-    const contentWidth = pageWidth - marginLeft - marginRight;
-    const contentBottom = pageHeight - marginBottom;
-    const baseFont = fontPath;
-
-    const setFont = (size: number, color: string = '#102a43') => {
-      doc.font(baseFont).fontSize(size).fillColor(color);
-    };
-
-    const ensureSpace = (minimumHeight: number) => {
-      if (doc.y + minimumHeight > contentBottom) {
-        doc.addPage();
-      }
-    };
-
-    const writeSeparator = () => {
-      doc
-        .moveTo(marginLeft, doc.y)
-        .lineTo(pageWidth - marginRight, doc.y)
-        .lineWidth(1)
-        .strokeColor('#d9e2ec')
-        .stroke();
-      doc.moveDown(0.7);
-    };
-
-    const writeHeader = () => {
-      setFont(26, '#1b4965');
-      doc.text('MedSync', { align: 'right' });
-      setFont(11, '#486581');
-      doc.text('מערכת תיעוד וסיכומי ביקור רפואיים', { align: 'right' });
-      doc.moveDown(0.4);
-      writeSeparator();
-      setFont(18, '#1b4965');
-      doc.text('סיכום ביקור רפואי', { align: 'right' });
-      doc.moveDown(0.8);
-    };
-
-    const writeInfoBlock = (title: string, rows: Array<[string, string]>) => {
-      const blockHeight = 22 + rows.length * 17;
-      ensureSpace(blockHeight + 18);
-
-      setFont(14, '#1b4965');
-      doc.text(title, { align: 'right' });
-      doc.moveDown(0.2);
-
-      rows.forEach(([label, value]) => {
-        setFont(11, '#486581');
-        doc.text(`${label}: `, { align: 'right', continued: true });
-        setFont(11, '#102a43');
-        doc.text(value || '-', { align: 'right' });
-      });
-
-      doc.moveDown(0.6);
-    };
-
-    const writeSection = (title: string, content: string) => {
-      const sectionContent = content?.trim() || 'לא תועד מידע בסעיף זה.';
-      setFont(14, '#1b4965');
-      const titleHeight = doc.heightOfString(title, { width: contentWidth, align: 'right' });
-      setFont(11, '#102a43');
-      const bodyHeight = doc.heightOfString(sectionContent, {
-        width: contentWidth,
-        align: 'right',
-        lineGap: 3,
-      });
-      ensureSpace(titleHeight + bodyHeight + 24);
-
-      setFont(14, '#1b4965');
-      doc.text(title, { align: 'right' });
-      doc.moveDown(0.2);
-      setFont(11, '#102a43');
-      doc.text(sectionContent, {
-        width: contentWidth,
-        align: 'right',
-        lineGap: 3,
-      });
-      doc.moveDown(0.9);
-      writeSeparator();
-    };
-
     try {
-      writeHeader();
-
-      writeInfoBlock('פרטי מטופל', [
-        ['שם מלא', data.patientName],
-        ['תעודת זהות', data.patientIdNumber],
-      ]);
-
-      writeInfoBlock('פרטי ביקור ורופא', [
-        ['שם רופא', data.doctorName],
-        ['התמחות', data.doctorSpecialty],
-        ['תאריך ביקור', data.visitDate],
-      ]);
-
-      writeSection('תלונת המטופל', data.complaints);
-      writeSection('ממצאים', data.findings);
-      writeSection('אבחנה', data.diagnosis);
-      writeSection('המלצות וטיפול', data.recommendations);
-
-      setFont(10, '#486581');
-      doc.moveDown(0.2);
-      doc.text('מסמך זה הופק אוטומטית על ידי MedSync • לשימוש רפואי פנימי', {
-        align: 'center',
+      pdfmake.setLocalAccessPolicy(() => false);
+      pdfmake.setUrlAccessPolicy(() => false);
+      pdfmake.setFonts({
+        NotoSansHebrew: {
+          normal: fontPath,
+          bold: fontPath,
+          italics: fontPath,
+          bolditalics: fontPath,
+        },
       });
 
-      doc.end();
-      return await pdfBufferPromise;
+      const docDefinition = {
+        pageSize: 'A4',
+        pageMargins: [36, 36, 36, 36],
+        defaultStyle: {
+          font: 'NotoSansHebrew',
+          fontSize: 11,
+          alignment: 'right' as const,
+          lineHeight: 1.3,
+        },
+        content: [
+          { text: 'MedSync', style: 'brand' },
+          { text: 'מערכת תיעוד וסיכומי ביקור רפואיים', style: 'subtitle' },
+          {
+            canvas: [
+              {
+                type: 'line',
+                x1: 0,
+                y1: 0,
+                x2: 523,
+                y2: 0,
+                lineWidth: 1,
+                lineColor: '#d9e2ec',
+              },
+            ],
+            margin: [0, 4, 0, 10],
+          },
+          { text: 'סיכום ביקור רפואי', style: 'docTitle' },
+          {
+            table: {
+              widths: ['*', '*'],
+              body: [
+                [
+                  {
+                    fillColor: '#f8fbff',
+                    stack: [
+                      { text: 'פרטי מטופל', style: 'metaTitle' },
+                      {
+                        text: [`שם מלא: ${data.patientName}`, `תעודת זהות: ${data.patientIdNumber}`].join('\n'),
+                        style: 'metaText',
+                      },
+                    ],
+                  },
+                  {
+                    fillColor: '#f8fbff',
+                    stack: [
+                      { text: 'פרטי ביקור ורופא', style: 'metaTitle' },
+                      {
+                        text: [
+                          `שם רופא: ${data.doctorName}`,
+                          `התמחות: ${data.doctorSpecialty}`,
+                          `תאריך ביקור: ${data.visitDate}`,
+                        ].join('\n'),
+                        style: 'metaText',
+                      },
+                    ],
+                  },
+                ],
+              ],
+            },
+            layout: {
+              hLineWidth: () => 0,
+              vLineWidth: () => 0,
+              paddingLeft: () => 12,
+              paddingRight: () => 12,
+              paddingTop: () => 10,
+              paddingBottom: () => 10,
+            },
+            margin: [0, 0, 0, 14],
+          },
+          { text: 'תלונת המטופל', style: 'sectionTitle' },
+          { text: data.complaints || 'לא תועד מידע בסעיף זה.', style: 'sectionText' },
+          { text: 'ממצאים', style: 'sectionTitle' },
+          { text: data.findings || 'לא תועד מידע בסעיף זה.', style: 'sectionText' },
+          { text: 'אבחנה', style: 'sectionTitle' },
+          { text: data.diagnosis || 'לא תועד מידע בסעיף זה.', style: 'sectionText' },
+          { text: 'המלצות וטיפול', style: 'sectionTitle' },
+          { text: data.recommendations || 'לא תועד מידע בסעיף זה.', style: 'sectionText' },
+          { text: 'מסמך זה הופק אוטומטית על ידי MedSync • לשימוש רפואי פנימי', style: 'footer' },
+        ],
+        styles: {
+          brand: { fontSize: 26, color: '#1b4965', bold: true, margin: [0, 0, 0, 2] },
+          subtitle: { fontSize: 11, color: '#486581', margin: [0, 0, 0, 8] },
+          docTitle: { fontSize: 18, color: '#1b4965', bold: true, margin: [0, 0, 0, 12] },
+          metaTitle: { fontSize: 13, color: '#1b4965', bold: true, margin: [0, 0, 0, 6] },
+          metaTable: { fontSize: 11, color: '#102a43', margin: [0, 0, 0, 0], lineHeight: 1.4 },
+          metaText: { fontSize: 11, color: '#102a43', lineHeight: 1.4 },
+          sectionTitle: { fontSize: 13, color: '#1b4965', bold: true, margin: [0, 0, 0, 4] },
+          sectionText: { fontSize: 11, color: '#102a43', lineHeight: 1.4, margin: [0, 0, 0, 10] },
+          footer: { fontSize: 10, color: '#486581', alignment: 'center', margin: [0, 12, 0, 0] },
+        },
+      };
+
+      const output = pdfmake.createPdf(docDefinition);
+      return await output.getBuffer();
     } catch (error) {
-      doc.destroy();
       this.logger.error(
         `Visit summary PDF generation failed: ${error instanceof Error ? error.message : String(error)}`,
       );
