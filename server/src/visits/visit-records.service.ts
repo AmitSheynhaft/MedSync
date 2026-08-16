@@ -381,49 +381,49 @@ export class VisitRecordsService {
   }
 
   async generateVisitSummaryPdf(visit: Visit): Promise<Buffer> {
-    const html = this.buildSummaryPdfHtml(visit);
-
-    // Dynamic import required: puppeteer is ESM-only and cannot be statically required
-    const { default: puppeteer } = await import('puppeteer');
-
-    let browser: Awaited<ReturnType<typeof puppeteer.launch>>;
     try {
-      browser = await puppeteer.launch({
+      const html = this.buildSummaryPdfHtml(visit);
+
+      // Dynamic import required: puppeteer is ESM-only and cannot be statically required
+      const { default: puppeteer } = await import('puppeteer');
+
+      const browser = await puppeteer.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
+
+      let page: Awaited<ReturnType<typeof browser.newPage>> | null = null;
+
+      try {
+        page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'load' });
+        const pdfBuffer = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: {
+            top: '10mm',
+            bottom: '10mm',
+            left: '8mm',
+            right: '8mm',
+          },
+        });
+        return Buffer.from(pdfBuffer);
+      } finally {
+        try {
+          if (page) {
+            await page.close().catch(() => undefined);
+          }
+        } finally {
+          await browser.close().catch(() => undefined);
+        }
+      }
     } catch (error) {
       this.logger.error(
-        `Puppeteer failed to launch: ${error instanceof Error ? error.message : String(error)}`,
+        `Visit summary PDF generation failed: ${error instanceof Error ? error.message : String(error)}`,
       );
       throw new ServiceUnavailableException(
-        'PDF generation is unavailable — Chrome/Chromium is not installed on the server',
+        'PDF generation failed for this visit summary',
       );
-    }
-    let page: Awaited<ReturnType<typeof browser.newPage>> | null = null;
-
-    try {
-      page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'load' });
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '10mm',
-          bottom: '10mm',
-          left: '8mm',
-          right: '8mm',
-        },
-      });
-      return Buffer.from(pdfBuffer);
-    } finally {
-      try {
-        if (page) {
-          await page.close().catch(() => undefined);
-        }
-      } finally {
-        await browser.close().catch(() => undefined);
-      }
     }
   }
 
