@@ -158,18 +158,33 @@ export class VisitRecordsService {
   }
 
   private resolvePdfFontPath(): string | undefined {
-    const candidateFontPaths = [
-      path.join(
-        process.cwd(),
-        'node_modules',
-        '@fontsource',
-        'noto-sans-hebrew',
-        'files',
-        'noto-sans-hebrew-hebrew-400-normal.woff2',
-      ),
+    const fontFiles = [
+      'noto-sans-hebrew-hebrew-400-normal.woff2',
+      'noto-sans-hebrew-hebrew-400-normal.woff',
     ];
 
-    return candidateFontPaths.find((fontPath) => existsSync(fontPath));
+    // Resolve through the package itself so it works regardless of the process
+    // working directory (dist/, docker workdir, pm2, systemd, etc.).
+    const packageRoots: string[] = [];
+    try {
+      packageRoots.push(
+        path.dirname(require.resolve('@fontsource/noto-sans-hebrew/package.json')),
+      );
+    } catch {
+      // Not resolvable from this module; fall back to the cwd lookup below.
+    }
+    packageRoots.push(
+      path.join(process.cwd(), 'node_modules', '@fontsource', 'noto-sans-hebrew'),
+    );
+
+    for (const root of packageRoots) {
+      for (const fontFile of fontFiles) {
+        const fontPath = path.join(root, 'files', fontFile);
+        if (existsSync(fontPath)) return fontPath;
+      }
+    }
+
+    return undefined;
   }
 
   private buildSummaryPdfData(visit: Visit) {
@@ -251,7 +266,13 @@ export class VisitRecordsService {
     }
 
     try {
-      pdfmake.setLocalAccessPolicy(() => false);
+      // Allow reading only the bundled Hebrew font file. Every other local path
+      // and all remote URLs stay blocked, so a malicious document definition
+      // cannot pull arbitrary files off the server.
+      const allowedFontPath = path.resolve(fontPath);
+      pdfmake.setLocalAccessPolicy(
+        (requestedPath: string) => path.resolve(requestedPath) === allowedFontPath,
+      );
       pdfmake.setUrlAccessPolicy(() => false);
       pdfmake.setFonts({
         NotoSansHebrew: {
