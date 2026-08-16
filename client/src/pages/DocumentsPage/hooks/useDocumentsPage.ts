@@ -124,6 +124,25 @@ export function useDocumentsPage() {
     }
   }, [patientId, filter]);
 
+  // Silently refetch page 1 without flipping to the "loading" state, so the grid
+  // does not collapse to the empty-state message and jump between renders.
+  const silentRefreshFirstPage = useCallback(async () => {
+    if (!patientId) return;
+    try {
+      const response = await getMedicalDocumentsPage({
+        patientId,
+        page: 1,
+        limit: PAGE_SIZE,
+        documentType: filter === 'all' ? undefined : filter,
+      });
+      setDocuments(response.items);
+      setHasMore(response.hasMore);
+      hasMoreRef.current = response.hasMore;
+    } catch {
+      // Silent — next poll or user-triggered refresh will retry.
+    }
+  }, [patientId, filter]);
+
   // Poll while any document is still processing, but only on page 1.
   const hasProcessingDocuments = (documents ?? []).some(doc => doc.summaryStatus === 'PROCESSING');
   useEffect(() => {
@@ -133,17 +152,16 @@ export function useDocumentsPage() {
     }
 
     const pollInterval = setInterval(() => {
-      if (documentsStatus === 'loading') return;
       if (processingPollCountRef.current >= MAX_PROCESSING_POLLS) {
         clearInterval(pollInterval);
         return;
       }
       processingPollCountRef.current += 1;
-      setRefreshKey((key) => key + 1);
+      void silentRefreshFirstPage();
     }, PROCESSING_POLL_INTERVAL_MS);
 
     return () => clearInterval(pollInterval);
-  }, [hasProcessingDocuments, documentsStatus]);
+  }, [hasProcessingDocuments, silentRefreshFirstPage]);
 
   const cameraStream = useCameraStream();
 

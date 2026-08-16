@@ -22,6 +22,7 @@ import {
 } from './documents.types';
 import {
   ALLOWED_DOCUMENT_MIME_TYPES,
+  DOCUMENT_ANALYSIS_TIMEOUT_MS,
   MAX_DOCUMENT_UPLOAD_BYTES,
 } from './documents.constants';
 import { UploadDocumentDto } from './dto/upload-document.dto';
@@ -117,11 +118,19 @@ export class DocumentsLogicService {
     );
 
     try {
-      const extractedText = await this.ocrService.extractText(buffer, mimeType);
+      const extractedText = await this.withTimeout(
+        this.ocrService.extractText(buffer, mimeType),
+        DOCUMENT_ANALYSIS_TIMEOUT_MS,
+        `OCR timed out after ${DOCUMENT_ANALYSIS_TIMEOUT_MS}ms`,
+      );
       const hasText = !!extractedText && extractedText.trim().length > 0;
 
       const summary = hasText
-        ? await this.documentSummaryService.summarize(extractedText)
+        ? await this.withTimeout(
+            this.documentSummaryService.summarize(extractedText),
+            DOCUMENT_ANALYSIS_TIMEOUT_MS,
+            `Summarization timed out after ${DOCUMENT_ANALYSIS_TIMEOUT_MS}ms`,
+          )
         : 'Could not extract any text from the uploaded document.';
 
       // Guard: document may have been deleted (e.g. patient cascade) while OCR/AI was running.
@@ -160,6 +169,20 @@ export class DocumentsLogicService {
         SummaryStatus.FAILED,
       );
     }
+  }
+
+  private withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    timeoutMessage: string,
+  ): Promise<T> {
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+    });
+    return Promise.race([promise, timeout]).finally(() => {
+      if (timer) clearTimeout(timer);
+    }) as Promise<T>;
   }
 
   private validateUploadedFile(file: Express.Multer.File | undefined): void {
