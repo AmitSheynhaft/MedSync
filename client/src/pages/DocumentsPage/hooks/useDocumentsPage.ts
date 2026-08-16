@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { loadUserDataSession } from '../../../auth/userDataSessionStore';
 import { getPatientById, Patient } from '../../../api/patients';
 import { uploadDocument } from '../../../api/documents';
-import { getMedicalDocumentsPage, MedicalDocument, DocumentTypeEnum } from '../../../api/medical-documents';
+import { getMedicalDocumentsPage, deleteMedicalDocument, updateMedicalDocument, MedicalDocument, DocumentTypeEnum } from '../../../api/medical-documents';
 import { AsyncStatus, useAsyncData } from '../../../hooks/useAsyncData';
 import { useCameraStream } from '../../../hooks/useCameraStream';
 import { isSupportedUploadFile, SUPPORTED_FORMATS_LABEL } from '../../PatientDashboard/components/UploadModal';
@@ -24,6 +24,10 @@ export function useDocumentsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [summaryModal, setSummaryModal] = useState<{ id: string; name: string } | null>(null);
+  const [deletingDocument, setDeletingDocument] = useState<MedicalDocument | null>(null);
+  const [editingDocument, setEditingDocument] = useState<MedicalDocument | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
   const [documentType, setDocumentType] = useState<DocumentTypeEnum | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -208,6 +212,36 @@ export function useDocumentsPage() {
   const patientName = patient ? `${patient.firstName} ${patient.lastName}` : 'מטופל';
   const pageTitle = isDoctorView ? `מסמכים — ${patientName}` : 'המסמכים הרפואיים שלי';
 
+  const handleConfirmDelete = async () => {
+    if (!deletingDocument || actionBusy) return;
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      await deleteMedicalDocument(deletingDocument.id);
+      setDeletingDocument(null);
+      setRefreshKey(key => key + 1);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'מחיקת המסמך נכשלה.');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleConfirmEditType = async (nextType: DocumentTypeEnum) => {
+    if (!editingDocument || actionBusy) return;
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      await updateMedicalDocument(editingDocument.id, { documentType: nextType });
+      setEditingDocument(null);
+      setRefreshKey(key => key + 1);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'עדכון המסמך נכשל.');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
   const filteredDocuments = documents ?? [];
 
   return {
@@ -218,6 +252,10 @@ export function useDocumentsPage() {
     fileInputRef, documentsStatus, documents,
     hasMore, loadingMore, loadMore,
     filteredDocuments, summaryModal, setSummaryModal,
+    deletingDocument, setDeletingDocument,
+    editingDocument, setEditingDocument,
+    actionError, setActionError, actionBusy,
+    handleConfirmDelete, handleConfirmEditType,
     pageTitle, cameraStream,
     openUploadModal, closeUploadModal,
     handleFileInputChange, handleConfirmUpload, handleCameraCapture,
