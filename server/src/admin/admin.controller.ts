@@ -29,6 +29,11 @@ export class AdminController {
   ) {}
 
   // ── Users ──────────────────────────────────────────────
+  @Get('users/:id')
+  getUser(@Param('id', new ParseUUIDPipe()) userId: string) {
+    return this.users.getAdminUserById(userId);
+  }
+
   @Get('users')
   getAllUsers(
     @Query('role') roleName?: string,
