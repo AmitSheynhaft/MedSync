@@ -7,9 +7,11 @@ import {
   ForbiddenException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import * as os from 'os';
+import { existsSync } from 'fs';
+import * as path from 'path';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import pdfmake = require('pdfmake');
 import { Visit } from './entities/visitEntity';
 import { VisitRecording } from './entities/visitRecordingEntity';
 import { VisitSummary } from './entities/visitSummaryEntity';
@@ -94,16 +96,6 @@ export class VisitRecordsService {
     return visit;
   }
 
-  private sanitizeHtml(value?: string | null): string {
-    if (!value) return '';
-    return value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
   private extractSummarySections(summaryText?: string) {
     const normalized = (summaryText ?? '')
       .replace(/\r\n/g, '\n')
@@ -165,18 +157,46 @@ export class VisitRecordsService {
     }).format(date);
   }
 
-  private getPreferredFontStack(): string {
-    const platform = os.platform();
-    if (platform === 'win32') {
-      return '"Segoe UI", Arial, sans-serif';
+  private resolvePdfFontPath(): string | undefined {
+    // 1. Prefer the full TTF committed under assets/fonts (copied to dist/ by nest build).
+    const bundledCandidates = [
+      path.join(__dirname, 'assets', 'fonts', 'NotoSansHebrew.ttf'),
+      path.join(__dirname, '..', 'assets', 'fonts', 'NotoSansHebrew.ttf'),
+      path.join(process.cwd(), 'dist', 'assets', 'fonts', 'NotoSansHebrew.ttf'),
+      path.join(process.cwd(), 'src', 'assets', 'fonts', 'NotoSansHebrew.ttf'),
+    ];
+    for (const candidate of bundledCandidates) {
+      if (existsSync(candidate)) return candidate;
     }
-    if (platform === 'darwin') {
-      return '"Arial Hebrew", "Arial", sans-serif';
+
+    // 2. Fallback to @fontsource subsets (latin subset for partial coverage).
+    const fontFiles = [
+      'noto-sans-hebrew-latin-400-normal.woff',
+      'noto-sans-hebrew-hebrew-400-normal.woff2',
+      'noto-sans-hebrew-hebrew-400-normal.woff',
+    ];
+    const packageRoots: string[] = [];
+    try {
+      packageRoots.push(
+        path.dirname(require.resolve('@fontsource/noto-sans-hebrew/package.json')),
+      );
+    } catch {
+      // Not resolvable from this module; fall back to the cwd lookup below.
     }
-    return '"Noto Sans Hebrew", "DejaVu Sans", Arial, sans-serif';
+    packageRoots.push(
+      path.join(process.cwd(), 'node_modules', '@fontsource', 'noto-sans-hebrew'),
+    );
+    for (const root of packageRoots) {
+      for (const fontFile of fontFiles) {
+        const fontPath = path.join(root, 'files', fontFile);
+        if (existsSync(fontPath)) return fontPath;
+      }
+    }
+
+    return undefined;
   }
 
-  private buildSummaryPdfHtml(visit: Visit): string {
+  private buildSummaryPdfData(visit: Visit) {
     const summarySections = this.extractSummarySections(visit.summary?.summaryText);
     const patientName = visit.patient?.user?.fullName ?? 'לא צוין';
     const patientIdNumber = visit.patient?.idNumber ?? '-';
@@ -231,192 +251,171 @@ export class VisitRecordsService {
       .filter(Boolean)
       .join('\n');
 
-    const sectionHtml = (title: string, content: string) => `
-      <section class="section">
-        <h3>${this.sanitizeHtml(title)}</h3>
-        <p>${this.sanitizeHtml(content || 'לא תועד מידע בסעיף זה.').replace(/\n/g, '<br/>')}</p>
-      </section>
-    `;
+    return {
+      patientName,
+      patientIdNumber,
+      doctorName,
+      doctorSpecialty,
+      visitDate,
+      followUpDate,
+      complaints: summarySections.complaints || visit.chiefComplaint || '',
+      findings: findingsText,
+      diagnosis: diagnosisText,
+      recommendations: recommendationsText,
+    };
+  }
 
-    return `<!doctype html>
-<html lang="he" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>סיכום ביקור - MedSync</title>
-    <style>
-      :root {
-        --brand: #1b4965;
-        --accent: #5fa8d3;
-        --border: #d9e2ec;
-        --text: #102a43;
-        --muted: #486581;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: ${this.getPreferredFontStack()};
-        color: var(--text);
-        background: #ffffff;
-        direction: rtl;
-      }
-      .sheet {
-        padding: 28px 34px;
-      }
-      .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        border-bottom: 2px solid var(--brand);
-        padding-bottom: 12px;
-        margin-bottom: 16px;
-      }
-      .logo {
-        font-size: 28px;
-        font-weight: 800;
-        letter-spacing: 0.4px;
-        color: var(--brand);
-      }
-      .subtitle {
-        font-size: 13px;
-        color: var(--muted);
-        margin-top: 2px;
-      }
-      .doc-title {
-        font-size: 20px;
-        font-weight: 700;
-        color: var(--brand);
-      }
-      .top-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 18px;
-      }
-      .meta {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 12px 14px;
-        background: #f8fbff;
-      }
-      .meta h4 {
-        margin: 0 0 8px 0;
-        font-size: 13px;
-        color: var(--brand);
-      }
-      .meta-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        font-size: 13px;
-        line-height: 1.55;
-      }
-      .meta-row .label {
-        color: var(--muted);
-      }
-      .section {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 12px 14px;
-        margin-bottom: 10px;
-      }
-      .section h3 {
-        margin: 0 0 8px 0;
-        font-size: 15px;
-        color: var(--brand);
-      }
-      .section p {
-        margin: 0;
-        font-size: 13px;
-        white-space: normal;
-        line-height: 1.7;
-      }
-      .footer {
-        margin-top: 20px;
-        border-top: 1px dashed var(--border);
-        padding-top: 8px;
-        font-size: 11px;
-        color: var(--muted);
-        text-align: center;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="sheet">
-      <header class="header">
-        <div>
-          <div class="logo">MedSync</div>
-          <div class="subtitle">מערכת תיעוד וסיכומי ביקור רפואיים</div>
-        </div>
-        <div class="doc-title">סיכום ביקור רפואי</div>
-      </header>
-
-      <section class="top-grid">
-        <article class="meta">
-          <h4>פרטי מטופל</h4>
-          <div class="meta-row"><span class="label">שם מלא</span><strong>${this.sanitizeHtml(patientName)}</strong></div>
-          <div class="meta-row"><span class="label">תעודת זהות</span><strong>${this.sanitizeHtml(patientIdNumber)}</strong></div>
-        </article>
-
-        <article class="meta">
-          <h4>פרטי ביקור ורופא</h4>
-          <div class="meta-row"><span class="label">שם רופא</span><strong>${this.sanitizeHtml(doctorName)}</strong></div>
-          <div class="meta-row"><span class="label">התמחות</span><strong>${this.sanitizeHtml(doctorSpecialty)}</strong></div>
-          <div class="meta-row"><span class="label">תאריך ביקור</span><strong>${this.sanitizeHtml(visitDate)}</strong></div>
-        </article>
-      </section>
-
-      ${sectionHtml('תלונת המטופל', summarySections.complaints || visit.chiefComplaint || '')}
-      ${sectionHtml('ממצאים', findingsText)}
-      ${sectionHtml('אבחנה', diagnosisText)}
-      ${sectionHtml('המלצות וטיפול', recommendationsText)}
-
-      <footer class="footer">
-        מסמך זה הופק אוטומטית על ידי MedSync • לשימוש רפואי פנימי
-      </footer>
-    </div>
-  </body>
-</html>`;
+  /**
+   * pdfmake doesn't implement Unicode bidi. Its font shaping via fontkit reverses
+   * the character order of ALL non-Hebrew tokens (Latin text, numbers, dates)
+   * within Hebrew RTL context.
+   *
+   * This helper pre-reverses every contiguous run of non-Hebrew characters
+   * (digits, Latin letters, punctuation like . / - %) so that after fontkit's
+   * RTL reversal they display in the correct visual order.
+   * Spaces are replaced with \u00A0 to prevent pdfmake word-splitting.
+   */
+  private rtl(text: string): string {
+    if (!text) return text;
+    return text
+      .split('\n')
+      .map((line) => {
+        if (!/[\u0590-\u05FF]/.test(line)) return line;
+        // Match contiguous LTR tokens: letters, digits, and tightly-bound
+        // punctuation (. / - %) that forms part of a number or word.
+        const fixed = line.replace(
+          /[A-Za-z0-9][A-Za-z0-9.,/\-%]*/g,
+          (token) => token.split('').reverse().join(''),
+        );
+        // Swap parentheses: in RTL context fontkit mirrors them, so we
+        // pre-swap to get the correct visual output.
+        const swapped = fixed.replace(/[()]/g, (ch) => ch === '(' ? ')' : '(');
+        return swapped.replace(/ /g, '\u00A0');
+      })
+      .join('\n');
   }
 
   async generateVisitSummaryPdf(visit: Visit): Promise<Buffer> {
+    const data = this.buildSummaryPdfData(visit);
+    const fontPath = this.resolvePdfFontPath();
+    if (!fontPath) {
+      throw new ServiceUnavailableException(
+        'PDF generation is unavailable because no Unicode font was found on the server',
+      );
+    }
+
     try {
-      const html = this.buildSummaryPdfHtml(visit);
-
-      // Dynamic import required: puppeteer is ESM-only and cannot be statically required
-      const { default: puppeteer } = await import('puppeteer');
-
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      // Allow reading only the bundled Hebrew font file. Every other local path
+      // and all remote URLs stay blocked, so a malicious document definition
+      // cannot pull arbitrary files off the server.
+      const allowedFontPath = path.resolve(fontPath);
+      pdfmake.setLocalAccessPolicy(
+        (requestedPath: string) => path.resolve(requestedPath) === allowedFontPath,
+      );
+      pdfmake.setUrlAccessPolicy(() => false);
+      pdfmake.setFonts({
+        NotoSansHebrew: {
+          normal: fontPath,
+          bold: fontPath,
+          italics: fontPath,
+          bolditalics: fontPath,
+        },
       });
 
-      let page: Awaited<ReturnType<typeof browser.newPage>> | null = null;
-
-      try {
-        page = await browser.newPage();
-        await page.setContent(html, { waitUntil: 'load' });
-        const pdfBuffer = await page.pdf({
-          format: 'A4',
-          printBackground: true,
-          margin: {
-            top: '10mm',
-            bottom: '10mm',
-            left: '8mm',
-            right: '8mm',
+      const docDefinition = {
+        pageSize: 'A4',
+        pageMargins: [36, 36, 36, 36],
+        defaultStyle: {
+          font: 'NotoSansHebrew',
+          fontSize: 11,
+          alignment: 'right' as const,
+          lineHeight: 1.3,
+        },
+        content: [
+          { text: 'MedSync', style: 'brand' },
+          { text: this.rtl('מערכת תיעוד וסיכומי ביקור רפואיים'), style: 'subtitle' },
+          {
+            canvas: [
+              {
+                type: 'line',
+                x1: 0,
+                y1: 0,
+                x2: 523,
+                y2: 0,
+                lineWidth: 1,
+                lineColor: '#d9e2ec',
+              },
+            ],
+            margin: [0, 4, 0, 10],
           },
-        });
-        return Buffer.from(pdfBuffer);
-      } finally {
-        try {
-          if (page) {
-            await page.close().catch(() => undefined);
-          }
-        } finally {
-          await browser.close().catch(() => undefined);
-        }
-      }
+          { text: this.rtl('סיכום ביקור רפואי'), style: 'docTitle' },
+          {
+            table: {
+              widths: ['*', '*'],
+              body: [
+                [
+                  {
+                    fillColor: '#f8fbff',
+                    stack: [
+                      { text: this.rtl('פרטי מטופל'), style: 'metaTitle' },
+                      {
+                        text: this.rtl([`שם מלא: ${data.patientName}`, `תעודת זהות: ${data.patientIdNumber}`].join('\n')),
+                        style: 'metaText',
+                      },
+                    ],
+                  },
+                  {
+                    fillColor: '#f8fbff',
+                    stack: [
+                      { text: this.rtl('פרטי ביקור ורופא'), style: 'metaTitle' },
+                      {
+                        text: this.rtl([
+                          `שם רופא: ${data.doctorName}`,
+                          `התמחות: ${data.doctorSpecialty}`,
+                          `תאריך ביקור: ${data.visitDate}`,
+                        ].join('\n')),
+                        style: 'metaText',
+                      },
+                    ],
+                  },
+                ],
+              ],
+            },
+            layout: {
+              hLineWidth: () => 0,
+              vLineWidth: () => 0,
+              paddingLeft: () => 12,
+              paddingRight: () => 12,
+              paddingTop: () => 10,
+              paddingBottom: () => 10,
+            },
+            margin: [0, 0, 0, 14],
+          },
+          { text: this.rtl('תלונת המטופל'), style: 'sectionTitle' },
+          { text: this.rtl(data.complaints || 'לא תועד מידע בסעיף זה.'), style: 'sectionText' },
+          { text: this.rtl('ממצאים'), style: 'sectionTitle' },
+          { text: this.rtl(data.findings || 'לא תועד מידע בסעיף זה.'), style: 'sectionText' },
+          { text: this.rtl('אבחנה'), style: 'sectionTitle' },
+          { text: this.rtl(data.diagnosis || 'לא תועד מידע בסעיף זה.'), style: 'sectionText' },
+          { text: this.rtl('המלצות וטיפול'), style: 'sectionTitle' },
+          { text: this.rtl(data.recommendations || 'לא תועד מידע בסעיף זה.'), style: 'sectionText' },
+          { text: this.rtl('מסמך זה הופק אוטומטית • לשימוש רפואי פנימי'), style: 'footer' },
+        ],
+        styles: {
+          brand: { fontSize: 26, color: '#1b4965', bold: true, margin: [0, 0, 0, 2] },
+          subtitle: { fontSize: 11, color: '#486581', margin: [0, 0, 0, 8] },
+          docTitle: { fontSize: 18, color: '#1b4965', bold: true, margin: [0, 0, 0, 12] },
+          metaTitle: { fontSize: 13, color: '#1b4965', bold: true, margin: [0, 0, 0, 6] },
+          metaTable: { fontSize: 11, color: '#102a43', margin: [0, 0, 0, 0], lineHeight: 1.4 },
+          metaText: { fontSize: 11, color: '#102a43', lineHeight: 1.4 },
+          sectionTitle: { fontSize: 13, color: '#1b4965', bold: true, margin: [0, 0, 0, 4] },
+          sectionText: { fontSize: 11, color: '#102a43', lineHeight: 1.4, margin: [0, 0, 0, 10] },
+          footer: { fontSize: 10, color: '#486581', alignment: 'center', margin: [0, 12, 0, 0] },
+        },
+      };
+
+      const output = pdfmake.createPdf(docDefinition);
+      return await output.getBuffer();
     } catch (error) {
       this.logger.error(
         `Visit summary PDF generation failed: ${error instanceof Error ? error.message : String(error)}`,

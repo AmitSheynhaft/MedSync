@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { UpdateUserInput, CreateUserInput } from '../../../api/users';
-import { IAdminUserListItem } from '../../../api/admin/users';
+import { IAdminUserDetail } from '../../../api/admin/users';
 import { ROLE_LABELS } from './adminUser.constants';
 import {
   GENDER_OPTIONS,
@@ -27,7 +27,7 @@ import {
 
 interface EditProps {
   mode: 'edit';
-  user: IAdminUserListItem;
+  user: IAdminUserDetail;
   roles: { id: string; name: string }[];
   clinics: { id: string; name: string }[];
   onClose: () => void;
@@ -76,10 +76,10 @@ const UserFormDialog: React.FC<Props> = (props) => {
     setErrors({});
     setSaveError(null);
     setRoleName(user?.role?.name ?? '');
-    setClinicId('');
-    setLicenseNumber('');
-    setSpecialization('');
-    setIdNumber('');
+    setClinicId(user?.clinicId ?? '');
+    setLicenseNumber(user?.licenseNumber ?? '');
+    setSpecialization(user?.specialization ?? '');
+    setIdNumber(user?.idNumber ?? '');
   }, [open, user, roles]);
 
   const validate = (): UserFormErrors => {
@@ -116,7 +116,11 @@ const UserFormDialog: React.FC<Props> = (props) => {
       (phone || '') !== (user.phone || '') ||
       (gender || '') !== (user.gender || '') ||
       (birthDate || '') !== (user.birthDate?.slice(0, 10) || '') ||
-      (roleName || '') !== (user.role?.name || '')
+      (roleName || '') !== (user.role?.name || '') ||
+      (clinicId || '') !== (user.clinicId || '') ||
+      (licenseNumber || '') !== (user.licenseNumber || '') ||
+      (specialization || '') !== (user.specialization || '') ||
+      (idNumber || '') !== (user.idNumber || '')
     );
   })();
 

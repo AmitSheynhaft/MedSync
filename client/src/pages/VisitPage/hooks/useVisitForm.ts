@@ -204,6 +204,7 @@ export function useVisitForm() {
       weight: weight.trim() || undefined,
       height: height.trim() || undefined,
       oxygenSat: oxygenSat.trim() || undefined,
+      chiefComplaint: subjective.trim() || undefined,
       visitType: visitType || undefined,
       followUpDate: followUpDate || undefined,
       referralNotes: referralNotes.trim() || undefined,

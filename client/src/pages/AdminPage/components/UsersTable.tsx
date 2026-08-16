@@ -4,7 +4,7 @@ import {
   IconButton, Chip, Typography, Tooltip, Box,
   TextField, InputAdornment, Stack, Paper, Button, MenuItem,
   Select, FormControl, InputLabel, OutlinedInput, Checkbox, ListItemText,
-  Dialog, DialogTitle, DialogContent, DialogActions,
+  Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress,
 } from '@mui/material';
 import EditIcon      from '@mui/icons-material/Edit';
 import DeleteIcon    from '@mui/icons-material/Delete';
@@ -12,7 +12,7 @@ import SearchIcon    from '@mui/icons-material/Search';
 import ClearIcon     from '@mui/icons-material/Clear';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { UpdateUserInput, CreateUserInput } from '../../../api/users';
-import { IAdminUserListItem } from '../../../api/admin/users';
+import { IAdminUserListItem, IAdminUserDetail, getAdminUserById } from '../../../api/admin/users';
 import { TablePaper } from '../styled';
 import UserFormDialog from './UserFormDialog';
 import { GENDER_LABELS, ROLE_CHIP, ROLE_LABELS } from './adminUser.constants';
@@ -62,7 +62,8 @@ interface Props {
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
 const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate, onDelete }) => {
-  const [editing, setEditing]   = useState<IAdminUserListItem | null>(null);
+  const [editing, setEditing]   = useState<IAdminUserDetail | null>(null);
+  const [loadingEditId, setLoadingEditId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [search, setSearch]     = useState('');
@@ -221,9 +222,26 @@ const UsersTable: React.FC<Props> = ({ users, roles, clinics, onCreate, onUpdate
                   <TableCell sx={usersTableDefaultCellSx}>{user.gender ? (GENDER_LABELS[user.gender] ?? user.gender) : '—'}</TableCell>
                   <TableCell align="center">
                     <Tooltip title="עריכה">
-                      <IconButton size="small" onClick={() => setEditing(user)} sx={usersTableEditButtonSx}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
+                      <span>
+                        <IconButton
+                          size="small"
+                          disabled={loadingEditId === user.id}
+                          onClick={async () => {
+                            setLoadingEditId(user.id);
+                            try {
+                              const detail = await getAdminUserById(user.id);
+                              setEditing(detail);
+                            } finally {
+                              setLoadingEditId(null);
+                            }
+                          }}
+                          sx={usersTableEditButtonSx}
+                        >
+                          {loadingEditId === user.id
+                            ? <CircularProgress size={16} />
+                            : <EditIcon fontSize="small" />}
+                        </IconButton>
+                      </span>
                     </Tooltip>
                     <Tooltip title="מחיקה">
                       <IconButton size="small" color="error" onClick={() => setConfirmDeleteId(user.id)}>

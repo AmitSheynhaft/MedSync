@@ -94,6 +94,26 @@ export class UsersService {
     return toPaginatedResult(rows.map((u) => this.mapUserEntityToSafeUser(u)), total, pagination);
   }
 
+  async getAdminUserById(userId: string): Promise<AdminUserListItem & {
+    clinicId: string | null;
+    licenseNumber: string | null;
+    specialization: string | null;
+    idNumber: string | null;
+  }> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['role', 'caregiver', 'secretary', 'patient'],
+    });
+    if (!user) throw new NotFoundException(`User ${userId} not found`);
+    return {
+      ...this.toAdminListItem(user),
+      clinicId: user.caregiver?.clinicId ?? user.secretary?.clinicId ?? null,
+      licenseNumber: user.caregiver?.licenseNumber ?? null,
+      specialization: user.caregiver?.specialization ?? null,
+      idNumber: user.secretary?.idNumber ?? null,
+    };
+  }
+
   async getAdminUsers(
     roleName?: string,
     page?: number,
@@ -215,7 +235,7 @@ export class UsersService {
     return this.getUserById(userId);
   }
 
-  // ── Delete (admin detaches; non-admin hard-deletes) ───────────────
+  // ── Delete ────────────────────────────────────────────────────────
 
   async deleteUserById(userId: string, actingUser?: IUser): Promise<void> {
     const user = await this.userRepository.findOne({
@@ -225,12 +245,22 @@ export class UsersService {
     if (!user) throw new NotFoundException(`User ${userId} not found`);
 
     if (actingUser?.role?.name === ROLE_ADMIN) {
-      await this.detachUserFromClinic(user, actingUser);
-      return;
+      this.assertAdminCanManageUser(user, actingUser);
     }
 
-    const result = await this.userRepository.delete(userId);
-    if (!result.affected) throw new NotFoundException(`User ${userId} not found`);
+    await this.dataSource.transaction(async (manager) => {
+      // visits.caregiver_id has RESTRICT FK — must remove visits before deleting caregiver
+      if (user.caregiver) {
+        await manager
+          .createQueryBuilder()
+          .delete()
+          .from('visits')
+          .where('"caregiver_id" = :caregiverId', { caregiverId: user.caregiver.id })
+          .execute();
+      }
+      const result = await manager.delete(User, { id: userId });
+      if (!result.affected) throw new NotFoundException(`User ${userId} not found`);
+    });
   }
 
   // ── Private: validation ──────────────────────────────────────────
