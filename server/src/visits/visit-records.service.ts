@@ -266,21 +266,14 @@ export class VisitRecordsService {
   }
 
   /**
-   * pdfmake has no built-in RTL/bidi support. This helper reverses word order
-   * for lines containing Hebrew characters so text reads right-to-left visually,
-   * while preserving LTR runs (numbers, English words) inline.
-   * Spaces are replaced with non-breaking spaces (\u00A0) to prevent pdfmake
-   * from splitting the text into separate TJ operators that lose inter-word gaps.
+   * pdfmake has no built-in RTL/bidi support and splits text on regular spaces
+   * into separate TJ operators that lose inter-word gaps. Replacing spaces with
+   * non-breaking spaces (\u00A0) keeps the entire line as a single glyph run
+   * so fontkit properly renders the space advance width between words.
    */
   private rtl(text: string): string {
     if (!text) return text;
-    return text
-      .split('\n')
-      .map((line) => {
-        if (!/[\u0590-\u05FF]/.test(line)) return line;
-        return line.split(/\s+/).reverse().join('\u00A0');
-      })
-      .join('\n');
+    return text.replace(/ /g, '\u00A0');
   }
 
   async generateVisitSummaryPdf(visit: Visit): Promise<Buffer> {
