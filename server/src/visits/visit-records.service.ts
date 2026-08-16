@@ -266,14 +266,31 @@ export class VisitRecordsService {
   }
 
   /**
-   * pdfmake has no built-in RTL/bidi support and splits text on regular spaces
-   * into separate TJ operators that lose inter-word gaps. Replacing spaces with
-   * non-breaking spaces (\u00A0) keeps the entire line as a single glyph run
-   * so fontkit properly renders the space advance width between words.
+   * pdfmake doesn't implement Unicode bidi. Its font shaping via fontkit reverses
+   * the character order of ALL non-Hebrew tokens (Latin text, numbers, dates)
+   * within Hebrew RTL context.
+   *
+   * This helper pre-reverses every contiguous run of non-Hebrew characters
+   * (digits, Latin letters, punctuation like . / - %) so that after fontkit's
+   * RTL reversal they display in the correct visual order.
+   * Spaces are replaced with \u00A0 to prevent pdfmake word-splitting.
    */
   private rtl(text: string): string {
     if (!text) return text;
-    return text.replace(/ /g, '\u00A0');
+    return text
+      .split('\n')
+      .map((line) => {
+        if (!/[\u0590-\u05FF]/.test(line)) return line;
+        // Match contiguous non-Hebrew, non-space, non-parentheses runs and reverse them.
+        // Parentheses stay in place as they are neutral characters positioned by
+        // the surrounding Hebrew RTL context.
+        const fixed = line.replace(
+          /[^\u0590-\u05FF\s()]+/g,
+          (token) => token.split('').reverse().join(''),
+        );
+        return fixed.replace(/ /g, '\u00A0');
+      })
+      .join('\n');
   }
 
   async generateVisitSummaryPdf(visit: Visit): Promise<Buffer> {
@@ -380,7 +397,7 @@ export class VisitRecordsService {
           { text: this.rtl(data.diagnosis || 'לא תועד מידע בסעיף זה.'), style: 'sectionText' },
           { text: this.rtl('המלצות וטיפול'), style: 'sectionTitle' },
           { text: this.rtl(data.recommendations || 'לא תועד מידע בסעיף זה.'), style: 'sectionText' },
-          { text: this.rtl('מסמך זה הופק אוטומטית על ידי MedSync • לשימוש רפואי פנימי'), style: 'footer' },
+          { text: this.rtl('מסמך זה הופק אוטומטית • לשימוש רפואי פנימי'), style: 'footer' },
         ],
         styles: {
           brand: { fontSize: 26, color: '#1b4965', bold: true, margin: [0, 0, 0, 2] },
