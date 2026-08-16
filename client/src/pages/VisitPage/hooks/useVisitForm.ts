@@ -288,13 +288,14 @@ export function useVisitForm() {
   useEffect(() => {
     if (!summary) return;
     const { patientComplaints, diagnosis: diagText, doctorsRecommendations } = summary;
+    const isUndocumented = (v: string) => v === 'Not documented.' || v === 'לא תועד.';
     const subjectiveText =
-      (patientComplaints && patientComplaints !== 'Not documented.') ? patientComplaints : transcript;
+      (patientComplaints && !isUndocumented(patientComplaints)) ? patientComplaints : transcript;
     if (subjectiveText) {
       setSubjective(prev => prev || subjectiveText);
     }
-    if (diagText && diagText !== 'Not documented.') setDiagnosis(prev => prev || diagText);
-    if (doctorsRecommendations && doctorsRecommendations !== 'Not documented.') setPlan(prev => prev || doctorsRecommendations);
+    if (diagText && !isUndocumented(diagText)) setDiagnosis(prev => prev || diagText);
+    if (doctorsRecommendations && !isUndocumented(doctorsRecommendations)) setPlan(prev => prev || doctorsRecommendations);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summary]);
 

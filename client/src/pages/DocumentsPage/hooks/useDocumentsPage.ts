@@ -30,9 +30,11 @@ export function useDocumentsPage() {
   const [actionBusy, setActionBusy] = useState(false);
   const [documentType, setDocumentType] = useState<DocumentTypeEnum | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null);
   const [documents, setDocuments] = useState<MedicalDocument[] | null>(null);
   const [documentsStatus, setDocumentsStatus] = useState<AsyncStatus>('loading');
   const [hasMore, setHasMore] = useState(true);
@@ -178,6 +180,25 @@ export function useDocumentsPage() {
     }
   };
 
+  const handleDeleteDocument = async (document: MedicalDocument) => {
+    if (!isDoctorView) return;
+
+    const shouldDelete = window.confirm(`למחוק את המסמך "${document.fileName}"?`);
+    if (!shouldDelete) return;
+
+    setDeleteError(null);
+    setDeletingDocumentId(document.id);
+    try {
+      await deleteMedicalDocument(document.id);
+      setDocuments((prev) => (prev ?? []).filter((item) => item.id !== document.id));
+      setRefreshKey((key) => key + 1);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'מחיקת המסמך נכשלה.');
+    } finally {
+      setDeletingDocumentId(null);
+    }
+  };
+
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -248,6 +269,8 @@ export function useDocumentsPage() {
     navigate, id, isDoctorView, patientId,
     filter, setFilter,
     uploading, uploadOpen, uploadError, setUploadError,
+    deleteError, setDeleteError,
+    deletingDocumentId,
     fileError, selectedFile, documentType, setDocumentType,
     fileInputRef, documentsStatus, documents,
     hasMore, loadingMore, loadMore,
@@ -258,6 +281,7 @@ export function useDocumentsPage() {
     handleConfirmDelete, handleConfirmEditType,
     pageTitle, cameraStream,
     openUploadModal, closeUploadModal,
+    handleDeleteDocument,
     handleFileInputChange, handleConfirmUpload, handleCameraCapture,
   };
 }

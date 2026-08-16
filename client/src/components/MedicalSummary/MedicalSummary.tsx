@@ -16,6 +16,12 @@ interface MedicalSummaryProps {
   text: string;
 }
 
+type VisitSummaryJson = {
+  patientComplaints?: unknown;
+  diagnosis?: unknown;
+  doctorsRecommendations?: unknown;
+};
+
 const KNOWN_HEADINGS = new Set([
   'מחלות כרוניות',
   'תרופות קבועות',
@@ -61,6 +67,40 @@ function injectStructure(raw: string): string {
     .replace(/[*_`#]+/g, '')
     .replace(/([^\n])\s+(\d{1,2}[.)])\s+/g, '$1\n\n$2 ')
     .replace(/([^\n])\s+([•·])\s+/g, '$1\n$2 ');
+}
+
+function normalizeJsonSummary(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
+    return raw;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as VisitSummaryJson;
+    const hasKnownKeys =
+      Object.prototype.hasOwnProperty.call(parsed, 'patientComplaints') ||
+      Object.prototype.hasOwnProperty.call(parsed, 'diagnosis') ||
+      Object.prototype.hasOwnProperty.call(parsed, 'doctorsRecommendations');
+
+    if (!hasKnownKeys) {
+      return raw;
+    }
+
+    const sections = [
+      { title: 'תלונות המטופל', value: parsed.patientComplaints },
+      { title: 'אבחנה', value: parsed.diagnosis },
+      { title: 'המלצות הרופא', value: parsed.doctorsRecommendations },
+    ];
+
+    return sections
+      .map(({ title, value }) => {
+        const normalizedValue = typeof value === 'string' && value.trim() ? value.trim() : 'לא תועד.';
+        return `${title}: ${normalizedValue}`;
+      })
+      .join('\n');
+  } catch {
+    return raw;
+  }
 }
 
 interface Item {
@@ -109,7 +149,7 @@ function isLikelyHeading(content: string): boolean {
 }
 
 function parseSummary(raw: string): Block[] {
-  const cleaned = stripLeadingDemographics(injectStructure(raw));
+  const cleaned = stripLeadingDemographics(injectStructure(normalizeJsonSummary(raw)));
   const lines = cleaned.split('\n').map((l) => l.trim());
 
   const blocks: Block[] = [];

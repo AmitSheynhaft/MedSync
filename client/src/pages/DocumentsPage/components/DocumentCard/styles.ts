@@ -39,6 +39,19 @@ export const documentCardMetaSx = {
   mb: 2,
 };
 
+export const documentCardDeleteButtonWrapSx = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  mb: 1,
+};
+
+export const documentCardDeleteButtonSx = {
+  color: '#c92a2a',
+  '&:hover': {
+    bgcolor: '#fff5f5',
+  },
+};
+
 export const documentCardStatusChipSx = (color: string, bg: string) => ({
   fontWeight: 800,
   fontSize: 11,

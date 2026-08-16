@@ -40,6 +40,11 @@ export const DocumentsPage: React.FC = () => {
             {page.uploadError}
           </Alert>
         )}
+        {page.deleteError && (
+          <Alert severity="error" onClose={() => page.setDeleteError(null)} sx={{ mb: 3 }}>
+            {page.deleteError}
+          </Alert>
+        )}
 
         {page.actionError && (
           <Alert severity="error" onClose={() => page.setActionError(null)} sx={{ mb: 3 }}>
@@ -58,6 +63,9 @@ export const DocumentsPage: React.FC = () => {
           documents={page.documents}
           filteredDocuments={page.filteredDocuments}
           loadingMore={page.loadingMore}
+          canDelete={page.isDoctorView}
+          deletingDocumentId={page.deletingDocumentId}
+          onDeleteDocument={page.handleDeleteDocument}
           onDocumentClick={document => page.setSummaryModal({ id: document.id, name: document.fileName })}
           onEditDocument={document => page.setEditingDocument(document)}
           onDeleteDocument={document => page.setDeletingDocument(document)}

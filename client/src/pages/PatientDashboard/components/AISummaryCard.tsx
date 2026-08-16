@@ -1,6 +1,7 @@
 import React from "react";
 import { Paper, Stack, Typography } from "@mui/material";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import MedicalSummary from "../../../components/MedicalSummary/MedicalSummary";
 
 interface AISummaryCardProps {
   overview?: string;
@@ -28,11 +29,17 @@ export const AISummaryCard: React.FC<AISummaryCardProps> = ({ overview, loading 
           סיכום בריאות בבינה מלאכותית
         </Typography>
       </Stack>
-      <Typography
-        sx={{ fontSize: 14, color: "text.secondary", lineHeight: 1.65 }}
-      >
-        {loading ? "טוען נתונים..." : overview || PLACEHOLDER}
-      </Typography>
+      {loading ? (
+        <Typography sx={{ fontSize: 14, color: "text.secondary", lineHeight: 1.65 }}>
+          טוען נתונים...
+        </Typography>
+      ) : overview ? (
+        <MedicalSummary text={overview} />
+      ) : (
+        <Typography sx={{ fontSize: 14, color: "text.secondary", lineHeight: 1.65 }}>
+          {PLACEHOLDER}
+        </Typography>
+      )}
     </Paper>
   );
 };

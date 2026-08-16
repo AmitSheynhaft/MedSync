@@ -31,11 +31,21 @@ const VisitPage: React.FC = () => {
 
       {patientInfo && <PatientInfoBar info={patientInfo} />}
 
+
       <FormColumn>
         <VisitFormCard form={form} />
 
         {!isReadOnly && (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-start', px: 0.5 }}>
+          <Box sx={{
+            position: 'sticky',
+            bottom: 0,
+            display: 'flex',
+            justifyContent: 'flex-start',
+            px: 0.5,
+            py: 1.5,
+            background: 'linear-gradient(to top, #f6f8fb 70%, transparent)',
+            zIndex: 1,
+          }}>
             <Button variant="contained" size="large" onClick={handleSave} disabled={saving}
               sx={{ borderRadius: '12px', px: 4.5, py: 1.5, fontSize: 15, fontWeight: 700, letterSpacing: '0.02em', background: '#3b5bdb', '&:hover': { background: '#3451c7' } }}>
               {saving ? 'שומר…' : 'שמור ואשר'}

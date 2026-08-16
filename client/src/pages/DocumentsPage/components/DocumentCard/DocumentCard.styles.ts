@@ -1,5 +1,7 @@
 export {
   documentCardBadgeWrapSx,
+  documentCardDeleteButtonSx,
+  documentCardDeleteButtonWrapSx,
   documentCardFileNameSx,
   documentCardFileTypeChipSx,
   documentCardMetaSx,

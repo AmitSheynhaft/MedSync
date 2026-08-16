@@ -124,6 +124,13 @@ export class DocumentsLogicService {
         ? await this.documentSummaryService.summarize(extractedText)
         : 'Could not extract any text from the uploaded document.';
 
+      // Guard: document may have been deleted (e.g. patient cascade) while OCR/AI was running.
+      const patientId = await this.documentsQueryService.getDocumentPatientId(documentId);
+      if (!patientId) {
+        this.logger.warn(`Document ${documentId} was deleted during analysis — skipping summary save`);
+        return;
+      }
+
       await this.documentsQueryService.saveDocumentSummary(
         documentId,
         summary,
@@ -138,16 +145,13 @@ export class DocumentsLogicService {
 
       if (!hasText) return;
 
-      const patientId = await this.documentsQueryService.getDocumentPatientId(documentId);
-      if (patientId) {
-        this.medicalSummaryService
-          .generateAndSavePatientMedicalSummary(patientId)
-          .catch((error) =>
-            this.logger.error(
-              `Medical summary trigger failed: ${error instanceof Error ? error.message : String(error)}`,
-            ),
-          );
-      }
+      this.medicalSummaryService
+        .generateAndSavePatientMedicalSummary(patientId)
+        .catch((error) =>
+          this.logger.error(
+            `Medical summary trigger failed: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+        );
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       this.logger.error(`Background analysis failed for ${documentId}: ${detail}`);

@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  Box,
   Button,
   Chip,
   CircularProgress,
@@ -18,6 +19,10 @@ import {
   formCardHeaderRecordSpinnerSx,
   formCardHeaderRootSx,
   formCardHeaderTitleSx,
+  formCardHeaderRecordingIndicatorSx,
+  formCardHeaderRecordingDotSx,
+  formCardHeaderAudioBarsContainerSx,
+  formCardHeaderRecordingLabelSx,
 } from './styles';
 
 interface IFormCardHeaderProps {
@@ -49,28 +54,41 @@ export const FormCardHeader: React.FC<IFormCardHeaderProps> = ({
       />
     )}
     {!isReadOnly && (
-      <Tooltip
-        title="שים לב: יש להפעיל את ההקלטה מתחילת הפגישה ועד סופה כדי להבטיח תיעוד מלא ומדויק."
-        placement="top"
-      >
-        <span>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={onRecord}
-            disabled={isProcessing || isStarting}
-            sx={formCardHeaderRecordButtonSx(isStarting, isRecording)}
-          >
-            {isStarting ? (
-              <CircularProgress size={16} sx={formCardHeaderRecordSpinnerSx} />
-            ) : isRecording ? (
-              <StopIcon sx={formCardHeaderRecordIconSx} />
-            ) : (
-              <KeyboardVoiceIcon sx={formCardHeaderRecordIconSx} />
-            )}
-          </Button>
-        </span>
-      </Tooltip>
+      <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+        {isRecording && (
+          <Box sx={formCardHeaderRecordingIndicatorSx}>
+            <Box sx={formCardHeaderRecordingDotSx} />
+            <Box sx={formCardHeaderAudioBarsContainerSx}>
+              {[0, 0.12, 0.24, 0.08, 0.18].map((delay, i) => (
+                <Box key={i} component="span" sx={{ animationDelay: `${delay}s` }} />
+              ))}
+            </Box>
+            <Typography sx={formCardHeaderRecordingLabelSx}>מקליט...</Typography>
+          </Box>
+        )}
+        <Tooltip
+          title="שים לב: יש להפעיל את ההקלטה מתחילת הפגישה ועד סופה כדי להבטיח תיעוד מלא ומדויק."
+          placement="top"
+        >
+          <span>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={onRecord}
+              disabled={isProcessing || isStarting}
+              sx={formCardHeaderRecordButtonSx(isStarting, isRecording)}
+            >
+              {isStarting ? (
+                <CircularProgress size={16} sx={formCardHeaderRecordSpinnerSx} />
+              ) : isRecording ? (
+                <StopIcon sx={formCardHeaderRecordIconSx} />
+              ) : (
+                <KeyboardVoiceIcon sx={formCardHeaderRecordIconSx} />
+              )}
+            </Button>
+          </span>
+        </Tooltip>
+      </Stack>
     )}
   </Stack>
 );
