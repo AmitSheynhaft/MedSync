@@ -5,6 +5,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import * as os from 'os';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -379,16 +380,26 @@ export class VisitRecordsService {
 </html>`;
   }
 
-  async generateVisitSummaryPdf(visitId: string): Promise<Buffer> {
-    const visit = await this.getVisitRecordById(visitId);
+  async generateVisitSummaryPdf(visit: Visit): Promise<Buffer> {
     const html = this.buildSummaryPdfHtml(visit);
 
     // Dynamic import required: puppeteer is ESM-only and cannot be statically required
     const { default: puppeteer } = await import('puppeteer');
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+
+    let browser: Awaited<ReturnType<typeof puppeteer.launch>>;
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+    } catch (error) {
+      this.logger.error(
+        `Puppeteer failed to launch: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new ServiceUnavailableException(
+        'PDF generation is unavailable — Chrome/Chromium is not installed on the server',
+      );
+    }
     let page: Awaited<ReturnType<typeof browser.newPage>> | null = null;
 
     try {
