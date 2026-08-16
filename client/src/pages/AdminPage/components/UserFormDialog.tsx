@@ -58,11 +58,13 @@ const UserFormDialog: React.FC<Props> = (props) => {
   const [password,   setPassword]   = useState('');
   const [gender,     setGender]     = useState(user?.gender ?? '');
   const [birthDate,  setBirthDate]  = useState(user?.birthDate?.slice(0, 10) ?? '');
-  const [roleId,     setRoleId]     = useState('');
-  const [clinicId,   setClinicId]   = useState('');
-  const [errors,     setErrors]     = useState<Errors>({});
-  const [saving,     setSaving]     = useState(false);
-  const [saveError,  setSaveError]  = useState<string | null>(null);
+  const [roleId,        setRoleId]        = useState('');
+  const [clinicId,      setClinicId]      = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [specialization,setSpecialization]= useState('');
+  const [errors,        setErrors]        = useState<Errors>({});
+  const [saving,        setSaving]        = useState(false);
+  const [saveError,     setSaveError]     = useState<string | null>(null);
   const birthDateRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -77,6 +79,8 @@ const UserFormDialog: React.FC<Props> = (props) => {
     const matched = roles.find((r) => r.name === user?.role?.name);
     setRoleId(matched?.id ?? '');
     setClinicId('');
+    setLicenseNumber((isEdit ? (props as EditProps).user.caregiver?.licenseNumber : '') ?? '');
+    setSpecialization((isEdit ? (props as EditProps).user.caregiver?.specialization : '') ?? '');
   }, [open, user, roles]);
 
   const validate = (): Errors => {
@@ -112,8 +116,11 @@ const UserFormDialog: React.FC<Props> = (props) => {
           gender:     gender    || undefined,
           birthDate:  birthDate || undefined,
           roleId:     roleId    || undefined,
+          licenseNumber:  roles.find(r => r.id === roleId)?.name === 'doctor' ? (licenseNumber.trim() || undefined) : undefined,
+          specialization: roles.find(r => r.id === roleId)?.name === 'doctor' ? (specialization.trim() || undefined) : undefined,
         });
       } else {
+        const selectedRole = roles.find(r => r.id === roleId)?.name;
         await (props as CreateProps).onSave({
           fullName: fullName.trim(),
           email:    email.trim(),
@@ -123,6 +130,8 @@ const UserFormDialog: React.FC<Props> = (props) => {
           birthDate: birthDate || undefined,
           roleId:    roleId    || undefined,
           clinicId:  clinicId  || undefined,
+          licenseNumber:  selectedRole === 'doctor' && licenseNumber  ? licenseNumber.trim()  : undefined,
+          specialization: selectedRole === 'doctor' && specialization ? specialization.trim() : undefined,
         });
       }
     } catch (err) {
@@ -140,7 +149,7 @@ const UserFormDialog: React.FC<Props> = (props) => {
         {isEdit ? 'עריכת משתמש' : 'משתמש חדש'}
       </DialogTitle>
       <DialogContent>
-        <Stack spacing={2} sx={{ mt: 1 }}>
+        <Stack spacing={1.5} sx={{ mt: 1 }}>
 
           {saveError && <Alert severity="error" onClose={() => setSaveError(null)}>{saveError}</Alert>}
 
@@ -176,6 +185,51 @@ const UserFormDialog: React.FC<Props> = (props) => {
               error={!!errors.password}
               helperText={errors.password ?? 'לפחות 8 תווים, אות גדולה ומספר'}
             />
+          )}
+
+          <TextField
+            {...fieldSx}
+            select
+            label="תפקיד"
+            value={roleId}
+            onChange={(e) => setRoleId(e.target.value)}
+          >
+            <MenuItem value="">— בחר תפקיד —</MenuItem>
+            {roles.map((r) => (
+              <MenuItem key={r.id} value={r.id}>{ROLE_LABELS[r.name] ?? r.name}</MenuItem>
+            ))}
+          </TextField>
+
+          {!isEdit && (() => {
+            const selectedRole = roles.find(r => r.id === roleId)?.name;
+            const needsClinic = selectedRole === 'secretary' || selectedRole === 'doctor';
+            return needsClinic ? (
+              <TextField {...fieldSx} select label="מרפאה" value={clinicId} onChange={(e) => setClinicId(e.target.value)} required>
+                <MenuItem value="">— בחר מרפאה —</MenuItem>
+                {clinics.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                ))}
+              </TextField>
+            ) : null;
+          })()}
+
+          {roles.find(r => r.id === roleId)?.name === 'doctor' && (
+            <>
+              <TextField
+                {...fieldSx}
+                label="מספר רישיון"
+                placeholder="123456"
+                value={licenseNumber}
+                onChange={(e) => setLicenseNumber(e.target.value)}
+              />
+              <TextField
+                {...fieldSx}
+                label="התמחות"
+                placeholder="קרדיולוגיה"
+                value={specialization}
+                onChange={(e) => setSpecialization(e.target.value)}
+              />
+            </>
           )}
 
           <TextField
@@ -233,33 +287,7 @@ const UserFormDialog: React.FC<Props> = (props) => {
             }}
           />
 
-          <TextField
-            {...fieldSx}
-            select
-            label="תפקיד"
-            value={roleId}
-            onChange={(e) => setRoleId(e.target.value)}
-          >
-            <MenuItem value="">— בחר תפקיד —</MenuItem>
-            {roles.map((r) => (
-              <MenuItem key={r.id} value={r.id}>{ROLE_LABELS[r.name] ?? r.name}</MenuItem>
-            ))}
-          </TextField>
-
-          {!isEdit && (() => {
-            const selectedRole = roles.find(r => r.id === roleId)?.name;
-            const needsClinic = selectedRole === 'secretary' || selectedRole === 'doctor';
-            return needsClinic ? (
-              <TextField {...fieldSx} select label="מרפאה" value={clinicId} onChange={(e) => setClinicId(e.target.value)} required>
-                <MenuItem value="">— בחר מרפאה —</MenuItem>
-                {clinics.map((c) => (
-                  <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
-                ))}
-              </TextField>
-            ) : null;
-          })()}
-
-          {Object.keys(errors).length > 0 && (
+          {Object.values(errors).some(Boolean) && (
             <Typography sx={{ fontSize: 12, color: 'error.main' }}>
               יש לתקן את השגיאות המסומנות לפני השמירה
             </Typography>

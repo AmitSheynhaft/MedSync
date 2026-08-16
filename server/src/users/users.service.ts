@@ -25,6 +25,8 @@ export interface CreateUserInput {
   birthDate?: string | Date;
   gender?: string;
   clinicId?: string;
+  licenseNumber?: string;
+  specialization?: string;
 }
 
 export interface UpdateUserInput {
@@ -35,6 +37,8 @@ export interface UpdateUserInput {
   phone?: string;
   birthDate?: string | Date;
   gender?: string;
+  licenseNumber?: string;
+  specialization?: string;
 }
 
 export type SafeUser = Omit<User, 'password'>;
@@ -63,7 +67,7 @@ export class UsersService {
 
   async findAll(roleName?: string): Promise<SafeUser[]> {
     const users = await this.repo.find({
-      relations: ['role'],
+      relations: ['role', 'caregiver'],
       order: { createdAt: 'DESC' },
     });
     const filtered = roleName
@@ -135,7 +139,8 @@ export class UsersService {
       await this.caregivers.save(this.caregivers.create({
         userId: saved.id,
         clinicId: input.clinicId ?? null,
-        specialization: null,
+        specialization: input.specialization ?? null,
+        licenseNumber: input.licenseNumber ?? null,
       }));
     }
 
@@ -168,10 +173,44 @@ export class UsersService {
     if (input.gender !== undefined) user.gender = input.gender;
     if (input.birthDate !== undefined)
       user.birthDate = input.birthDate ? new Date(input.birthDate) : null;
-    if (input.roleId !== undefined) user.roleId = input.roleId;
     if (input.password) user.password = hashPassword(input.password);
 
+    if (input.roleId !== undefined) user.roleId = input.roleId;
+
     const saved = await this.repo.save(user);
+
+    // When roleId is supplied, ensure the matching profile exists (handles
+    // role changes AND doctors/secretaries created without a profile).
+    if (input.roleId !== undefined) {
+      const roleName = (await this.roles.findOne(input.roleId)).name;
+      if (roleName === ROLE_PATIENT) {
+        const exists = await this.patients.findOne({ where: { userId: id } });
+        if (!exists) await this.patients.save(this.patients.create({ userId: id }));
+      } else if (roleName === ROLE_DOCTOR) {
+        const exists = await this.caregivers.findOne({ where: { userId: id } });
+        if (!exists) await this.caregivers.save(this.caregivers.create({ userId: id }));
+      } else if (roleName === ROLE_SECRETARY) {
+        const exists = await this.secretaries.findOne({ where: { userId: id } });
+        if (!exists) {
+          await this.secretaries.save(this.secretaries.create({
+            userId: id,
+            idNumber: randomUUID(),
+            clinicId: null,
+          }));
+        }
+      }
+    }
+
+    // Update caregiver-specific fields if supplied.
+    if (input.licenseNumber !== undefined || input.specialization !== undefined) {
+      const caregiver = await this.caregivers.findOne({ where: { userId: id } });
+      if (caregiver) {
+        if (input.licenseNumber !== undefined) caregiver.licenseNumber = input.licenseNumber || null;
+        if (input.specialization !== undefined) caregiver.specialization = input.specialization || null;
+        await this.caregivers.save(caregiver);
+      }
+    }
+
     return this.strip(saved);
   }
 

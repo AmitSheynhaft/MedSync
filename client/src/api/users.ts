@@ -10,6 +10,7 @@ export interface User {
   createdAt: string;
   updatedAt: string;
   role?: { name: string };
+  caregiver?: { licenseNumber?: string | null; specialization?: string | null } | null;
 }
 
 export interface CreateUserInput {
@@ -21,6 +22,8 @@ export interface CreateUserInput {
   birthDate?: string;
   gender?: string;
   clinicId?: string;
+  licenseNumber?: string;
+  specialization?: string;
 }
 
 export interface UpdateUserInput extends Partial<CreateUserInput> {}
@@ -38,3 +41,10 @@ export const createUser = (input: CreateUserInput) =>
 export const updateUser = (id: string, input: UpdateUserInput) =>
   apiPatch<User>(`/api/users/${id}`, input);
 export const deleteUser = (id: string) => apiDelete<void>(`/api/users/${id}`);
+
+// Admin-only endpoints (require admin role)
+export const adminGetUsers = () => apiGet<User[]>('/api/admin/users');
+export const adminCreateUser = (input: CreateUserInput) => apiPost<User>('/api/admin/users', input);
+export const adminUpdateUser = (id: string, input: UpdateUserInput) =>
+  apiPatch<User>(`/api/admin/users/${id}`, input);
+export const adminDeleteUser = (id: string) => apiDelete<void>(`/api/admin/users/${id}`);

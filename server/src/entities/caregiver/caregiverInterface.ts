@@ -6,8 +6,8 @@ export interface ICaregiver {
   id: string;
   userId: string;
   user?: IUser;
-  licenseNumber: string;
-  specialization: string;
+  licenseNumber?: string | null;
+  specialization?: string | null;
   clinicName?: string;
   clinicId?: string;
   createdAt: Date;

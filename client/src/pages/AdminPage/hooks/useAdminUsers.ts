@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  getUsers,
-  deleteUser,
-  updateUser,
-  createUser,
+  adminGetUsers,
+  adminDeleteUser,
+  adminUpdateUser,
+  adminCreateUser,
   User,
   CreateUserInput,
   UpdateUserInput,
@@ -31,7 +31,7 @@ export function useAdminUsers(): AdminUsersState {
     let active = true;
     setLoading(true);
     setError(null);
-    Promise.all([getUsers(), getRoles()])
+    Promise.all([adminGetUsers(), getRoles()])
       .then(([u, r]) => {
         if (!active) return;
         setUsers(u);
@@ -50,33 +50,18 @@ export function useAdminUsers(): AdminUsersState {
   useEffect(() => load(), [load]);
 
   const handleCreate = async (input: CreateUserInput) => {
-    try {
-      await createUser(input);
-      load();
-    } catch (err) {
-      setError('יצירת המשתמש נכשלה');
-      throw err;
-    }
+    await adminCreateUser(input);
+    load();
   };
 
   const handleUpdate = async (id: string, input: UpdateUserInput) => {
-    try {
-      await updateUser(id, input);
-      load();
-    } catch (err) {
-      setError('עדכון המשתמש נכשל');
-      throw err;
-    }
+    await adminUpdateUser(id, input);
+    load();
   };
 
   const handleDelete = async (id: string) => {
-    try {
-      await deleteUser(id);
-      load();
-    } catch (err) {
-      setError('מחיקת המשתמש נכשלה');
-      throw err;
-    }
+    await adminDeleteUser(id);
+    load();
   };
 
   return { users, roles, loading, error, refresh: load, handleCreate, handleUpdate, handleDelete };

@@ -39,8 +39,8 @@ export class Patient extends BaseEntity implements IPatient {
   @Column({ type: 'varchar', name: 'blood_type', nullable: true })
   bloodType?: string;
 
-  @Column({ type: 'varchar' })
-  address: string;
+  @Column({ type: 'varchar', nullable: true })
+  address?: string;
 
   @Column({ type: 'text', nullable: true })
   notes?: string;

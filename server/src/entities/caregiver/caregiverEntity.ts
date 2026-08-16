@@ -28,11 +28,11 @@ export class Caregiver extends BaseEntity implements ICaregiver {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ type: 'varchar', name: 'license_number', unique: true })
-  licenseNumber: string;
+  @Column({ type: 'varchar', name: 'license_number', unique: true, nullable: true })
+  licenseNumber?: string | null;
 
-  @Column({ type: 'varchar' })
-  specialization: string;
+  @Column({ type: 'varchar', nullable: true })
+  specialization?: string | null;
 
   @Column({ type: 'varchar', name: 'clinic_name', nullable: true })
   clinicName?: string;

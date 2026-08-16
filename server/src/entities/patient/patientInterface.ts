@@ -11,7 +11,7 @@ export interface IPatient {
   idNumber?: string;
   hmo?: string;
   bloodType?: string;
-  address: string;
+  address?: string;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
