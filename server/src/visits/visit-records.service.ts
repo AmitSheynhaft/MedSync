@@ -269,18 +269,16 @@ export class VisitRecordsService {
    * pdfmake has no built-in RTL/bidi support. This helper reverses word order
    * for lines containing Hebrew characters so text reads right-to-left visually,
    * while preserving LTR runs (numbers, English words) inline.
+   * Spaces are replaced with non-breaking spaces (\u00A0) to prevent pdfmake
+   * from splitting the text into separate TJ operators that lose inter-word gaps.
    */
   private rtl(text: string): string {
     if (!text) return text;
-    // Process each line independently to preserve \n layout
     return text
       .split('\n')
       .map((line) => {
-        // If line has no Hebrew characters, leave it as-is (e.g. "MedSync")
         if (!/[\u0590-\u05FF]/.test(line)) return line;
-        // Reverse word order so the rightmost word is first in the string,
-        // which pdfmake will place starting from the right margin.
-        return line.split(/\s+/).reverse().join(' ');
+        return line.split(/\s+/).reverse().join('\u00A0');
       })
       .join('\n');
   }
