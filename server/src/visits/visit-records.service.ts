@@ -265,6 +265,26 @@ export class VisitRecordsService {
     };
   }
 
+  /**
+   * pdfmake has no built-in RTL/bidi support. This helper reverses word order
+   * for lines containing Hebrew characters so text reads right-to-left visually,
+   * while preserving LTR runs (numbers, English words) inline.
+   */
+  private rtl(text: string): string {
+    if (!text) return text;
+    // Process each line independently to preserve \n layout
+    return text
+      .split('\n')
+      .map((line) => {
+        // If line has no Hebrew characters, leave it as-is (e.g. "MedSync")
+        if (!/[\u0590-\u05FF]/.test(line)) return line;
+        // Reverse word order so the rightmost word is first in the string,
+        // which pdfmake will place starting from the right margin.
+        return line.split(/\s+/).reverse().join(' ');
+      })
+      .join('\n');
+  }
+
   async generateVisitSummaryPdf(visit: Visit): Promise<Buffer> {
     const data = this.buildSummaryPdfData(visit);
     const fontPath = this.resolvePdfFontPath();
@@ -303,7 +323,7 @@ export class VisitRecordsService {
         },
         content: [
           { text: 'MedSync', style: 'brand' },
-          { text: 'מערכת תיעוד וסיכומי ביקור רפואיים', style: 'subtitle' },
+          { text: this.rtl('מערכת תיעוד וסיכומי ביקור רפואיים'), style: 'subtitle' },
           {
             canvas: [
               {
@@ -318,7 +338,7 @@ export class VisitRecordsService {
             ],
             margin: [0, 4, 0, 10],
           },
-          { text: 'סיכום ביקור רפואי', style: 'docTitle' },
+          { text: this.rtl('סיכום ביקור רפואי'), style: 'docTitle' },
           {
             table: {
               widths: ['*', '*'],
@@ -327,9 +347,9 @@ export class VisitRecordsService {
                   {
                     fillColor: '#f8fbff',
                     stack: [
-                      { text: 'פרטי מטופל', style: 'metaTitle' },
+                      { text: this.rtl('פרטי מטופל'), style: 'metaTitle' },
                       {
-                        text: [`שם מלא: ${data.patientName}`, `תעודת זהות: ${data.patientIdNumber}`].join('\n'),
+                        text: this.rtl([`שם מלא: ${data.patientName}`, `תעודת זהות: ${data.patientIdNumber}`].join('\n')),
                         style: 'metaText',
                       },
                     ],
@@ -337,13 +357,13 @@ export class VisitRecordsService {
                   {
                     fillColor: '#f8fbff',
                     stack: [
-                      { text: 'פרטי ביקור ורופא', style: 'metaTitle' },
+                      { text: this.rtl('פרטי ביקור ורופא'), style: 'metaTitle' },
                       {
-                        text: [
+                        text: this.rtl([
                           `שם רופא: ${data.doctorName}`,
                           `התמחות: ${data.doctorSpecialty}`,
                           `תאריך ביקור: ${data.visitDate}`,
-                        ].join('\n'),
+                        ].join('\n')),
                         style: 'metaText',
                       },
                     ],
@@ -361,15 +381,15 @@ export class VisitRecordsService {
             },
             margin: [0, 0, 0, 14],
           },
-          { text: 'תלונת המטופל', style: 'sectionTitle' },
-          { text: data.complaints || 'לא תועד מידע בסעיף זה.', style: 'sectionText' },
-          { text: 'ממצאים', style: 'sectionTitle' },
-          { text: data.findings || 'לא תועד מידע בסעיף זה.', style: 'sectionText' },
-          { text: 'אבחנה', style: 'sectionTitle' },
-          { text: data.diagnosis || 'לא תועד מידע בסעיף זה.', style: 'sectionText' },
-          { text: 'המלצות וטיפול', style: 'sectionTitle' },
-          { text: data.recommendations || 'לא תועד מידע בסעיף זה.', style: 'sectionText' },
-          { text: 'מסמך זה הופק אוטומטית על ידי MedSync • לשימוש רפואי פנימי', style: 'footer' },
+          { text: this.rtl('תלונת המטופל'), style: 'sectionTitle' },
+          { text: this.rtl(data.complaints || 'לא תועד מידע בסעיף זה.'), style: 'sectionText' },
+          { text: this.rtl('ממצאים'), style: 'sectionTitle' },
+          { text: this.rtl(data.findings || 'לא תועד מידע בסעיף זה.'), style: 'sectionText' },
+          { text: this.rtl('אבחנה'), style: 'sectionTitle' },
+          { text: this.rtl(data.diagnosis || 'לא תועד מידע בסעיף זה.'), style: 'sectionText' },
+          { text: this.rtl('המלצות וטיפול'), style: 'sectionTitle' },
+          { text: this.rtl(data.recommendations || 'לא תועד מידע בסעיף זה.'), style: 'sectionText' },
+          { text: this.rtl('מסמך זה הופק אוטומטית על ידי MedSync • לשימוש רפואי פנימי'), style: 'footer' },
         ],
         styles: {
           brand: { fontSize: 26, color: '#1b4965', bold: true, margin: [0, 0, 0, 2] },
