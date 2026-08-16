@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Box, Typography, Avatar, Paper, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { Box, Typography, Avatar, Paper, IconButton, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { PatientSummary } from '../../../api/patients';
 import ClickableCard from '../../../components/ClickableCard/ClickableCard';
@@ -14,8 +15,12 @@ interface PatientListItemProps {
 
 export const PatientListItem: React.FC<PatientListItemProps> = ({ patient, onDelete }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const openMenu = (e: React.MouseEvent<HTMLElement>) => { e.preventDefault(); e.stopPropagation(); setMenuAnchor(e.currentTarget); };
+  const closeMenu = () => setMenuAnchor(null);
 
   const handleConfirmDelete = async () => {
     if (busy) return;
@@ -32,7 +37,7 @@ export const PatientListItem: React.FC<PatientListItemProps> = ({ patient, onDel
   };
 
   return (
-    <Box sx={{ position: 'relative' }}>
+    <Box>
       <ClickableCard to={`/patients/${patient.id}`}>
         <Paper
           elevation={0}
@@ -42,7 +47,6 @@ export const PatientListItem: React.FC<PatientListItemProps> = ({ patient, onDel
             gap: 1.75,
             px: { xs: 1.75, sm: 2 },
             py: { xs: 1.4, sm: 1.6 },
-            pl: { xs: 5, sm: 5.5 },
             border: '1px solid #dfe3ea',
             borderRadius: 2,
             bgcolor: '#fff',
@@ -65,20 +69,33 @@ export const PatientListItem: React.FC<PatientListItemProps> = ({ patient, onDel
               {patient.gender ? ` • ${getGenderLabel(patient.gender)}` : ''}
             </Typography>
           </Box>
+          <IconButton
+            size="small"
+            onClick={openMenu}
+            sx={{ color: '#868e96', flexShrink: 0 }}
+          >
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
           <ChevronLeftIcon sx={{ color: '#c7cfdb', flexShrink: 0, fontSize: 20 }} />
         </Paper>
       </ClickableCard>
 
-      <Tooltip title="מחיקת מטופל">
-        <IconButton
-          size="small"
-          color="error"
-          onClick={() => setConfirmOpen(true)}
-          sx={{ position: 'absolute', top: '50%', left: 8, transform: 'translateY(-50%)', bgcolor: '#fff', '&:hover': { bgcolor: '#fff0f0' } }}
+      <Menu
+        anchorEl={menuAnchor}
+        open={!!menuAnchor}
+        onClose={closeMenu}
+        onClick={e => e.stopPropagation()}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      >
+        <MenuItem
+          onClick={() => { closeMenu(); setConfirmOpen(true); }}
+          sx={{ color: 'error.main', gap: 1 }}
         >
-          <DeleteIcon sx={{ fontSize: 18 }} />
-        </IconButton>
-      </Tooltip>
+          <DeleteIcon fontSize="small" />
+          מחיקת מטופל
+        </MenuItem>
+      </Menu>
 
       <Dialog open={confirmOpen} onClose={busy ? undefined : () => setConfirmOpen(false)} maxWidth="xs" fullWidth dir="rtl">
         <DialogTitle>מחיקת מטופל</DialogTitle>

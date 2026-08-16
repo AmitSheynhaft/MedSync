@@ -1,5 +1,5 @@
 export type ToastState = { severity: 'success' | 'error' | 'warning'; message: string } | null;
-export type DiagnosisItem = { code: string; description: string; diagnosisId?: string };
+export type DiagnosisItem = { code: string; description: string; diagnosisId?: string; note?: string };
 export type MedicineItem = { name: string; dosage: string; frequency: string; duration: string; instructions?: string; medicineId?: string };
 export type PatientInfo = { name: string; phone?: string; idNumber?: string; dob?: string; hmo?: string; bloodType?: string };
 

@@ -35,6 +35,7 @@ export function useVisitForm() {
   const [diagnosis, setDiagnosis] = useState('');
   const [plan, setPlan] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showEmptyWarning, setShowEmptyWarning] = useState(false);
   const isReadOnly = useVisitReadOnlyMode(!!visitId);
   const [visitDate, setVisitDate] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
@@ -223,9 +224,11 @@ export function useVisitForm() {
       diagnosesList.length > 0 ||
       medicinesList.length > 0;
     if (!hasContent) {
-      setToast({ severity: 'error', message: 'לא ניתן לשמור ביקור ריק.' });
+      setShowEmptyWarning(true);
+      setToast({ severity: 'error', message: 'יש למלא את השדות על מנת לשמור.' });
       return;
     }
+    setShowEmptyWarning(false);
 
     isSavingRef.current = true;
     setSaving(true);
@@ -296,6 +299,46 @@ export function useVisitForm() {
     }
     if (diagText && !isUndocumented(diagText)) setDiagnosis(prev => prev || diagText);
     if (doctorsRecommendations && !isUndocumented(doctorsRecommendations)) setPlan(prev => prev || doctorsRecommendations);
+    // Populate vitals extracted verbally from the transcript
+    if (summary.vitals) {
+      const v = summary.vitals;
+      if (v.bloodPressure?.trim()) setBloodPressure(prev => prev || v.bloodPressure!);
+      if (v.pulse?.trim()) setPulse(prev => prev || v.pulse!);
+      if (v.bodyTemp?.trim()) setBodyTemp(prev => prev || v.bodyTemp!);
+      if (v.weight?.trim()) setWeight(prev => prev || v.weight!);
+      if (v.height?.trim()) setHeight(prev => prev || v.height!);
+      if (v.oxygenSat?.trim()) setOxygenSat(prev => prev || v.oxygenSat!);
+    }
+    // Populate medicines extracted from the transcript
+    if (summary.medicines && summary.medicines.length > 0) {
+      setMedicinesList(prev => {
+        const existingKeys = new Set(prev.map(m => `${m.name}|${m.dosage}|${m.frequency}|${m.duration}`));
+        const newMedicines = summary.medicines!.filter(med => 
+          med.name?.trim() && med.dosage?.trim() && med.frequency?.trim() && med.duration?.trim() &&
+          !existingKeys.has(`${med.name}|${med.dosage}|${med.frequency}|${med.duration}`)
+        );
+        return [...prev, ...newMedicines.map(m => ({
+          name: m.name,
+          dosage: m.dosage,
+          frequency: m.frequency,
+          duration: m.duration,
+        }))];
+      });
+    }
+    // Populate diagnoses extracted from the transcript
+    if (summary.diagnoses && summary.diagnoses.length > 0) {
+      setDiagnosesList(prev => {
+        const existingDescs = new Set(prev.map(d => d.description));
+        const newDiagnoses = summary.diagnoses!.filter(diag => 
+          diag.description?.trim() && !existingDescs.has(diag.description)
+        );
+        return [...prev, ...newDiagnoses.map(d => ({
+          code: '',
+          description: d.description,
+          note: d.note,
+        }))];
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summary]);
 
@@ -314,7 +357,9 @@ export function useVisitForm() {
     isReadOnly, isLoadingVisit, isRecording, isProcessing, isStarting,
     visitDate, timer, saving, toast, setToast, patientInfo,
     // text fields
-    subjective, setSubjective, diagnosis, setDiagnosis, plan, setPlan,
+    subjective, setSubjective: (v: string) => { setShowEmptyWarning(false); setSubjective(v); },
+    diagnosis, setDiagnosis, plan, setPlan: (v: string) => { setShowEmptyWarning(false); setPlan(v); },
+    showEmptyWarning,
     // vitals
     bloodPressure, setBloodPressure, pulse, setPulse, bodyTemp, setBodyTemp,
     weight, setWeight, height, setHeight, oxygenSat, setOxygenSat,

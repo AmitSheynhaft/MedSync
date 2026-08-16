@@ -28,7 +28,7 @@ export class SummaryService implements OnModuleInit {
       throw new ServiceUnavailableException('שירות הסיכום אינו זמין — GEMINI_API_KEY חסר');
     }
     if (!transcript || transcript.length === 0) {
-      return { patientComplaints: '', diagnosis: '', doctorsRecommendations: '' };
+      return { patientComplaints: '', diagnosis: '', doctorsRecommendations: '', vitals: {} };
     }
 
     try {

@@ -63,9 +63,6 @@ export const DocumentsPage: React.FC = () => {
           documents={page.documents}
           filteredDocuments={page.filteredDocuments}
           loadingMore={page.loadingMore}
-          canDelete={page.isDoctorView}
-          deletingDocumentId={page.deletingDocumentId}
-          onDeleteDocument={page.handleDeleteDocument}
           onDocumentClick={document => page.setSummaryModal({ id: document.id, name: document.fileName })}
           onEditDocument={document => page.setEditingDocument(document)}
           onDeleteDocument={document => page.setDeletingDocument(document)}

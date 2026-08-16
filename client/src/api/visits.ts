@@ -158,6 +158,24 @@ export interface VisitSummaryObject {
   patientComplaints: string;
   diagnosis: string;
   doctorsRecommendations: string;
+  vitals?: {
+    bloodPressure?: string;
+    pulse?: string;
+    bodyTemp?: string;
+    weight?: string;
+    height?: string;
+    oxygenSat?: string;
+  };
+  medicines?: {
+    name: string;
+    dosage: string;
+    frequency: string;
+    duration: string;
+  }[];
+  diagnoses?: {
+    description: string;
+    note?: string;
+  }[];
 }
 
 export function transcribeAudio(audioBlob: Blob): Promise<{ transcript: string; summary: VisitSummaryObject }> {

@@ -47,6 +47,7 @@ export const VisitFormCard: React.FC<IVisitFormCardProps> = ({ form }) => (
       value={form.subjective}
       onChange={form.setSubjective}
       disabled={form.isProcessing || form.isReadOnly}
+      highlight={form.showEmptyWarning && !form.subjective}
     />
 
     <TextSection
@@ -58,6 +59,7 @@ export const VisitFormCard: React.FC<IVisitFormCardProps> = ({ form }) => (
       value={form.plan}
       onChange={form.setPlan}
       disabled={form.isReadOnly}
+      highlight={form.showEmptyWarning && !form.plan}
     />
 
     <VitalsSection

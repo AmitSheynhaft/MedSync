@@ -507,7 +507,7 @@ export class VisitRecordsService {
       input.chiefComplaint?.trim() ||
       input.referralNotes?.trim();
     if (!hasContent) {
-      throw new BadRequestException('לא ניתן לשמור ביקור ריק — יש להזין לפחות שדה אחד');
+      throw new BadRequestException('לא ניתן לשמור ביקור ריק — יש למלא לפחות אחד מהשדות: תלונות, אבחנה, המלצות, מדדים או הפניות');
     }
     if (input.actingUserId) {
       const patient = await this.patientsRepo.findOne({
