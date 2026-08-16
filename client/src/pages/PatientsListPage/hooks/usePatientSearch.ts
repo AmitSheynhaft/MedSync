@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getPatientsPage, PatientSummary } from '../../../api/patients';
+import { getPatientsPage, deletePatient, PatientSummary } from '../../../api/patients';
 import { AsyncStatus } from '../../../hooks/useAsyncData';
 
 const PAGE_SIZE = 20;
@@ -80,6 +80,11 @@ export function usePatientSearch() {
     }
   }, [query]);
 
+  const handleDelete = useCallback(async (id: string) => {
+    await deletePatient(id);
+    setPatients((prev) => prev.filter((patient) => patient.id !== id));
+  }, []);
+
   return {
     query,
     setQuery,
@@ -88,5 +93,6 @@ export function usePatientSearch() {
     hasMore,
     loadingMore,
     loadMore,
+    handleDelete,
   };
 }
