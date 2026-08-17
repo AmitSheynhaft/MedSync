@@ -50,7 +50,7 @@ export const SecretarySlotsPage: React.FC = () => {
             <Tab label="תורים שעברו וביטולים" />
           </Tabs>
 
-          <Box sx={{ flex: 1, overflow: 'auto' }}>
+          <Box sx={{ flex: 1, overflow: 'auto', pl: 1, ml: -1 }}>
             {current.status === 'loading' ? (
               <Typography sx={{ textAlign: 'center', color: '#868e96', py: 4 }}>טוען תורים...</Typography>
             ) : current.status === 'error' ? (
