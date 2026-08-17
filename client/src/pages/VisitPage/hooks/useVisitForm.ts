@@ -81,6 +81,7 @@ export function useVisitForm() {
   const [medicineDosage, setMedicineDosage] = useState('');
   const [medicineFrequency, setMedicineFrequency] = useState('');
   const [medicineDuration, setMedicineDuration] = useState('');
+  const [medicineError, setMedicineError] = useState('');
 
   const isRecording = status === 'recording';
   const isProcessing = status === 'processing';
@@ -167,7 +168,11 @@ export function useVisitForm() {
 
   const handleAddMedicine = () => {
     const name = medicineSearch.trim();
-    if (!name || !medicineDosage.trim() || !medicineFrequency.trim() || !medicineDuration.trim()) return;
+    if (!name || !medicineDosage.trim() || !medicineFrequency.trim() || !medicineDuration.trim()) {
+      setMedicineError('יש למלא את כל השדות: שם תרופה, מינון, תדירות ומשך טיפול');
+      return;
+    }
+    setMedicineError('');
     setMedicinesList(prev => [...prev, {
       name, dosage: medicineDosage.trim(), frequency: medicineFrequency.trim(), duration: medicineDuration.trim(),
     }]);
@@ -371,7 +376,7 @@ export function useVisitForm() {
     // medicines
     medicinesList, medicineSearch, setMedicineSearch, medicineOptions,
     medicineDosage, setMedicineDosage, medicineFrequency, setMedicineFrequency,
-    medicineDuration, setMedicineDuration, handleAddMedicine, removeMedicine,
+    medicineDuration, setMedicineDuration, handleAddMedicine, removeMedicine, medicineError,
     // actions
     handleRecord, handleSave, cancel,
   };

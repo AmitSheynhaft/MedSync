@@ -102,6 +102,7 @@ export const VisitFormCard: React.FC<IVisitFormCardProps> = ({ form }) => (
       setMedicineDuration={form.setMedicineDuration}
       handleAddMedicine={form.handleAddMedicine}
       removeMedicine={form.removeMedicine}
+      medicineError={form.medicineError}
     />
   </FormCard>
 );
