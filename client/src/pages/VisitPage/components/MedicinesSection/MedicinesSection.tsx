@@ -28,12 +28,13 @@ interface IMedicinesSectionProps {
   setMedicineDuration: (value: string) => void;
   handleAddMedicine: () => void;
   removeMedicine: (index: number) => void;
+  medicineError?: string;
 }
 
 export const MedicinesSection: React.FC<IMedicinesSectionProps> = ({
   isReadOnly, medicinesList, medicineOptions, medicineSearch, setMedicineSearch,
   medicineDosage, setMedicineDosage, medicineFrequency, setMedicineFrequency,
-  medicineDuration, setMedicineDuration, handleAddMedicine, removeMedicine,
+  medicineDuration, setMedicineDuration, handleAddMedicine, removeMedicine, medicineError,
 }) => (
   <>
     <SectionHeader icon={<MedicationIcon sx={medicinesSectionIconSx} />} label="תרופות" color="#e8590c" bg="#fff3e6" />
@@ -85,6 +86,11 @@ export const MedicinesSection: React.FC<IMedicinesSectionProps> = ({
         <Button variant="outlined" size="small" onClick={handleAddMedicine} sx={medicinesSectionAddButtonSx}>
           הוסף תרופה
         </Button>
+        {medicineError && (
+          <Typography variant="caption" color="error" sx={{ mt: 0.5, textAlign: 'right' }}>
+            {medicineError}
+          </Typography>
+        )}
       </Stack>
     )}
   </>

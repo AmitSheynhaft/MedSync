@@ -31,7 +31,7 @@ export const SecretarySlotsPage: React.FC = () => {
   const emptyText = tab === 0 ? 'אין תורים קרובים במרפאה.' : 'אין תורים קודמים או מבוטלים.';
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', overflow: 'hidden' }}>
       <PageHeader title="תורי המרפאה" subtitle="ניהול תורים במרפאה שלך" showDoctorSubtitle={false} />
 
       <Box sx={{ flex: 1, overflow: 'auto', bgcolor: '#f6f8fb', p: { xs: 2, sm: 3 } }}>
