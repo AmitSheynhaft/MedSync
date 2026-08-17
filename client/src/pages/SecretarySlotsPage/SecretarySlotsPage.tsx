@@ -34,9 +34,9 @@ export const SecretarySlotsPage: React.FC = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', overflow: 'hidden' }}>
       <PageHeader title="תורי המרפאה" subtitle="ניהול תורים במרפאה שלך" showDoctorSubtitle={false} />
 
-      <Box sx={{ flex: 1, overflow: 'auto', bgcolor: '#f6f8fb', p: { xs: 2, sm: 3 } }}>
-        <Box sx={{ maxWidth: 760, mx: 'auto' }}>
-          {state.error && <Alert severity="error" sx={{ mb: 2 }}>{state.error}</Alert>}
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: '#f6f8fb', p: { xs: 2, sm: 3 } }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', maxWidth: 760, mx: 'auto', width: '100%' }}>
+          {state.error && <Alert severity="error" sx={{ mb: 2, flexShrink: 0 }}>{state.error}</Alert>}
 
           <Tabs
             value={tab}
@@ -44,30 +44,32 @@ export const SecretarySlotsPage: React.FC = () => {
             variant="scrollable"
             scrollButtons="auto"
             allowScrollButtonsMobile
-            sx={{ mb: 2, '& .MuiTab-root': { fontWeight: 600, minWidth: 'auto' } }}
+            sx={{ mb: 2, flexShrink: 0, '& .MuiTab-root': { fontWeight: 600, minWidth: 'auto' } }}
           >
             <Tab label="תורים קרובים" />
             <Tab label="תורים שעברו וביטולים" />
           </Tabs>
 
-          {current.status === 'loading' ? (
-            <Typography sx={{ textAlign: 'center', color: '#868e96', py: 4 }}>טוען תורים...</Typography>
-          ) : current.status === 'error' ? (
-            <Typography sx={{ textAlign: 'center', color: 'error.main', py: 4 }}>טעינת התורים נכשלה.</Typography>
-          ) : rows.length === 0 ? (
-            <Typography sx={{ textAlign: 'center', color: '#868e96', py: 4 }}>{emptyText}</Typography>
-          ) : (
-            <Stack spacing={1.25}>
-              {rows.map(slot => (
-                <ClinicSlotCard
-                  key={slot.id}
-                  slot={slot}
-                  onCancel={tab === 0 ? state.requestCancel : undefined}
-                  disabled={state.cancelling}
-                />
-              ))}
-            </Stack>
-          )}
+          <Box sx={{ flex: 1, overflow: 'auto' }}>
+            {current.status === 'loading' ? (
+              <Typography sx={{ textAlign: 'center', color: '#868e96', py: 4 }}>טוען תורים...</Typography>
+            ) : current.status === 'error' ? (
+              <Typography sx={{ textAlign: 'center', color: 'error.main', py: 4 }}>טעינת התורים נכשלה.</Typography>
+            ) : rows.length === 0 ? (
+              <Typography sx={{ textAlign: 'center', color: '#868e96', py: 4 }}>{emptyText}</Typography>
+            ) : (
+              <Stack spacing={1.25}>
+                {rows.map(slot => (
+                  <ClinicSlotCard
+                    key={slot.id}
+                    slot={slot}
+                    onCancel={tab === 0 ? state.requestCancel : undefined}
+                    disabled={state.cancelling}
+                  />
+                ))}
+              </Stack>
+            )}
+          </Box>
         </Box>
       </Box>
 
