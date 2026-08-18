@@ -78,28 +78,43 @@ export class UsersService {
     page?: number,
     limit?: number,
   ): Promise<SafeUser[] | PaginatedResult<SafeUser>> {
-    const where = roleName?.trim() ? { role: { name: roleName.trim() } } : undefined;
+    const where = roleName?.trim()
+      ? { role: { name: roleName.trim() } }
+      : undefined;
     const order = { createdAt: 'DESC' as const, id: 'DESC' as const };
 
     if (page === undefined && limit === undefined) {
-      const rows = await this.userRepository.find({ where, relations: ['role'], order });
+      const rows = await this.userRepository.find({
+        where,
+        relations: ['role'],
+        order,
+      });
       return rows.map((u) => this.mapUserEntityToSafeUser(u));
     }
 
     const pagination = resolvePagination(page, limit);
     const [rows, total] = await this.userRepository.findAndCount({
-      where, relations: ['role'], order,
-      skip: pagination.skip, take: pagination.take,
+      where,
+      relations: ['role'],
+      order,
+      skip: pagination.skip,
+      take: pagination.take,
     });
-    return toPaginatedResult(rows.map((u) => this.mapUserEntityToSafeUser(u)), total, pagination);
+    return toPaginatedResult(
+      rows.map((u) => this.mapUserEntityToSafeUser(u)),
+      total,
+      pagination,
+    );
   }
 
-  async getAdminUserById(userId: string): Promise<AdminUserListItem & {
-    clinicId: string | null;
-    licenseNumber: string | null;
-    specialization: string | null;
-    idNumber: string | null;
-  }> {
+  async getAdminUserById(userId: string): Promise<
+    AdminUserListItem & {
+      clinicId: string | null;
+      licenseNumber: string | null;
+      specialization: string | null;
+      idNumber: string | null;
+    }
+  > {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       relations: ['role', 'caregiver', 'secretary', 'patient'],
@@ -122,19 +137,35 @@ export class UsersService {
     const qb = this.userRepository
       .createQueryBuilder('user')
       .leftJoin('user.role', 'role')
-      .select(['user.id', 'user.fullName', 'user.email', 'user.phone', 'user.birthDate', 'user.gender', 'role.name'])
+      .select([
+        'user.id',
+        'user.fullName',
+        'user.email',
+        'user.phone',
+        'user.birthDate',
+        'user.gender',
+        'role.name',
+      ])
       .orderBy('user.createdAt', 'DESC')
       .addOrderBy('user.id', 'DESC');
 
-    if (roleName?.trim()) qb.where('role.name = :roleName', { roleName: roleName.trim() });
+    if (roleName?.trim())
+      qb.where('role.name = :roleName', { roleName: roleName.trim() });
 
     if (page === undefined && limit === undefined) {
       return (await qb.getMany()).map((u) => this.toAdminListItem(u));
     }
 
     const pagination = resolvePagination(page, limit);
-    const [rows, total] = await qb.skip(pagination.skip).take(pagination.take).getManyAndCount();
-    return toPaginatedResult(rows.map((u) => this.toAdminListItem(u)), total, pagination);
+    const [rows, total] = await qb
+      .skip(pagination.skip)
+      .take(pagination.take)
+      .getManyAndCount();
+    return toPaginatedResult(
+      rows.map((u) => this.toAdminListItem(u)),
+      total,
+      pagination,
+    );
   }
 
   async getUserById(userId: string): Promise<SafeUser> {
@@ -165,7 +196,9 @@ export class UsersService {
 
   async createUser(input: CreateUserInput): Promise<User> {
     if (!input?.email || !input?.password || !input?.fullName) {
-      throw new BadRequestException('fullName, email and password are required');
+      throw new BadRequestException(
+        'fullName, email and password are required',
+      );
     }
 
     const normalizedEmail = input.email.toLowerCase();
@@ -188,7 +221,9 @@ export class UsersService {
           email: normalizedEmail,
           password,
           phone: input.phone,
-          birthDate: input.birthDate ? new Date(input.birthDate as string) : null,
+          birthDate: input.birthDate
+            ? new Date(input.birthDate as string)
+            : null,
           gender: input.gender,
         }),
       );
@@ -199,7 +234,10 @@ export class UsersService {
 
   // ── Update (self) ────────────────────────────────────────────────
 
-  async updateUserById(userId: string, updates: UpdateUserInput): Promise<SafeUser> {
+  async updateUserById(
+    userId: string,
+    updates: UpdateUserInput,
+  ): Promise<SafeUser> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException(`User ${userId} not found`);
 
@@ -218,7 +256,13 @@ export class UsersService {
   ): Promise<SafeUser> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['role', 'caregiver', 'secretary', 'patient', 'patient.patientClinics'],
+      relations: [
+        'role',
+        'caregiver',
+        'secretary',
+        'patient',
+        'patient.patientClinics',
+      ],
     });
     if (!user) throw new NotFoundException(`User ${userId} not found`);
 
@@ -240,7 +284,12 @@ export class UsersService {
   async deleteUserById(userId: string, actingUser?: IUser): Promise<void> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ['caregiver', 'secretary', 'patient', 'patient.patientClinics'],
+      relations: [
+        'caregiver',
+        'secretary',
+        'patient',
+        'patient.patientClinics',
+      ],
     });
     if (!user) throw new NotFoundException(`User ${userId} not found`);
 
@@ -255,11 +304,14 @@ export class UsersService {
           .createQueryBuilder()
           .delete()
           .from('visits')
-          .where('"caregiver_id" = :caregiverId', { caregiverId: user.caregiver.id })
+          .where('"caregiver_id" = :caregiverId', {
+            caregiverId: user.caregiver.id,
+          })
           .execute();
       }
       const result = await manager.delete(User, { id: userId });
-      if (!result.affected) throw new NotFoundException(`User ${userId} not found`);
+      if (!result.affected)
+        throw new NotFoundException(`User ${userId} not found`);
     });
   }
 
@@ -267,10 +319,14 @@ export class UsersService {
 
   private async assertEmailAvailable(email: string): Promise<void> {
     const existing = await this.userRepository.findOne({ where: { email } });
-    if (existing) throw new ConflictException(`Email '${email}' already in use`);
+    if (existing)
+      throw new ConflictException(`Email '${email}' already in use`);
   }
 
-  private validateRoleSpecificCreateFields(roleName: string, input: CreateUserInput): void {
+  private validateRoleSpecificCreateFields(
+    roleName: string,
+    input: CreateUserInput,
+  ): void {
     if (roleName === ROLE_SECRETARY && !input.clinicId?.trim())
       throw new BadRequestException('clinicId is required for secretary');
     if (roleName === ROLE_DOCTOR) {
@@ -283,7 +339,8 @@ export class UsersService {
 
   private assertAdminCanManageUser(user: User, actingUser?: IUser): void {
     if (actingUser?.role?.name !== ROLE_ADMIN) return;
-    const adminClinicId = actingUser.caregiver?.clinicId ?? actingUser.secretary?.clinicId;
+    const adminClinicId =
+      actingUser.caregiver?.clinicId ?? actingUser.secretary?.clinicId;
     if (adminClinicId && !this.isUserInClinic(user, adminClinicId))
       throw new ForbiddenException('Cannot manage users outside your clinic');
   }
@@ -291,7 +348,12 @@ export class UsersService {
   private isUserInClinic(user: User, clinicId: string): boolean {
     if (user.caregiver?.clinicId === clinicId) return true;
     if (user.secretary?.clinicId === clinicId) return true;
-    if ((user.patient?.patientClinics ?? []).some((pc) => pc.clinicId === clinicId)) return true;
+    if (
+      (user.patient?.patientClinics ?? []).some(
+        (pc) => pc.clinicId === clinicId,
+      )
+    )
+      return true;
     // Detached users (no clinic on any profile) can be reassigned by any admin.
     return (
       !user.caregiver?.clinicId &&
@@ -302,7 +364,10 @@ export class UsersService {
 
   // ── Private: field application ───────────────────────────────────
 
-  private async applyBaseUserFields(user: User, updates: UpdateUserInput): Promise<void> {
+  private async applyBaseUserFields(
+    user: User,
+    updates: UpdateUserInput,
+  ): Promise<void> {
     if (updates.email && updates.email.toLowerCase() !== user.email) {
       const conflict = await this.userRepository.findOne({
         where: { email: updates.email.toLowerCase() },
@@ -310,19 +375,30 @@ export class UsersService {
       if (conflict) throw new ConflictException('Email already in use');
       user.email = updates.email.toLowerCase();
     }
-    if (updates.fullName  !== undefined) user.fullName  = updates.fullName;
-    if (updates.phone     !== undefined) user.phone     = updates.phone;
-    if (updates.gender    !== undefined) user.gender    = updates.gender;
+    if (updates.fullName !== undefined) user.fullName = updates.fullName;
+    if (updates.phone !== undefined) user.phone = updates.phone;
+    if (updates.gender !== undefined) user.gender = updates.gender;
     if (updates.birthDate !== undefined)
-      user.birthDate = updates.birthDate ? new Date(updates.birthDate as string) : null;
+      user.birthDate = updates.birthDate
+        ? new Date(updates.birthDate as string)
+        : null;
     if (updates.password) user.password = hashPassword(updates.password);
   }
 
-  private async applyRoleChange(user: User, updates: UpdateUserInput): Promise<void> {
+  private async applyRoleChange(
+    user: User,
+    updates: UpdateUserInput,
+  ): Promise<void> {
     if (updates.roleName !== undefined) {
-      if (!updates.roleName.trim()) throw new BadRequestException('roleName must not be empty');
-      user.roleId = (await this.rolesService.getRoleByName(updates.roleName.trim())).id;
+      if (!updates.roleName.trim())
+        throw new BadRequestException('roleName must not be empty');
+      const role = await this.rolesService.getRoleByName(
+        updates.roleName.trim(),
+      );
+      user.role = role;
+      user.roleId = role.id;
     } else if (updates.roleId !== undefined) {
+      user.role = undefined as unknown as User['role'];
       user.roleId = updates.roleId;
     }
   }
@@ -336,9 +412,9 @@ export class UsersService {
     input: CreateUserInput,
   ): Promise<void> {
     if (roleName === ROLE_PATIENT) {
-      const patient = await manager.getRepository(Patient).save(
-        manager.getRepository(Patient).create({ userId }),
-      );
+      const patient = await manager
+        .getRepository(Patient)
+        .save(manager.getRepository(Patient).create({ userId }));
       if (input.clinicId?.trim()) {
         await manager.getRepository(PatientClinic).save(
           manager.getRepository(PatientClinic).create({
@@ -367,20 +443,41 @@ export class UsersService {
     }
   }
 
-  private async updateCaregiverProfile(user: User, updates: UpdateUserInput): Promise<void> {
+  private async updateCaregiverProfile(
+    user: User,
+    updates: UpdateUserInput,
+  ): Promise<void> {
     if (!user.caregiver) return;
     let dirty = false;
-    if (updates.licenseNumber !== undefined) { user.caregiver.licenseNumber = updates.licenseNumber || undefined; dirty = true; }
-    if (updates.specialization !== undefined) { user.caregiver.specialization = updates.specialization || undefined; dirty = true; }
-    if (updates.clinicId !== undefined) { user.caregiver.clinicId = updates.clinicId || undefined; dirty = true; }
+    if (updates.licenseNumber !== undefined) {
+      user.caregiver.licenseNumber = updates.licenseNumber || undefined;
+      dirty = true;
+    }
+    if (updates.specialization !== undefined) {
+      user.caregiver.specialization = updates.specialization || undefined;
+      dirty = true;
+    }
+    if (updates.clinicId !== undefined) {
+      user.caregiver.clinicId = updates.clinicId || undefined;
+      dirty = true;
+    }
     if (dirty) await this.caregiverRepository.save(user.caregiver);
   }
 
-  private async updateSecretaryProfile(user: User, updates: UpdateUserInput): Promise<void> {
+  private async updateSecretaryProfile(
+    user: User,
+    updates: UpdateUserInput,
+  ): Promise<void> {
     if (user.secretary) {
       let dirty = false;
-      if (updates.idNumber?.trim()) { user.secretary.idNumber = updates.idNumber.trim(); dirty = true; }
-      if (updates.clinicId?.trim()) { user.secretary.clinicId = updates.clinicId.trim(); dirty = true; }
+      if (updates.idNumber?.trim()) {
+        user.secretary.idNumber = updates.idNumber.trim();
+        dirty = true;
+      }
+      if (updates.clinicId?.trim()) {
+        user.secretary.clinicId = updates.clinicId.trim();
+        dirty = true;
+      }
       if (dirty) await this.secretaryRepository.save(user.secretary);
       return;
     }
@@ -396,7 +493,10 @@ export class UsersService {
     }
   }
 
-  private async upsertPatientClinicMembership(user: User, updates: UpdateUserInput): Promise<void> {
+  private async upsertPatientClinicMembership(
+    user: User,
+    updates: UpdateUserInput,
+  ): Promise<void> {
     if (!user.patient || !updates.clinicId?.trim()) return;
     const clinicId = updates.clinicId.trim();
     const exists = await this.patientClinicRepository.findOne({
@@ -404,13 +504,20 @@ export class UsersService {
     });
     if (!exists) {
       await this.patientClinicRepository.save(
-        this.patientClinicRepository.create({ patientId: user.patient.id, clinicId }),
+        this.patientClinicRepository.create({
+          patientId: user.patient.id,
+          clinicId,
+        }),
       );
     }
   }
 
-  private async detachUserFromClinic(user: User, actingUser: IUser): Promise<void> {
-    const adminClinicId = actingUser.caregiver?.clinicId ?? actingUser.secretary?.clinicId;
+  private async detachUserFromClinic(
+    user: User,
+    actingUser: IUser,
+  ): Promise<void> {
+    const adminClinicId =
+      actingUser.caregiver?.clinicId ?? actingUser.secretary?.clinicId;
     this.assertAdminCanManageUser(user, actingUser);
 
     if (user.caregiver?.id) {
@@ -433,7 +540,8 @@ export class UsersService {
   // ── Private: role resolution ─────────────────────────────────────
 
   private async resolveRoleId(input: CreateUserInput): Promise<string> {
-    if (input.roleId) return (await this.rolesService.getRoleById(input.roleId)).id;
+    if (input.roleId)
+      return (await this.rolesService.getRoleById(input.roleId)).id;
     const roleName = input.roleName?.trim() || 'patient';
     return (await this.rolesService.getRoleByName(roleName)).id;
   }
