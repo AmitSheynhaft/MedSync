@@ -77,7 +77,7 @@ export const PatientListItem: React.FC<PatientListItemProps> = ({ patient, onDel
         <IconButton
           size="small"
           onClick={openMenu}
-          sx={{ position: 'absolute', top: '50%', left: 8, transform: 'translateY(-50%)', color: '#868e96', zIndex: 1 }}
+          sx={{ position: 'absolute', top: '50%', right: 8, transform: 'translateY(-50%)', color: '#868e96', zIndex: 1 }}
         >
           <MoreVertIcon fontSize="small" />
         </IconButton>
