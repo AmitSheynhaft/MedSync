@@ -15,6 +15,7 @@ interface IDiagnosesSectionProps {
   isReadOnly: boolean;
   diagnosesList: DiagnosisItem[];
   diagnosisOptions: Diagnosis[];
+  isDiagnosesLoading: boolean;
   diagnosisSearch: string;
   setDiagnosisSearch: (value: string) => void;
   addDiagnosis: (item: DiagnosisItem) => void;
@@ -22,7 +23,7 @@ interface IDiagnosesSectionProps {
 }
 
 export const DiagnosesSection: React.FC<IDiagnosesSectionProps> = ({
-  isReadOnly, diagnosesList, diagnosisOptions, diagnosisSearch, setDiagnosisSearch, addDiagnosis, removeDiagnosis,
+  isReadOnly, diagnosesList, diagnosisOptions, isDiagnosesLoading, diagnosisSearch, setDiagnosisSearch, addDiagnosis, removeDiagnosis,
 }) => (
   <>
     <SectionHeader icon={<LocalHospitalIcon sx={diagnosesSectionIconSx} />} label="אבחנות ICD-10" color="#7048e8" bg="#f3f0ff" />
@@ -45,6 +46,7 @@ export const DiagnosesSection: React.FC<IDiagnosesSectionProps> = ({
         value={null}
         getOptionLabel={option => `${option.code} — ${option.description}`}
         filterOptions={options => options}
+        loading={isDiagnosesLoading}
         inputValue={diagnosisSearch}
         onInputChange={(_, value, reason) => { if (reason !== 'reset') setDiagnosisSearch(value); }}
         onChange={(_, selectedOption) => {
@@ -56,11 +58,14 @@ export const DiagnosesSection: React.FC<IDiagnosesSectionProps> = ({
           <TextField {...params} placeholder="חפש קוד או תיאור ICD-10..."
             slotProps={{ ...params.slotProps, htmlInput: { ...(params.slotProps?.htmlInput as object), ...RTL_TEXT_DIRECTION } }} />
         )}
-        renderOption={(props, option) => (
-          <Box component="li" {...props} sx={diagnosesSectionOptionSx}>
-            <Typography variant="body2"><strong style={{ color: '#7048e8' }}>{option.code}</strong> — {option.description}</Typography>
-          </Box>
-        )}
+        renderOption={(props, option) => {
+          const { key, ...optionProps } = props as typeof props & { key: React.Key };
+          return (
+            <Box key={key} component="li" {...optionProps} sx={diagnosesSectionOptionSx}>
+              <Typography variant="body2"><strong style={{ color: '#7048e8' }}>{option.code}</strong> — {option.description}</Typography>
+            </Box>
+          );
+        }}
         noOptionsText="לא נמצאו אבחנות"
         slotProps={{ popper: { placement: 'bottom-start', modifiers: [{ name: 'flip', enabled: false }] } }}
       />

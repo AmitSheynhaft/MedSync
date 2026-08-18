@@ -90,14 +90,14 @@ export const AppLayout: React.FC = () => {
               <NavItem to="/secretary-documents"  title="מסמכים"       icon={<DescriptionIcon   fontSize="small" />} />
               <NavItem to="/profile"              title="פרופיל"       icon={<PersonIcon        fontSize="small" />} />
             </>
-          ) : (
+          ) : role !== null ? (
             <>
               <NavItem to="/dashboard"       title="בית"      icon={<HomeIcon        fontSize="small" />} />
               <NavItem to="/my-slots"        title="התורים שלי" icon={<EventIcon       fontSize="small" />} />
               <NavItem to="/documents"       title="מסמכים"   icon={<DescriptionIcon fontSize="small" />} />
               <NavItem to="/profile"         title="פרופיל"   icon={<PersonIcon      fontSize="small" />} />
             </>
-          )}
+          ) : null}
         </Box>
 
         <Box sx={utilityGroupSx}>

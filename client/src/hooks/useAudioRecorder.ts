@@ -15,6 +15,8 @@ export function useAudioRecorder() {
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startLockRef = useRef(false);
+  const cancelledRef = useRef(false);
+  const mountedRef = useRef(true);
 
   const releaseStream = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -23,6 +25,7 @@ export function useAudioRecorder() {
 
   const start = async () => {
     if (startLockRef.current || isStarting || status === 'recording' || status === 'processing') return;
+    cancelledRef.current = false;
     startLockRef.current = true;
     setIsStarting(true);
     try {
@@ -54,6 +57,7 @@ export function useAudioRecorder() {
   };
 
   const cancel = () => {
+    cancelledRef.current = true;
     mediaRecorderRef.current?.stop();
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
@@ -67,7 +71,10 @@ export function useAudioRecorder() {
 
   // Release mic on unmount regardless of recording state.
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
+      cancelledRef.current = true;
       if (timerRef.current) clearInterval(timerRef.current);
       mediaRecorderRef.current?.stop();
       releaseStream();
@@ -76,18 +83,21 @@ export function useAudioRecorder() {
   }, []);
 
   const handleStop = async () => {
+    if (cancelledRef.current) return;
     const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
     try {
       const data = await transcribeAudio(blob);
+      if (!mountedRef.current || cancelledRef.current) return;
       setTranscript(data.transcript || '');
       // Guard: server may return a plain string on older builds
       const s = data.summary;
       setSummary(s && typeof s === 'object' ? s : null);
     } catch {
+      if (!mountedRef.current || cancelledRef.current) return;
       setTranscript('');
       setSummary(null);
     }
-    setStatus('done');
+    if (mountedRef.current && !cancelledRef.current) setStatus('done');
   };
 
   return { status, isStarting, transcript, summary, timer, start, stop, cancel };

@@ -5,6 +5,7 @@ export const getGenderLabel = (gender?: string): string => {
   return gender ?? '';
 };
 
+
 export const formatSlotDate = (dateStr: string): string => {
   const d = new Date(`${dateStr}T00:00:00`);
   if (Number.isNaN(d.getTime())) return dateStr;

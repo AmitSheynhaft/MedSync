@@ -3,7 +3,6 @@ import type { MedicalDocument, DocumentTypeEnum, SummaryStatus } from '../../api
 export { DOC_TYPE_LABELS, DOC_TYPE_OPTIONS } from '../../api/medical-documents';
 
 export type TFilterKey = 'all' | DocumentTypeEnum;
-
 export type TFilterOption = { key: TFilterKey; label: string };
 
 export const FILTERS: TFilterOption[] = [

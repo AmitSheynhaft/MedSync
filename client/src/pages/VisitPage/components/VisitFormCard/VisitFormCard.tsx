@@ -82,6 +82,7 @@ export const VisitFormCard: React.FC<IVisitFormCardProps> = ({ form }) => (
       isReadOnly={form.isReadOnly}
       diagnosesList={form.diagnosesList}
       diagnosisOptions={form.diagnosisOptions}
+      isDiagnosesLoading={form.isDiagnosesLoading}
       diagnosisSearch={form.diagnosisSearch}
       setDiagnosisSearch={form.setDiagnosisSearch}
       addDiagnosis={form.addDiagnosis}
@@ -92,6 +93,7 @@ export const VisitFormCard: React.FC<IVisitFormCardProps> = ({ form }) => (
       isReadOnly={form.isReadOnly}
       medicinesList={form.medicinesList}
       medicineOptions={form.medicineOptions}
+      isMedicinesLoading={form.isMedicinesLoading}
       medicineSearch={form.medicineSearch}
       setMedicineSearch={form.setMedicineSearch}
       medicineDosage={form.medicineDosage}

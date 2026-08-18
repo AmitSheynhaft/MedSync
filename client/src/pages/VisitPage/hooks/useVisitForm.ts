@@ -70,9 +70,11 @@ export function useVisitForm() {
     diagnosisSearch,
     setDiagnosisSearch,
     diagnosisOptions,
+    isDiagnosesLoading,
     medicineSearch,
     setMedicineSearch,
     medicineOptions,
+    isMedicinesLoading,
   } = useVisitCatalogOptions(isReadOnly);
   // Diagnoses list
   const [diagnosesList, setDiagnosesList] = useState<DiagnosisItem[]>([]);
@@ -226,12 +228,17 @@ export function useVisitForm() {
       !!weight.trim() ||
       !!height.trim() ||
       !!oxygenSat.trim() ||
-      !!referralNotes.trim() ||
-      diagnosesList.length > 0 ||
-      medicinesList.length > 0;
-    if (!hasContent) {
+      !!referralNotes.trim();
+    // Medicines and diagnoses require a visit record to exist first;
+    // they alone don't satisfy the server's content check on createVisit.
+    const hasListsOnly = !hasContent && (diagnosesList.length > 0 || medicinesList.length > 0);
+    if (!hasContent && !hasListsOnly) {
       setShowEmptyWarning(true);
       setToast({ severity: 'error', message: 'יש למלא את השדות על מנת לשמור.' });
+      return;
+    }
+    if (hasListsOnly) {
+      setToast({ severity: 'error', message: 'יש למלא לפחות שדה אחד (תלונה, אבחנה, מדדים) לפני הוספת תרופות.' });
       return;
     }
     setShowEmptyWarning(false);
@@ -331,20 +338,6 @@ export function useVisitForm() {
         }))];
       });
     }
-    // Populate diagnoses extracted from the transcript
-    if (summary.diagnoses && summary.diagnoses.length > 0) {
-      setDiagnosesList(prev => {
-        const existingDescs = new Set(prev.map(d => d.description));
-        const newDiagnoses = summary.diagnoses!.filter(diag => 
-          diag.description?.trim() && !existingDescs.has(diag.description)
-        );
-        return [...prev, ...newDiagnoses.map(d => ({
-          code: '',
-          description: d.description,
-          note: d.note,
-        }))];
-      });
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summary]);
 
@@ -372,9 +365,9 @@ export function useVisitForm() {
     // metadata
     visitType, setVisitType, followUpDate, setFollowUpDate, referralNotes, setReferralNotes,
     // diagnoses
-    diagnosesList, diagnosisSearch, setDiagnosisSearch, diagnosisOptions, addDiagnosis, removeDiagnosis,
+    diagnosesList, diagnosisSearch, setDiagnosisSearch, diagnosisOptions, isDiagnosesLoading, addDiagnosis, removeDiagnosis,
     // medicines
-    medicinesList, medicineSearch, setMedicineSearch, medicineOptions,
+    medicinesList, medicineSearch, setMedicineSearch, medicineOptions, isMedicinesLoading,
     medicineDosage, setMedicineDosage, medicineFrequency, setMedicineFrequency,
     medicineDuration, setMedicineDuration, handleAddMedicine, removeMedicine, medicineError,
     // actions

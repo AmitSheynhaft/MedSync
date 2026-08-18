@@ -18,6 +18,7 @@ interface IMedicinesSectionProps {
   isReadOnly: boolean;
   medicinesList: MedicineItem[];
   medicineOptions: Medicine[];
+  isMedicinesLoading: boolean;
   medicineSearch: string;
   setMedicineSearch: (value: string) => void;
   medicineDosage: string;
@@ -32,7 +33,7 @@ interface IMedicinesSectionProps {
 }
 
 export const MedicinesSection: React.FC<IMedicinesSectionProps> = ({
-  isReadOnly, medicinesList, medicineOptions, medicineSearch, setMedicineSearch,
+  isReadOnly, medicinesList, medicineOptions, isMedicinesLoading, medicineSearch, setMedicineSearch,
   medicineDosage, setMedicineDosage, medicineFrequency, setMedicineFrequency,
   medicineDuration, setMedicineDuration, handleAddMedicine, removeMedicine, medicineError,
 }) => (
@@ -57,6 +58,7 @@ export const MedicinesSection: React.FC<IMedicinesSectionProps> = ({
           options={medicineOptions}
           getOptionLabel={option => option.name}
           filterOptions={options => options}
+          loading={isMedicinesLoading}
           inputValue={medicineSearch}
           onInputChange={(_, value, reason) => { if (reason !== 'reset') setMedicineSearch(value); }}
           onChange={(_, selectedOption) => {
@@ -67,11 +69,14 @@ export const MedicinesSection: React.FC<IMedicinesSectionProps> = ({
             <TextField {...params} placeholder="חפש שם תרופה..."
               slotProps={{ ...params.slotProps, htmlInput: { ...(params.slotProps?.htmlInput as object), ...RTL_TEXT_DIRECTION } }} />
           )}
-          renderOption={(props, option) => (
-            <Box component="li" {...props} sx={medicinesSectionOptionSx}>
-              <Typography variant="body2">{option.name}</Typography>
-            </Box>
-          )}
+          renderOption={(props, option) => {
+            const { key, ...optionProps } = props as typeof props & { key: React.Key };
+            return (
+              <Box key={key} component="li" {...optionProps} sx={medicinesSectionOptionSx}>
+                <Typography variant="body2">{option.name}</Typography>
+              </Box>
+            );
+          }}
           noOptionsText="לא נמצאו תרופות"
           slotProps={{ popper: { placement: 'bottom-start', modifiers: [{ name: 'flip', enabled: false }] } }}
         />
