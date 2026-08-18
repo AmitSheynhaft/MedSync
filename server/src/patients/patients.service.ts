@@ -199,6 +199,10 @@ export class PatientsService {
             ...baseWhere,
             user: { ...userWhere, email: ILike(`%${trimmedSearchQuery}%`) },
           },
+          {
+            ...baseWhere,
+            idNumber: ILike(`%${trimmedSearchQuery}%`),
+          },
         ]
       : baseWhere;
 
