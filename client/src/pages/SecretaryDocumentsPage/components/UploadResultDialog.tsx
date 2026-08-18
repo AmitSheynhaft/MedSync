@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -19,8 +19,17 @@ interface IUploadResultDialogProps {
 }
 
 export const UploadResultDialog: React.FC<IUploadResultDialogProps> = ({ result, onClose }) => {
-  const isSuccess = result === 'success';
-  const content = result ? UPLOAD_RESULT_CONTENT[result] : null;
+  // Keep the last non-null result while the dialog is playing its exit
+  // transition, so the icon/text don't flip to the "error" variant (which
+  // visually resembles the RoleMismatchDialog "no permissions" popup) during
+  // the fade-out.
+  const [displayResult, setDisplayResult] = useState<UploadResult | null>(result);
+  useEffect(() => {
+    if (result) setDisplayResult(result);
+  }, [result]);
+
+  const isSuccess = displayResult === 'success';
+  const content = displayResult ? UPLOAD_RESULT_CONTENT[displayResult] : null;
 
   return (
     <Dialog open={Boolean(result)} onClose={onClose} dir="rtl" maxWidth="xs" fullWidth>
